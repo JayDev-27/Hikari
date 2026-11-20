@@ -34,6 +34,8 @@ export interface AvatarController {
   react(event: AvatarEvent): void;
   /** Is the given canvas-space point on a visible part of the model? (click-through) */
   hitTest(x: number, y: number): string | null;
+  /** True while something visibly animates beyond idle life (gesture motion, eyes catching up). */
+  isBusy?(): boolean;
   /** Called once per frame by the stage loop with seconds since last frame. */
   update(dt: number): void;
   resize(width: number, height: number): void;

@@ -9,6 +9,7 @@ interface StageStore {
   latency: Partial<Record<LatencyMark["stage"], number>>;
   debug: boolean;
   fps: number;
+  tier: string;
   /** Debug: AudioContext state and current mouth opening (0..1). */
   audio: { ctx: string; mouth: number };
   setAudio(a: { ctx: string; mouth: number }): void;
@@ -17,7 +18,7 @@ interface StageStore {
   setCaption(c: string): void;
   mark(stage: LatencyMark["stage"], ms: number): void;
   toggleDebug(): void;
-  setFps(f: number): void;
+  setFps(f: number, tier?: string): void;
 }
 
 export const useStage = create<StageStore>((set) => ({
@@ -27,6 +28,7 @@ export const useStage = create<StageStore>((set) => ({
   latency: {},
   debug: import.meta.env.DEV,
   fps: 0,
+  tier: "–",
   audio: { ctx: "–", mouth: 0 },
   setAudio: (audio) => set({ audio }),
   setCore: (core) => set({ core }),
@@ -34,5 +36,5 @@ export const useStage = create<StageStore>((set) => ({
   setCaption: (caption) => set({ caption }),
   mark: (stage, ms) => set((s) => ({ latency: stage === "eos" ? { eos: ms } : { ...s.latency, [stage]: Math.round(ms) } })),
   toggleDebug: () => set((s) => ({ debug: !s.debug })),
-  setFps: (fps) => set({ fps }),
+  setFps: (fps, tier) => set(tier ? { fps, tier } : { fps }),
 }));

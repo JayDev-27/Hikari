@@ -22,7 +22,10 @@ export function Stage() {
         // Dev-only: VITE_AUTOPLAY_MOCK=1 pnpm dev → play the mock turn on load (visual lip-sync check).
         if (import.meta.env.DEV && import.meta.env.VITE_AUTOPLAY_MOCK) setTimeout(() => runtime.playMock(), 1500);
       })
-      .catch((e: unknown) => setError(String(e)));
+      .catch((e: unknown) => {
+        console.error("avatar load failed:", e);
+        setError(String(e));
+      });
     return () => {
       cancelled = true;
       runtime.destroy();
@@ -46,12 +49,12 @@ export function Stage() {
 }
 
 function DebugOverlay({ rt }: { rt: React.RefObject<StageRuntime | null> }) {
-  const { debug, core, state, latency, fps, audio } = useStage();
+  const { debug, core, state, latency, fps, tier, audio } = useStage();
   if (!debug) return null;
   return (
     <div className="debug" onMouseDown={(e) => e.stopPropagation()}>
       <div>
-        core <span className={core ? "ok" : "bad"}>{core ? "connected" : "offline"}</span> · {state} · {fps} fps
+        core <span className={core ? "ok" : "bad"}>{core ? "connected" : "offline"}</span> · {state} · {fps} fps ({tier})
       </div>
       <div>
         stt {latency.stt_final ?? "–"} · llm {latency.llm_first_token ?? "–"} · tts {latency.tts_first_chunk ?? "–"} ·

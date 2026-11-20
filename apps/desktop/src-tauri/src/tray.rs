@@ -31,6 +31,9 @@ pub fn setup<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
                 if let Some(w) = app.get_webview_window(STAGE) {
                     let visible = w.is_visible().unwrap_or(true);
                     let _ = if visible { w.hide() } else { w.show() };
+                    app.state::<std::sync::Arc<stage::StageState>>().visible.store(!visible, std::sync::atomic::Ordering::Relaxed);
+                    // Frontend pauses its render loop while hidden.
+                    let _ = app.emit_to(STAGE, "stage://visible", !visible);
                     let _ = toggle_c.set_text(if visible { "Show Hikari" } else { "Hide Hikari" });
                 }
             }

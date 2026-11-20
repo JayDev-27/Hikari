@@ -20,10 +20,12 @@ Status legend: ✅ done · 🟡 in progress · ⬜ not started
 - [ ] Hands-on check with a real cursor: click-through on transparent pixels, drag, eye-follow, ⌥Space barge-in.
 - [ ] A/V sync measurement script (record loopback vs viseme timeline).
 - [x] `apps/desktop/dev/protocol-console` for B (§12.3): interactive + one-shot `--say`/`--wav`, schema validation, latency report, TTS WAV capture.
-- [ ] Idle FPS throttling (30 fps idle / 60 animating).
+- [x] Idle FPS throttling: 60 active / 30 idle / 0 hidden. Release idle CPU 37.2 % → 24.7 % (M2). Fixed 3 production-only bugs (CSP eval, blob-worker textures, tauri:// URL resolution).
 - [ ] Tag `m0` once B's mock server drives the mouth.
 
 ## Open questions
+
+0. **Idle CPU budget vs smooth idle.** At 30 fps idle Live2D costs ~25 % of a core (release, M2), far above the < 3 % target. Options: (a) accept ~25 %; (b) a "deep idle" tier (~10–15 fps after N s with nothing happening: estimated ~10–12 %, slightly choppier blinks); (c) a still frame after longer idle, waking on cursor or voice. Needs a decision.
 
 1. Hima TTS licence — B to contact the author before shipping anything that bundles it.
 2. Peekaboo TCC attribution (Bridge host vs Hikari.app) — test in M7.

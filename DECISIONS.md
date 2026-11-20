@@ -4,6 +4,15 @@ Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 
 ## 2026-11-20 — Phase 0 / M0 (A)
 
+- **Render tiers** (`src/stage/frameScheduler.ts`): 60 fps active (speaking, gestures, hover, listening/thinking, eyes catching up, 800 ms tail), 30 fps idle, 0 when hidden via the tray. Skips rAF ticks, so it's vsync-aligned on 60/120 Hz; under macOS Low Power Mode WebKit caps rAF at 30 fps and both tiers get every tick.
+- **No pause on `document.visibilitychange`**: WebKit reported this floating panel as `hidden` at boot while it was on screen (release build, Chrome frontmost). Only the tray's explicit hide pauses rendering.
+- **Cursor poll** reads CoreGraphics (`CGEventGetLocation`, thread-safe, no TCC) and caches window geometry from window events. Four Tauri getters at 30 Hz were each a synchronous main-thread round trip. Polls at 30 Hz near her or while the cursor moves, 8 Hz otherwise, and not at all while hidden.
+- **Production-only bugs found by testing the release build** (dev serves without Tauri's CSP or the custom protocol, so none showed in dev):
+  1. Pixi v8 needs `import "pixi.js/unsafe-eval"` under a CSP without `unsafe-eval`; otherwise it fails at init.
+  2. Pixi decodes textures in a `blob:` Worker, which the CSP blocks, so loading hung forever with no error. Fix: `loadTextures.config.preferWorkers = false`. The CSP stays strict.
+  3. Pixi resolves root-relative URLs under `tauri://` to `tauri://characters/…` (host dropped). Model URLs are now absolute.
+- `src/diagnostics.ts` forwards webview errors and warnings to the Rust log (stdout + log file), since release builds have no devtools. `VITE_DIAG=1` adds a 5 s render heartbeat; `VITE_FORCE_TIER=active|idle` pins the tier for measurements.
+- **Idle CPU, measured** on an M2 with a release build (`dev/measure-idle.sh`, app + its WebKit processes, % of one core): **37.2 % at 60 fps → 24.7 % at the 30 fps idle tier**. In both, about 20 points are WebKit rendering and compositing Live2D; the app process (~4 %) is mostly UI-side compositing. The spec's "idle CPU < 3 %" can't be met while idle stays at 30 fps (§9.5): cost scales roughly with frame rate. This needs a product decision (see PLAN open questions).
 - **Cubism Core 6 compat shim** (`src/avatar/live2d/coreCompat.ts`): SDK 5-r.5 ships Core 6, which moved `drawables.renderOrders` to `Model.getRenderOrders()`; untitled-pixi-live2d-engine 1.4.0 still reads the old field and crashed on first draw. Every other Drawables field the engine uses is unchanged. Shim maps the old field for models without offscreens (warns otherwise). Remove when the engine supports Core 6.
 - Captions follow the **audible** chunk on the audio clock, not schedule time (chunks are queued ahead; the old code showed the last sentence while she spoke the first).
 - Dev flag `VITE_AUTOPLAY_MOCK=1` plays the mock turn on load (used for screenshot-based lip-sync checks). Debug overlay shows AudioContext state + live mouth opening.

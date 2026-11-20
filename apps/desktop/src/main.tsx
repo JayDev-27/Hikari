@@ -2,6 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { Stage } from "./stage/Stage";
 import "./styles.css";
+import { installDiagnostics } from "./diagnostics";
+
+installDiagnostics();
 
 // One bundle, several windows: route on the hash (stage / chat / settings / studio …).
 const route = location.hash.replace(/^#\/?/, "") || "stage";

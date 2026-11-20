@@ -7,6 +7,7 @@ import { CoreClient } from "../core/client";
 import { LipSyncEngine, visemesFromSpectrum, visemesToLive2D } from "../lipsync/engine";
 import { mockTurn } from "../dev/mockReplay";
 import { useStage } from "../state/stage";
+import { FrameScheduler, type FrameTier } from "./frameScheduler";
 
 export const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -38,6 +39,8 @@ export class StageRuntime {
   private turnStartAt = 0;
   private firstAudioMarked = false;
   private captionSeq = -1;
+  private readonly scheduler = new FrameScheduler();
+  private visible = true;
 
   constructor(coreUrl = "ws://127.0.0.1:8765/ws") {
     this.core = new CoreClient(coreUrl);
@@ -68,6 +71,23 @@ export class StageRuntime {
     this.core.onStatus = (ok) => useStage.getState().setCore(ok);
     this.core.connect();
     if (inTauri) void this.wireTauri();
+    // Note: no document.visibilitychange pause — WebKit reports this floating,
+    // mostly transparent panel as "hidden" while it is on screen (observed in
+    // release builds). Only the tray's explicit hide pauses rendering.
+  }
+
+  /** Stage hidden (tray / visibility): stop requestAnimationFrame entirely. */
+  setVisible(v: boolean): void {
+    if (v === this.visible) return;
+    this.visible = v;
+    if (!v) {
+      cancelAnimationFrame(this.raf);
+      this.raf = 0;
+    } else if (this.avatar && !this.raf) {
+      this.scheduler.reset();
+      this.last = performance.now();
+      this.raf = requestAnimationFrame(this.loop);
+    }
   }
 
   private wireProtocol(): void {
@@ -113,6 +133,7 @@ export class StageRuntime {
     this.unlisten.push(
       await listen<{ x: number; y: number; inside: boolean; gx: number; gy: number }>("stage://cursor", (e) => {
         const { x, y, inside } = e.payload;
+        this.scheduler.poke(performance.now()); // eyes catch up at the active rate
         // Click-through: interactive only while over a visible part of her.
         const hit = inside ? this.avatar?.hitTest(x, y) ?? null : null;
         const over = hit !== null;
@@ -147,6 +168,7 @@ export class StageRuntime {
           setTimeout(() => this.playMock(), 300);
         }
       }),
+      await listen<boolean>("stage://visible", (e) => this.setVisible(e.payload)),
       await listen("hotkey://panic", () => {
         this.bargeIn("ui");
         this.core.send("tool.confirm", { callId: "*", approved: false, via: "click" });
@@ -154,14 +176,33 @@ export class StageRuntime {
     );
   }
 
-  private loop = (): void => {
+  /** Anything moving that deserves the 60 fps tier. */
+  private isBusy(): boolean {
+    const st = useStage.getState().state;
+    return (
+      this.playback.isPlaying ||
+      this.lipsync.hasPending ||
+      this.gestures.length > 0 ||
+      this.hovering ||
+      (st !== "idle" && st !== "sleeping") ||
+      (this.avatar?.isBusy?.() ?? false)
+    );
+  }
+
+  private loop = (now: number = performance.now()): void => {
+    if (!this.visible) {
+      this.raf = 0;
+      return;
+    }
     this.raf = requestAnimationFrame(this.loop);
-    const now = performance.now();
+    // VITE_FORCE_TIER (measurement builds only): pin the render tier.
+    const tier = (import.meta.env.VITE_FORCE_TIER as FrameTier | undefined) ?? this.scheduler.tier(now, this.visible, this.isBusy());
+    if (!this.scheduler.shouldRender(now, tier)) return;
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
     this.frames++;
     if (now - this.fpsAt >= 1000) {
-      useStage.getState().setFps(Math.round((this.frames * 1000) / (now - this.fpsAt)));
+      useStage.getState().setFps(Math.round((this.frames * 1000) / (now - this.fpsAt)), tier);
       this.frames = 0;
       this.fpsAt = now;
     }

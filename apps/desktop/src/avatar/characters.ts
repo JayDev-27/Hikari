@@ -29,7 +29,10 @@ export async function loadPack(id: string, base = "/characters"): Promise<Charac
   }
   const json = (await res.json()) as CharacterJson;
   if (!json.modelPath) throw new Error(`'${json.displayName}' has no model yet — import your own model for this character`);
-  return { ...json, modelUrl: `${base}/${id}/${json.modelPath}` };
+  // Absolute URL: Pixi's path resolver turns root-relative paths under a custom
+  // scheme into tauri://characters/… (drops the host) in production builds.
+  const modelUrl = new URL(`${base}/${id}/${json.modelPath}`, location.href).href;
+  return { ...json, modelUrl };
 }
 
 export const DEFAULT_CHARACTER = "hiyori";

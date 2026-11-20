@@ -1,4 +1,7 @@
-import { Application, extensions } from "pixi.js";
+// CSP-safe Pixi: the app's CSP forbids eval/new Function, which Pixi v8 otherwise uses
+// to generate shader/uniform sync code. Production builds enforce the CSP (dev didn't).
+import "pixi.js/unsafe-eval";
+import { Application, extensions, loadTextures } from "pixi.js";
 import { Live2DModel, Live2DPlugin, MotionPriority } from "untitled-pixi-live2d-engine/cubism";
 import type { Emotion } from "@hikari/protocol";
 import type { AvatarController, AvatarEvent, AvatarState, Visemes } from "../types";
@@ -55,6 +58,10 @@ export class Live2DAvatar implements AvatarController {
     }
     if (!pluginAdded) {
       extensions.add(Live2DPlugin);
+      // Pixi decodes textures in a blob: Worker by default; the production CSP
+      // blocks blob workers, so texture loading would hang forever (dev has no CSP).
+      // Decode on the main thread instead — a one-off cost at model load.
+      if (loadTextures.config) loadTextures.config.preferWorkers = false;
       pluginAdded = true;
     }
     const a = new Live2DAvatar(pack);
@@ -170,6 +177,12 @@ export class Live2DAvatar implements AvatarController {
    * previous readback (one frame of lag at 30 Hz polling is imperceptible).
    * Exact per-pixel: reads the alpha of the rendered framebuffer right after render.
    */
+  isBusy(): boolean {
+    const mm = this.model.internalModel.motionManager as unknown as { state: { currentPriority: number } };
+    const lookMoving = Math.abs(this.look.tx - this.look.x) > 0.01 || Math.abs(this.look.ty - this.look.y) > 0.01;
+    return mm.state.currentPriority > MotionPriority.IDLE || lookMoving;
+  }
+
   hitTest(x: number, y: number): string | null {
     this.pendingHit = { x, y };
     return this.lastHit;
