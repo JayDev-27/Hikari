@@ -1,8 +1,10 @@
 [package]
 name = "desktop"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "Hikari: local-first anime AI companion for macOS"
+authors = ["JayDev-27"]
+license = "MIT"
+repository = "https://github.com/JayDev-27/Hikari"
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -13,6 +13,7 @@ A Live2D / VRM character who lives on your desktop, talks with you in **Hindi, E
 ![Rust](https://img.shields.io/badge/Rust-1.100-000?logo=rust)
 ![Live2D](https://img.shields.io/badge/Live2D-Cubism%205-FF6699)
 ![Status](https://img.shields.io/badge/status-M0%20(early)-orange)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 </div>
 
@@ -127,3 +128,7 @@ Third-party models and runtimes aren't committed. [`docs/LICENSES.md`](docs/LICE
 - **Sample models** (Hiyori, Haru) are under the Live2D Free Material License. *This content uses sample data owned and copyrighted by Live2D Inc.*
 - **Franchise characters** ship as persona text plus an empty model slot only. Import a model you own; ripped models and voice-actor clones are never included.
 - **Voice cloning** requires a recorded consent file for any voice other than your own.
+
+## License
+
+Hikari's own code is under the [MIT License](LICENSE). Third-party models, runtimes and SDKs keep their own licences, which MIT doesn't change. That includes Live2D Cubism Core and the Live2D sample models; see [`docs/LICENSES.md`](docs/LICENSES.md).

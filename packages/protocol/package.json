@@ -8,5 +8,6 @@
   "scripts": {
     "gen": "node scripts/gen-ts.mjs",
     "check": "node scripts/gen-ts.mjs --check"
-  }
+  },
+  "license": "MIT"
 }
