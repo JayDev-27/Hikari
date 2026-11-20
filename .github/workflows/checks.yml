@@ -1,0 +1,57 @@
+name: Code checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    name: Desktop and protocol
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 12.14.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check generated protocol types
+        run: pnpm check:protocol
+
+      - name: Lint TypeScript
+        run: pnpm -F desktop lint --max-warnings 0
+
+      - name: Check TypeScript types
+        run: pnpm typecheck
+
+      - name: Run desktop tests
+        run: pnpm -F desktop test
+
+      - name: Build desktop frontend
+        run: pnpm -F desktop build
+
+      - name: Install Rust and Clippy
+        run: rustup toolchain install 1.100.0 --profile minimal --component clippy
+
+      - name: Check Rust with Clippy
+        run: cargo +1.100.0 clippy --locked --all-targets --manifest-path apps/desktop/src-tauri/Cargo.toml -- -D warnings

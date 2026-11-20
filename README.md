@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/brand/hikari-logo-256.png" alt="Hikari macOS app icon" width="160" height="160">
+<img src="assets/brand/hikari-macos-icon-256.png" alt="Hikari macOS app icon" width="160" height="160">
 
 # 光 Hikari
 
@@ -14,7 +14,7 @@ A Live2D / VRM character who lives on your desktop, talks with you in **Hindi, E
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-1.100-000?logo=rust)
 ![Live2D](https://img.shields.io/badge/Live2D-Cubism%205-FF6699)
-![Status](https://img.shields.io/badge/status-M0%20(early)-orange)
+[![Code checks](https://github.com/JayDev-27/Hikari/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/JayDev-27/Hikari/actions/workflows/checks.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 </div>
@@ -121,6 +121,26 @@ core/                Python core: voice pipeline, memory, agent (coming in M1)
 | M8 | Onboarding, performance, signed `.dmg` |
 
 The full plan is in [`docs/PLAN.md`](docs/PLAN.md).
+
+## Contributing
+
+Bug fixes, docs improvements, and tests are welcome. For a bug report, include reproduction steps, your macOS version, and any relevant logs. For a larger change, open an issue to discuss the scope first. [Open an issue](https://github.com/JayDev-27/Hikari/issues/new)
+
+Fork the repo, create a branch, and open a pull request against `main`. In the PR, explain what changed and how you verified it. Include a short screen recording for visible desktop changes. If you change the wire schema, run `pnpm gen:protocol` and commit the regenerated types.
+
+Run these checks from the repo root on macOS:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm check:protocol
+pnpm -F desktop lint --max-warnings 0
+pnpm typecheck
+pnpm -F desktop test
+pnpm -F desktop build
+cargo clippy --locked --all-targets --manifest-path apps/desktop/src-tauri/Cargo.toml -- -D warnings
+```
+
+GitHub Actions runs the same checks on pull requests and pushes to `main`. For changes to the avatar, tray, or hotkeys, also verify the behavior in the running app on macOS. Dependabot checks pnpm, Cargo, and GitHub Actions dependencies weekly and opens update PRs for review. [Code checks](https://github.com/JayDev-27/Hikari/actions/workflows/checks.yml)
 
 ## Assets & licences
 
