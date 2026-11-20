@@ -12,6 +12,6 @@ Nothing in this table is committed to git unless marked "committed".
 | Hima TTS Nano (`Prahaladha/hima-tts-nano-hi`) | Hugging Face | **`other`, no licence text — all rights reserved** | Do not ship until the author grants a licence | B, prototype only |
 | Hima-ASR (`Prahaladha/hima-asr-mlx-*`) | Hugging Face | Apache-2.0 + Gemma terms | Pass on Gemma prohibited-use policy | B |
 | Character packs (`characters/*/character.json`, persona.md) | this repo | project licence | — | committed |
-| Hikari logo / app icon (`assets/brand/`) | original artwork for this project | MIT (project licence) | — | committed |
+| Hikari logo / app icon (`assets/brand/`) | artwork supplied for Hikari | — | — | committed |
 
 Franchise personas (Reze, Makima, Rize Kamishiro) ship as **persona text + empty model slot** only. No fan-ripped models, art, or voice-actor audio, ever.
