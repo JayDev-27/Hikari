@@ -1,7 +1,14 @@
-# Tauri + React + Typescript
+# apps/desktop
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+The Hikari desktop app: Tauri v2 (Rust) shell plus a React/TypeScript stage. See the [root README](../../README.md) and [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md).
 
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+| Path | What |
+|---|---|
+| `src-tauri/` | Rust: NSPanel stage, click-through cursor poll, tray, global hotkeys |
+| `src/stage/` | `StageRuntime` (one clock: AudioContext), frame scheduler, stage UI |
+| `src/avatar/` | `AvatarController` interface, Live2D renderer, character packs |
+| `src/lipsync/` | Phoneme → viseme map (Hindi + English), coarticulation engine, A/V sync analysis |
+| `src/audio/` | Gapless TTS playback queue, barge-in |
+| `src/core/` | WebSocket client for the Python core |
+| `dev/` | Protocol console, A/V sync probe, idle-CPU and cursor test helpers |
+| `scripts/fetch-assets.mjs` | Fetches Live2D sample models + Cubism Core (never committed) |
