@@ -20,6 +20,7 @@ Rust via rustup (`source ~/.cargo/env`). Cubism Core must come from the official
 | Rust lint | `cd apps/desktop/src-tauri && cargo clippy` |
 | Regenerate protocol types | `pnpm gen:protocol` (CI: `pnpm check:protocol`) |
 | Bundle `.app`/`.dmg` | `pnpm build` |
+| Talk to the core without the app (B) | `pnpm -F desktop console [--say "…" \| --wav f.wav]` — see `apps/desktop/dev/protocol-console/README.md` |
 
 ## Conventions
 
