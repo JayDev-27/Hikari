@@ -1,0 +1,12 @@
+{
+  "name": "@hikari/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "gen": "node scripts/gen-ts.mjs",
+    "check": "node scripts/gen-ts.mjs --check"
+  }
+}

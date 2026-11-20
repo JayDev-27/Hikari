@@ -1,0 +1,16 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "stage",
+  "description": "Stage window: drag, cursor events, hotkey events",
+  "windows": ["stage"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-ignore-cursor-events",
+    "core:window:allow-set-size",
+    "core:window:allow-outer-position",
+    "core:window:allow-set-position",
+    "autostart:default",
+    "global-shortcut:default"
+  ]
+}

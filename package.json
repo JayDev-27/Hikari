@@ -1,0 +1,13 @@
+{
+  "name": "hikari",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen:protocol": "pnpm -F @hikari/protocol gen",
+    "check:protocol": "pnpm -F @hikari/protocol check",
+    "dev": "pnpm -F desktop tauri dev",
+    "build": "pnpm -F desktop tauri build",
+    "lint": "pnpm -F desktop lint",
+    "typecheck": "pnpm -F desktop typecheck"
+  }
+}

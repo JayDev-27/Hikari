@@ -1,0 +1,49 @@
+//! Menu-bar (tray) icon. Hikari runs as an accessory app: no Dock icon.
+
+use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::TrayIconBuilder;
+use tauri::{AppHandle, Emitter, Manager, Runtime};
+
+use crate::stage::{self, STAGE};
+
+pub fn setup<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
+    let toggle = MenuItem::with_id(app, "toggle", "Hide Hikari", true, None::<&str>)?;
+    let lock = CheckMenuItem::with_id(app, "lock", "Click-through lock", true, false, None::<&str>)?;
+    let mute = CheckMenuItem::with_id(app, "mute", "Mute mic", true, false, None::<&str>)?;
+    let panic = MenuItem::with_id(app, "panic", "Stop all actions", true, Some("CmdOrCtrl+Shift+Escape"))?;
+    let quit = MenuItem::with_id(app, "quit", "Quit Hikari", true, Some("CmdOrCtrl+Q"))?;
+    let menu = Menu::with_items(
+        app,
+        &[&toggle, &lock, &mute, &PredefinedMenuItem::separator(app)?, &panic, &PredefinedMenuItem::separator(app)?, &quit],
+    )?;
+
+    let toggle_c = toggle.clone();
+    let lock_c = lock.clone();
+    let mute_c = mute.clone();
+    TrayIconBuilder::with_id("hikari")
+        .icon(app.default_window_icon().cloned().expect("bundle icon"))
+        .icon_as_template(false)
+        .tooltip("Hikari")
+        .menu(&menu)
+        .show_menu_on_left_click(true)
+        .on_menu_event(move |app, ev| match ev.id().as_ref() {
+            "toggle" => {
+                if let Some(w) = app.get_webview_window(STAGE) {
+                    let visible = w.is_visible().unwrap_or(true);
+                    let _ = if visible { w.hide() } else { w.show() };
+                    let _ = toggle_c.set_text(if visible { "Show Hikari" } else { "Hide Hikari" });
+                }
+            }
+            "lock" => stage::set_locked(app, lock_c.is_checked().unwrap_or(false)),
+            "mute" => {
+                let _ = app.emit("hotkey://mute", mute_c.is_checked().unwrap_or(false));
+            }
+            "panic" => {
+                let _ = app.emit("hotkey://panic", ());
+            }
+            "quit" => app.exit(0),
+            _ => {}
+        })
+        .build(app)?;
+    Ok(())
+}

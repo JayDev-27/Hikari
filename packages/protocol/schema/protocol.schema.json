@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hikari.local/protocol/0.1.0",
+  "title": "HikariProtocol",
+  "description": "Hikari UI <-> core wire protocol. Every frame is an Envelope (JSON text frame over WebSocket ws://127.0.0.1:<port>/ws). Bump protocolVersion on any change; minor = additive, major = breaking.",
+  "x-protocolVersion": "0.1.0",
+  "$ref": "#/$defs/Envelope",
+  "$defs": {
+    "Envelope": {
+      "type": "object",
+      "required": ["v", "type", "ts", "payload"],
+      "properties": {
+        "v": { "type": "string", "description": "protocolVersion of the sender, semver", "const": "0.1.0" },
+        "type": { "$ref": "#/$defs/MessageType" },
+        "id": { "type": "string", "description": "Optional message id (uuid) for request/response pairing" },
+        "replyTo": { "type": "string", "description": "id of the message this answers" },
+        "turnId": { "type": "string", "description": "Conversation turn this message belongs to" },
+        "ts": { "type": "number", "description": "Sender wall-clock ms since epoch" },
+        "payload": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "MessageType": {
+      "type": "string",
+      "enum": [
+        "hello", "audio.in.chunk", "stt.partial", "stt.final", "turn.start", "turn.end",
+        "llm.token", "tts.chunk", "tts.end", "avatar.emotion", "avatar.gesture", "state", "barge_in",
+        "tool.request", "tool.confirm", "tool.result", "memory.query", "memory.results",
+        "memory.upsert", "memory.delete", "voice_lab.event", "provider.status", "latency.mark",
+        "text.in", "error"
+      ]
+    },
+    "Hello": {
+      "type": "object",
+      "required": ["role", "protocolVersion"],
+      "properties": {
+        "role": { "enum": ["ui", "core", "console"] },
+        "protocolVersion": { "type": "string" },
+        "capabilities": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "AudioInChunk": {
+      "type": "object",
+      "required": ["seq", "sampleRate", "encoding", "data"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "sampleRate": { "type": "integer", "description": "16000 expected" },
+        "encoding": { "enum": ["pcm_s16le", "pcm_f32le"] },
+        "data": { "type": "string", "contentEncoding": "base64" },
+        "pushToTalk": { "type": "boolean" }
+      }
+    },
+    "SttText": {
+      "type": "object",
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string" },
+        "language": { "$ref": "#/$defs/Language" },
+        "confidence": { "type": "number" }
+      }
+    },
+    "TextIn": {
+      "type": "object",
+      "required": ["text"],
+      "properties": { "text": { "type": "string" } }
+    },
+    "TurnEvent": {
+      "type": "object",
+      "properties": {
+        "reason": { "enum": ["vad", "push_to_talk", "text", "barge_in", "complete", "error", "cancelled"] }
+      }
+    },
+    "LlmToken": {
+      "type": "object",
+      "required": ["delta"],
+      "properties": { "delta": { "type": "string" }, "provider": { "type": "string" } }
+    },
+    "Phoneme": {
+      "type": "object",
+      "required": ["p", "start", "end"],
+      "properties": {
+        "p": { "type": "string", "description": "IPA phoneme (espeak-style), or 'sil' / 'br' (breath)" },
+        "start": { "type": "number", "description": "ms from chunk start" },
+        "end": { "type": "number", "description": "ms from chunk start" },
+        "stress": { "type": "number", "description": "0..1 optional emphasis" }
+      }
+    },
+    "TtsChunk": {
+      "type": "object",
+      "required": ["seq", "sampleRate", "encoding", "pcm", "text"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0, "description": "Order within turn; UI schedules gaplessly by seq" },
+        "sampleRate": { "type": "integer" },
+        "encoding": { "enum": ["pcm_s16le", "pcm_f32le"] },
+        "pcm": { "type": "string", "contentEncoding": "base64", "description": "Mono audio" },
+        "durationMs": { "type": "number" },
+        "text": { "type": "string", "description": "Sentence this chunk speaks (display text, any script)" },
+        "language": { "$ref": "#/$defs/Language" },
+        "phonemes": { "type": "array", "items": { "$ref": "#/$defs/Phoneme" } },
+        "phonemeSource": { "enum": ["tts", "aligner", "none"] }
+      }
+    },
+    "AvatarEmotion": {
+      "type": "object",
+      "required": ["name", "intensity"],
+      "properties": {
+        "name": { "$ref": "#/$defs/Emotion" },
+        "intensity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "valence": { "type": "number", "minimum": -1, "maximum": 1 },
+        "arousal": { "type": "number", "minimum": 0, "maximum": 1 },
+        "seq": { "type": "integer", "description": "tts chunk seq this applies from; absent = now" }
+      }
+    },
+    "AvatarGesture": {
+      "type": "object",
+      "required": ["tag", "atMs"],
+      "properties": {
+        "tag": { "$ref": "#/$defs/GestureTag" },
+        "atMs": { "type": "number", "description": "Offset in ms from the start of tts chunk `seq`" },
+        "seq": { "type": "integer" },
+        "intensity": { "type": "number" }
+      }
+    },
+    "State": {
+      "type": "object",
+      "required": ["state"],
+      "properties": {
+        "state": { "enum": ["idle", "listening", "thinking", "speaking", "working", "sleeping", "waking"] },
+        "detail": { "type": "string" }
+      }
+    },
+    "BargeIn": {
+      "type": "object",
+      "properties": {
+        "source": { "enum": ["ui", "core"] },
+        "playedUntilSeq": { "type": "integer" },
+        "playedMsInSeq": { "type": "number", "description": "So core can trim history to what was actually heard" }
+      }
+    },
+    "ToolRequest": {
+      "type": "object",
+      "required": ["callId", "tool", "tier", "summary", "args"],
+      "properties": {
+        "callId": { "type": "string" },
+        "tool": { "type": "string" },
+        "tier": { "enum": ["read", "act", "sensitive"] },
+        "summary": { "type": "string", "description": "Exact human-readable action shown in the confirm dialog" },
+        "args": { "type": "object" },
+        "needsConfirmation": { "type": "boolean" }
+      }
+    },
+    "ToolConfirm": {
+      "type": "object",
+      "required": ["callId", "approved"],
+      "properties": {
+        "callId": { "type": "string" },
+        "approved": { "type": "boolean" },
+        "via": { "enum": ["click", "voice"] }
+      }
+    },
+    "ToolResult": {
+      "type": "object",
+      "required": ["callId", "ok"],
+      "properties": {
+        "callId": { "type": "string" },
+        "ok": { "type": "boolean" },
+        "result": {},
+        "error": { "type": "string" }
+      }
+    },
+    "MemoryQuery": {
+      "type": "object",
+      "properties": {
+        "q": { "type": "string" },
+        "kind": { "enum": ["fact", "episode", "self", "summary"] },
+        "namespace": { "type": "string" },
+        "limit": { "type": "integer" },
+        "offset": { "type": "integer" }
+      }
+    },
+    "MemoryItem": {
+      "type": "object",
+      "required": ["id", "kind", "text"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "enum": ["fact", "episode", "self", "summary"] },
+        "text": { "type": "string" },
+        "namespace": { "type": "string" },
+        "confidence": { "type": "number" },
+        "importance": { "type": "number" },
+        "emotion": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "sourceTurnId": { "type": "string" }
+      }
+    },
+    "MemoryResults": {
+      "type": "object",
+      "required": ["items"],
+      "properties": {
+        "items": { "type": "array", "items": { "$ref": "#/$defs/MemoryItem" } },
+        "total": { "type": "integer" }
+      }
+    },
+    "MemoryDelete": {
+      "type": "object",
+      "required": ["ids"],
+      "properties": { "ids": { "type": "array", "items": { "type": "string" } } }
+    },
+    "VoiceLabEvent": {
+      "type": "object",
+      "required": ["op"],
+      "properties": {
+        "op": { "type": "string", "description": "e.g. script.get, clip.saved, consent.check, train.progress, eval.report" },
+        "voiceId": { "type": "string" },
+        "data": {}
+      }
+    },
+    "ProviderStatus": {
+      "type": "object",
+      "required": ["capability", "provider", "status"],
+      "properties": {
+        "capability": { "enum": ["llm", "stt", "tts", "embed"] },
+        "provider": { "type": "string" },
+        "model": { "type": "string" },
+        "status": { "enum": ["active", "failover", "benched", "ok", "error"] },
+        "reason": { "type": "string" },
+        "latencyMs": { "type": "number" }
+      }
+    },
+    "LatencyMark": {
+      "type": "object",
+      "required": ["stage", "ms"],
+      "properties": {
+        "stage": { "enum": ["eos", "stt_final", "llm_first_token", "tts_first_chunk", "audio_first_play"] },
+        "ms": { "type": "number", "description": "ms since end-of-speech for this turn" }
+      }
+    },
+    "ErrorInfo": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "recoverable": { "type": "boolean" }
+      }
+    },
+    "Language": { "enum": ["en", "hi", "hinglish", "unknown"] },
+    "Emotion": {
+      "enum": ["neutral", "joy", "fun", "angry", "sorrow", "surprised", "shy", "sleepy", "thinking", "teasing"]
+    },
+    "GestureTag": {
+      "enum": [
+        "wave", "shrug", "facepalm", "laugh", "shy_look_away", "think_chin", "clap", "point",
+        "pout", "cross_arms", "head_pat_react", "nod", "head_tilt", "bow"
+      ]
+    }
+  },
+  "x-payloads": {
+    "hello": "Hello",
+    "audio.in.chunk": "AudioInChunk",
+    "stt.partial": "SttText",
+    "stt.final": "SttText",
+    "text.in": "TextIn",
+    "turn.start": "TurnEvent",
+    "turn.end": "TurnEvent",
+    "llm.token": "LlmToken",
+    "tts.chunk": "TtsChunk",
+    "tts.end": "TurnEvent",
+    "avatar.emotion": "AvatarEmotion",
+    "avatar.gesture": "AvatarGesture",
+    "state": "State",
+    "barge_in": "BargeIn",
+    "tool.request": "ToolRequest",
+    "tool.confirm": "ToolConfirm",
+    "tool.result": "ToolResult",
+    "memory.query": "MemoryQuery",
+    "memory.results": "MemoryResults",
+    "memory.upsert": "MemoryItem",
+    "memory.delete": "MemoryDelete",
+    "voice_lab.event": "VoiceLabEvent",
+    "provider.status": "ProviderStatus",
+    "latency.mark": "LatencyMark",
+    "error": "ErrorInfo"
+  }
+}

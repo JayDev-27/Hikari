@@ -1,0 +1,86 @@
+:root {
+  --bubble-bg: rgba(255, 255, 255, 0.92);
+  --bubble-fg: #2a2233;
+  --overlay-bg: rgba(20, 16, 28, 0.72);
+  --overlay-fg: #e9e4f5;
+  --accent: #ff7eb6;
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans Devanagari", "Segoe UI", sans-serif;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  /* The stage window is transparent: never paint a background. */
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.bubble {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  max-width: 88%;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: var(--bubble-bg);
+  color: var(--bubble-fg);
+  font-size: 14px;
+  line-height: 1.35;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.bubble:empty {
+  opacity: 0;
+}
+
+.debug {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--overlay-bg);
+  color: var(--overlay-fg);
+  font: 11px/1.4 ui-monospace, Menlo, monospace;
+  pointer-events: auto;
+}
+.debug button {
+  font: inherit;
+  margin-top: 4px;
+  cursor: pointer;
+}
+.debug .ok {
+  color: #7be495;
+}
+.debug .bad {
+  color: #ff8a8a;
+}
+.empty-slot {
+  position: absolute;
+  inset: auto 12% 30% 12%;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--overlay-bg);
+  color: var(--overlay-fg);
+  text-align: center;
+  font-size: 13px;
+}
