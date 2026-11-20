@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/brand/hikari-logo-256.png" alt="Hikari logo" width="160" height="160">
+<img src="assets/brand/hikari-logo-256.png" alt="Hikari macOS app icon" width="160" height="160">
 
 # 光 Hikari
 
