@@ -19,6 +19,8 @@ export function Stage() {
       .then((avatar) => {
         if (cancelled) return avatar.destroy();
         runtime.attach(avatar);
+        // Dev-only: VITE_AUTOPLAY_MOCK=1 pnpm dev → play the mock turn on load (visual lip-sync check).
+        if (import.meta.env.DEV && import.meta.env.VITE_AUTOPLAY_MOCK) setTimeout(() => runtime.playMock(), 1500);
       })
       .catch((e: unknown) => setError(String(e)));
     return () => {
@@ -44,7 +46,7 @@ export function Stage() {
 }
 
 function DebugOverlay({ rt }: { rt: React.RefObject<StageRuntime | null> }) {
-  const { debug, core, state, latency, fps } = useStage();
+  const { debug, core, state, latency, fps, audio } = useStage();
   if (!debug) return null;
   return (
     <div className="debug" onMouseDown={(e) => e.stopPropagation()}>
@@ -54,6 +56,9 @@ function DebugOverlay({ rt }: { rt: React.RefObject<StageRuntime | null> }) {
       <div>
         stt {latency.stt_final ?? "–"} · llm {latency.llm_first_token ?? "–"} · tts {latency.tts_first_chunk ?? "–"} ·
         audio {latency.audio_first_play ?? "–"} ms
+      </div>
+      <div>
+        ctx {audio.ctx} · mouth {audio.mouth.toFixed(2)}
       </div>
       <button onClick={() => rt.current?.playMock()}>play mock turn</button>{" "}
       <button onClick={() => rt.current?.bargeIn()}>barge in</button>

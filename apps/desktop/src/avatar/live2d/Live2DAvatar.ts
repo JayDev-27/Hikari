@@ -44,6 +44,8 @@ export class Live2DAvatar implements AvatarController {
   private lastHit: string | null = null;
   private pixel = new Uint8Array(4);
   private destroyed = false;
+  /** Cleanup hook for things the loader attaches (e.g. ResizeObserver). */
+  onDestroy?: () => void;
 
   private constructor(private pack: CharacterPack) {}
 
@@ -216,13 +218,16 @@ export class Live2DAvatar implements AvatarController {
     this.lastHit = areas[0] ?? "body";
   }
 
+  /** Pixi's resizeTo already resizes the canvas; we only re-fit the model. */
   resize(): void {
-    this.app.resize();
+    if (this.destroyed) return;
     this.layout();
   }
 
   destroy(): void {
+    if (this.destroyed) return;
     this.destroyed = true;
+    this.onDestroy?.();
     this.app.destroy(true, { children: true });
   }
 }

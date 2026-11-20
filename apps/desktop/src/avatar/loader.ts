@@ -9,9 +9,13 @@ export async function loadAvatar(host: HTMLElement, characterId: string): Promis
     if (!("Live2DCubismCore" in window)) {
       throw new Error("Live2D Cubism Core isn't installed yet — run `pnpm -F desktop fetch:assets --sdk <SDK zip>`");
     }
+    const { patchCubismCore } = await import("./live2d/coreCompat");
+    patchCubismCore();
     const { Live2DAvatar } = await import("./live2d/Live2DAvatar");
     const avatar = await Live2DAvatar.create(host, pack);
-    new ResizeObserver(() => avatar.resize()).observe(host);
+    const ro = new ResizeObserver(() => avatar.resize());
+    ro.observe(host);
+    avatar.onDestroy = () => ro.disconnect();
     return avatar;
   }
   throw new Error("VRM renderer lands in M3");

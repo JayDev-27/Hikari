@@ -9,6 +9,9 @@ interface StageStore {
   latency: Partial<Record<LatencyMark["stage"], number>>;
   debug: boolean;
   fps: number;
+  /** Debug: AudioContext state and current mouth opening (0..1). */
+  audio: { ctx: string; mouth: number };
+  setAudio(a: { ctx: string; mouth: number }): void;
   setCore(v: boolean): void;
   setState(s: AvatarState): void;
   setCaption(c: string): void;
@@ -24,6 +27,8 @@ export const useStage = create<StageStore>((set) => ({
   latency: {},
   debug: import.meta.env.DEV,
   fps: 0,
+  audio: { ctx: "–", mouth: 0 },
+  setAudio: (audio) => set({ audio }),
   setCore: (core) => set({ core }),
   setState: (state) => set({ state }),
   setCaption: (caption) => set({ caption }),

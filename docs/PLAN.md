@@ -16,7 +16,8 @@ Status legend: ✅ done · 🟡 in progress · ⬜ not started
 
 ## M0 (A) remaining
 
-- [ ] Cubism Core installed (user downloads SDK zip — licence acceptance) → visual check of Hiyori on the stage, click-through on transparent pixels, drag, eye-follow, mock-turn lip sync.
+- [x] Cubism Core installed (SDK 5-r.5, Core 6 + compat shim); Hiyori renders transparently on the stage; mock turn plays (AudioContext running), mouth follows phonemes, captions track audio.
+- [ ] Hands-on check with a real cursor: click-through on transparent pixels, drag, eye-follow, ⌥Space barge-in.
 - [ ] A/V sync measurement script (record loopback vs viseme timeline).
 - [ ] `apps/desktop/dev/protocol-console` for B (§12.3).
 - [ ] Idle FPS throttling (30 fps idle / 60 animating).

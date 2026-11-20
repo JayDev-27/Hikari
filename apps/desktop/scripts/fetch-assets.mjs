@@ -56,7 +56,11 @@ function fetchCore() {
     const hit = existsSync(dl) && readdirSync(dl).filter((f) => /^CubismSdkForWeb-.*\.zip$/.test(f)).sort().at(-1);
     zip = hit ? join(dl, hit) : null;
   }
-  if (!zip || !existsSync(zip)) {
+  if (zip && !existsSync(zip)) {
+    console.warn(`! No file at ${zip}. Check the downloaded zip's exact name and path.`);
+    return;
+  }
+  if (!zip) {
     console.warn(
       "! Cubism Core not installed. Download 'Cubism SDK for Web' from https://www.live2d.com/en/sdk/download/web/\n" +
         "  (this means accepting Live2D's license), then re-run: pnpm fetch:assets --sdk <path-to-zip>",
@@ -66,7 +70,8 @@ function fetchCore() {
   const tmp = mkdtempSync(join(tmpdir(), "hikari-sdk-"));
   try {
     run("unzip", ["-q", zip, "-d", tmp]);
-    const files = walk(tmp);
+    // Materialise: walk() is a generator and each .find() would consume it.
+    const files = [...walk(tmp)];
     const core = files.find((f) => f.endsWith("Core/live2dcubismcore.min.js"));
     const redist = files.find((f) => f.endsWith("RedistributableFiles.txt"));
     if (!core) throw new Error("live2dcubismcore.min.js not found in SDK zip");

@@ -4,7 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { AvatarController } from "../avatar/types";
 import { PlaybackQueue } from "../audio/playback";
 import { CoreClient } from "../core/client";
-import { LipSyncEngine, visemesFromSpectrum } from "../lipsync/engine";
+import { LipSyncEngine, visemesFromSpectrum, visemesToLive2D } from "../lipsync/engine";
 import { mockTurn } from "../dev/mockReplay";
 import { useStage } from "../state/stage";
 
@@ -37,6 +37,7 @@ export class StageRuntime {
   private leaveTimer?: ReturnType<typeof setTimeout>;
   private turnStartAt = 0;
   private firstAudioMarked = false;
+  private captionSeq = -1;
 
   constructor(coreUrl = "ws://127.0.0.1:8765/ws") {
     this.core = new CoreClient(coreUrl);
@@ -45,7 +46,6 @@ export class StageRuntime {
     this.playback.onChunkScheduled = (sc) => {
       this.chunkStart.set(sc.seq, sc.ctxStart);
       this.lipsync.addChunk(sc.ctxStart, sc.chunk.phonemes ?? []);
-      useStage.getState().setCaption(sc.text);
       if (!this.firstAudioMarked) {
         this.firstAudioMarked = true;
         const lead = (sc.ctxStart - this.playback.audibleTime()) * 1000;
@@ -91,6 +91,7 @@ export class StageRuntime {
     this.chunkStart.clear();
     this.turnStartAt = performance.now();
     this.firstAudioMarked = false;
+    this.captionSeq = -1;
   }
 
   /** Stop speaking immediately (user started talking / panic). */
@@ -168,13 +169,23 @@ export class StageRuntime {
     if (!a) return;
 
     const t = this.playback.audibleTime();
+    // Caption follows what is audible now (chunks are scheduled well ahead of playback).
+    const playing = this.playback.scheduled.find((c) => t >= c.ctxStart && t < c.ctxEnd);
+    if (playing && playing.seq !== this.captionSeq) {
+      this.captionSeq = playing.seq;
+      useStage.getState().setCaption(playing.text);
+    }
     const rms = this.playback.isPlaying ? this.playback.rms() : 0;
     let fallback;
     if (this.playback.isPlaying && !this.lipsync.hasPending) {
       this.playback.analyser.getFloatFrequencyData(this.freq);
       fallback = visemesFromSpectrum(this.freq, this.playback.ctx.sampleRate, rms);
     }
-    a.setVisemes(this.lipsync.sample(t, dt, Math.min(1, rms * 5), fallback));
+    const vis = this.lipsync.sample(t, dt, Math.min(1, rms * 5), fallback);
+    a.setVisemes(vis);
+    if (this.frames % 6 === 0 && useStage.getState().debug) {
+      useStage.getState().setAudio({ ctx: this.playback.ctx.state, mouth: Math.round(visemesToLive2D(vis).open * 100) / 100 });
+    }
 
     // Fire gestures whose time has come (on the audio clock).
     if (this.gestures.length) {
