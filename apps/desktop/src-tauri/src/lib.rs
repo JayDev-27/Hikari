@@ -7,7 +7,15 @@ use std::sync::Arc;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::new().level(log::LevelFilter::Info).build())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info })
+                // Keep dependency chatter out of the debug log.
+                .level_for("tao", log::LevelFilter::Info)
+                .level_for("wry", log::LevelFilter::Info)
+                .level_for("tauri", log::LevelFilter::Info)
+                .build(),
+        )
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_nspanel::init())
         .plugin(tauri_plugin_autostart::init(

@@ -49,6 +49,7 @@ export class Live2DAvatar implements AvatarController {
   private destroyed = false;
   /** Cleanup hook for things the loader attaches (e.g. ResizeObserver). */
   onDestroy?: () => void;
+  onHitChange?: (hit: string | null) => void;
 
   private constructor(private pack: CharacterPack) {}
 
@@ -212,7 +213,7 @@ export class Live2DAvatar implements AvatarController {
     const px = Math.floor(x * r.resolution);
     const py = Math.floor(gl.drawingBufferHeight - y * r.resolution);
     if (px < 0 || py < 0 || px >= gl.drawingBufferWidth || py >= gl.drawingBufferHeight) {
-      this.lastHit = null;
+      this.setHit(null);
       return;
     }
     // Sample a small cross so 1-px gaps (hair strands) don't flicker.
@@ -225,12 +226,18 @@ export class Live2DAvatar implements AvatarController {
       }
     }
     if (!hit) {
-      this.lastHit = null;
+      this.setHit(null);
       return;
     }
     const areas = this.model.hitTest(x, y);
-    this.lastHit = areas[0] ?? "body";
+    this.setHit(areas[0] ?? "body");
   }
+  private setHit(hit: string | null): void {
+    if (hit === this.lastHit) return;
+    this.lastHit = hit;
+    this.onHitChange?.(hit);
+  }
+
 
   /** Pixi's resizeTo already resizes the canvas; we only re-fit the model. */
   resize(): void {

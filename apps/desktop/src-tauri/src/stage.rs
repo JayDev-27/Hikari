@@ -51,6 +51,7 @@ pub fn set_click_through<R: Runtime>(
     let ignore = ignore || state.locked.load(Ordering::Relaxed);
     if state.ignoring.swap(ignore, Ordering::Relaxed) != ignore {
         window.set_ignore_cursor_events(ignore).map_err(|e| e.to_string())?;
+        log::debug!("stage click-through: {}", if ignore { "on (clicks pass through)" } else { "off (Hikari takes clicks)" });
     }
     Ok(())
 }

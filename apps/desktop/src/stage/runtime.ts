@@ -36,6 +36,7 @@ export class StageRuntime {
   private unlisten: Array<() => void> = [];
   private hovering = false;
   private leaveTimer?: ReturnType<typeof setTimeout>;
+  private cursorInside = false;
   private turnStartAt = 0;
   private firstAudioMarked = false;
   private captionSeq = -1;
@@ -68,6 +69,12 @@ export class StageRuntime {
 
   attach(avatar: AvatarController): void {
     this.avatar = avatar;
+    // Fresh per-pixel answer after a render: apply it now. Without this the
+    // toggle lagged one cursor event behind — with a resting cursor, she stayed
+    // click-through until the mouse moved again (found by the cursor test).
+    avatar.onHitChange = (hit) => {
+      if (this.cursorInside && inTauri) this.applyHover(hit !== null);
+    };
     if (!this.raf) this.loop();
   }
 
@@ -144,24 +151,10 @@ export class StageRuntime {
           this.scheduler.poke(performance.now());
         }
         // Click-through: interactive only while over a visible part of her.
-        const hit = inside ? this.avatar?.hitTest(x, y) ?? null : null;
-        const over = hit !== null;
-        // Become interactive immediately; go back to click-through only after
-        // 60 ms off-model (hysteresis — rapid toggling is known to crash AppKit).
-        if (over) {
-          clearTimeout(this.leaveTimer);
-          this.leaveTimer = undefined;
-          if (!this.hovering) {
-            this.hovering = true;
-            void invoke("set_click_through", { ignore: false });
-          }
-        } else if (this.hovering && this.leaveTimer === undefined) {
-          this.leaveTimer = setTimeout(() => {
-            this.leaveTimer = undefined;
-            this.hovering = false;
-            void invoke("set_click_through", { ignore: true });
-          }, 60);
-        }
+        // hitTest answers from the last pixel readback; the fresh answer arrives
+        // via avatar.onHitChange right after the next render (see attach()).
+        this.cursorInside = inside;
+        this.applyHover(inside ? (this.avatar?.hitTest(x, y) ?? null) !== null : false);
         // Eyes follow the cursor anywhere on screen: x/y are window-relative
         // (can be far outside), normalised by half the screen size around her face.
         const dx = (x - window.innerWidth / 2) / (screen.width / 2);
@@ -183,6 +176,27 @@ export class StageRuntime {
         this.core.send("tool.confirm", { callId: "*", approved: false, via: "click" });
       }),
     );
+  }
+
+  /**
+   * Become interactive immediately; go back to click-through only after 60 ms
+   * off-model (hysteresis — rapid toggling is known to crash AppKit).
+   */
+  private applyHover(over: boolean): void {
+    if (over) {
+      clearTimeout(this.leaveTimer);
+      this.leaveTimer = undefined;
+      if (!this.hovering) {
+        this.hovering = true;
+        void invoke("set_click_through", { ignore: false });
+      }
+    } else if (this.hovering && this.leaveTimer === undefined) {
+      this.leaveTimer = setTimeout(() => {
+        this.leaveTimer = undefined;
+        this.hovering = false;
+        void invoke("set_click_through", { ignore: true });
+      }, 60);
+    }
   }
 
   /** Anything moving that deserves the 60 fps tier. */
