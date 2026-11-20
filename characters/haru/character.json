@@ -1,0 +1,36 @@
+{
+  "id": "haru",
+  "displayName": "Haru",
+  "renderer": "live2d",
+  "modelPath": "model/Haru.model3.json",
+  "scale": 1.0,
+  "expressionMap": {
+    "neutral": "F01",
+    "joy": "F02",
+    "angry": "F03",
+    "surprised": "F04",
+    "sorrow": "F05",
+    "shy": "F06",
+    "fun": "F07",
+    "teasing": "F08"
+  },
+  "motionMap": {
+    "idle": { "group": "Idle" },
+    "tap": { "group": "TapBody", "index": 0 },
+    "tap_head": { "group": "TapBody", "index": 1 },
+    "tap_body": { "group": "TapBody", "index": 0 },
+    "wave": { "group": "TapBody", "index": 2 },
+    "laugh": { "group": "TapBody", "index": 3 },
+    "head_pat_react": { "group": "TapBody", "index": 1 }
+  },
+  "hitAreas": { "Head": "head", "Body": "body" },
+  "persona": "persona.md",
+  "voice": { "engine": "hima", "voiceId": "Meera" },
+  "defaultLanguage": "hinglish",
+  "license": {
+    "source": "Live2D Inc. sample model (CubismWebSamples)",
+    "terms": "Live2D Free Material License — Original Character. Commercial use only for individuals / businesses under ¥10M annual sales. Sample sound data not redistributed.",
+    "url": "https://www.live2d.com/en/learn/sample/haru/",
+    "credit": "This content uses sample data owned and copyrighted by Live2D Inc."
+  }
+}

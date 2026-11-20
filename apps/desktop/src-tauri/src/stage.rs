@@ -57,27 +57,51 @@ pub fn set_locked<R: Runtime>(app: &AppHandle<R>, locked: bool) {
     }
 }
 
-/// Extra AppKit tweaks Tauri doesn't expose: float over fullscreen apps and
-/// join every Space (incl. fullscreen Spaces) without stealing focus.
 #[cfg(target_os = "macos")]
-fn macos_float<R: Runtime>(window: &WebviewWindow<R>) {
-    use objc2_app_kit::{NSWindow, NSWindowCollectionBehavior};
-    let Ok(ptr) = window.ns_window() else { return };
-    // Called from the Tauri `setup` hook, which runs on the main thread (AppKit requirement).
-    // SAFETY: `ns_window` returns a live NSWindow pointer owned by tao for this window's lifetime.
-    let ns: &NSWindow = unsafe { &*(ptr as *mut NSWindow) };
-    ns.setCollectionBehavior(
-        NSWindowCollectionBehavior::CanJoinAllSpaces
-            | NSWindowCollectionBehavior::FullScreenAuxiliary
-            | NSWindowCollectionBehavior::Stationary
-            | NSWindowCollectionBehavior::IgnoresCycle,
-    );
-    // NSStatusWindowLevel (25): above normal and fullscreen app windows.
-    ns.setLevel(25);
-    ns.setHasShadow(false);
+tauri_nspanel::tauri_panel! {
+    panel!(StagePanel {
+        config: {
+            // Key only when needed (e.g. a future text field), never main:
+            // clicking/dragging her must not steal focus from the user's app.
+            can_become_key_window: true,
+            can_become_main_window: false,
+            is_floating_panel: true
+        }
+    })
 }
 
-pub fn setup<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
+/// Convert the stage into a non-activating NSPanel that floats over every
+/// Space, including other apps' fullscreen Spaces (plain NSWindow + setLevel
+/// does neither reliably and activates Hikari on click).
+#[cfg(target_os = "macos")]
+fn macos_float(window: &WebviewWindow) -> tauri::Result<()> {
+    use tauri_nspanel::{CollectionBehavior, PanelLevel, StyleMask, WebviewWindowExt};
+    let panel = window
+        .to_panel::<StagePanel>()
+        .map_err(|e| tauri::Error::Anyhow(anyhow::anyhow!("to_panel: {e:?}")))?;
+    if let Err(e) = panel.set_style_mask(StyleMask::empty().borderless().nonactivating_panel().into()) {
+        log::warn!("stage style mask: {e:?}");
+    }
+    panel.set_collection_behavior(
+        CollectionBehavior::new()
+            .can_join_all_spaces()
+            .full_screen_auxiliary()
+            .stationary()
+            .ignores_cycle()
+            .into(),
+    );
+    // Floating (4) sits above normal app windows but below the menu bar and
+    // system UI; with FullScreenAuxiliary it also shows over fullscreen apps.
+    panel.set_level(PanelLevel::Floating.value());
+    panel.set_floating_panel(true);
+    panel.set_hides_on_deactivate(false);
+    panel.set_becomes_key_only_if_needed(true);
+    panel.set_has_shadow(false);
+    panel.order_front_regardless();
+    Ok(())
+}
+
+pub fn setup(app: &AppHandle) -> tauri::Result<()> {
     let window = app
         .get_webview_window(STAGE)
         .expect("stage window declared in tauri.conf.json");
@@ -93,7 +117,7 @@ pub fn setup<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     }
 
     #[cfg(target_os = "macos")]
-    macos_float(&window);
+    macos_float(&window)?;
 
     // Start click-through; the first cursor event over her flips it off.
     window.set_ignore_cursor_events(true)?;

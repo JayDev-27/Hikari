@@ -34,6 +34,9 @@ importers:
       react-dom:
         specifier: ^19.1.0
         version: 19.3.1(react@19.3.1)
+      untitled-pixi-live2d-engine:
+        specifier: 1.4.0
+        version: 1.4.0(@pixi/sound@6.0.2(pixi.js@8.23.0))(pixi.js@8.23.0)
       zustand:
         specifier: ^5.1.0
         version: 5.1.0(@types/react@19.3.0)(react@19.3.1)
@@ -257,6 +260,11 @@ packages:
 
   '@oxc-project/types@0.156.0':
     resolution: {integrity: sha512-1Duyg48TdJNdyhEB8Xn1L36bT9Pv6GUtlKjHxOys8xkaF/rQq3XJE+bAurSK/AgIz5mGFsb77cn9Pb20+WCScw==}
+
+  '@pixi/sound@6.0.2':
+    resolution: {integrity: sha512-ub04iiBA/kCO+DR9o3ik6UbOQt3/xnn0QStT6K0XBaOUqtTpiVxm4D/o+ndWladAjDLLfMghfMBMZDduKB7A1A==}
+    peerDependencies:
+      pixi.js: ^8.0.0
 
   '@rolldown/binding-android-arm-eabi@1.2.19':
     resolution: {integrity: sha512-e+Ebe0WT+9tbXmNKPIiC8YrWAHYwug3m6i4p3rZGGulfZri1jtI4HslT+OZnFf/OIHowWF71DTlHwXBP2SiA7A==}
@@ -1089,6 +1097,12 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  untitled-pixi-live2d-engine@1.4.0:
+    resolution: {integrity: sha512-Jh5ROMR9/etaI2I4Ssq63CLS1c3kZyLI1nQatM7LgfBRAOEEJVML9hWx50yUZcSyB5AO9rICbr0jTK3h2E/SAQ==}
+    peerDependencies:
+      '@pixi/sound': ^6.0.1
+      pixi.js: ^8.13.1
+
   update-browserslist-db@1.4.0:
     resolution: {integrity: sha512-WPJuOnjI9FWDct4fB+ej4Mz8opLaw5CDcZ2t44tFZ0vIQVYWzBhWR3mkixuUj/A7+vY4V9+ApOZ2YYLwdgq46w==}
     hasBin: true
@@ -1447,6 +1461,10 @@ snapshots:
     optional: true
 
   '@oxc-project/types@0.156.0': {}
+
+  '@pixi/sound@6.0.2(pixi.js@8.23.0)':
+    dependencies:
+      pixi.js: 8.23.0
 
   '@rolldown/binding-android-arm-eabi@1.2.19':
     optional: true
@@ -2165,6 +2183,11 @@ snapshots:
       - supports-color
 
   typescript@6.0.3: {}
+
+  untitled-pixi-live2d-engine@1.4.0(@pixi/sound@6.0.2(pixi.js@8.23.0))(pixi.js@8.23.0):
+    dependencies:
+      '@pixi/sound': 6.0.2(pixi.js@8.23.0)
+      pixi.js: 8.23.0
 
   update-browserslist-db@1.4.0(browserslist@4.29.6):
     dependencies:

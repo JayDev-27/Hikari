@@ -26,6 +26,7 @@ tauri-plugin-autostart = "2.7.0"
 tauri-plugin-shell = "2.6.0"
 tauri-plugin-log = "2.10.2"
 log = "0.4.35"
+anyhow = "1.0.104"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
@@ -37,5 +38,4 @@ panic = "abort"
 strip = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
-objc2 = "0.6.5"
-objc2-app-kit = { version = "0.3.2", features = ["NSWindow", "NSResponder"] }
+tauri-nspanel = "2.1.1"

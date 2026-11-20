@@ -30,8 +30,11 @@ export class StageRuntime {
   private freq: Float32Array<ArrayBuffer>;
   private raf = 0;
   private last = performance.now();
+  private frames = 0;
+  private fpsAt = performance.now();
   private unlisten: Array<() => void> = [];
   private hovering = false;
+  private leaveTimer?: ReturnType<typeof setTimeout>;
   private turnStartAt = 0;
   private firstAudioMarked = false;
 
@@ -112,9 +115,21 @@ export class StageRuntime {
         // Click-through: interactive only while over a visible part of her.
         const hit = inside ? this.avatar?.hitTest(x, y) ?? null : null;
         const over = hit !== null;
-        if (over !== this.hovering) {
-          this.hovering = over;
-          void invoke("set_click_through", { ignore: !over });
+        // Become interactive immediately; go back to click-through only after
+        // 60 ms off-model (hysteresis — rapid toggling is known to crash AppKit).
+        if (over) {
+          clearTimeout(this.leaveTimer);
+          this.leaveTimer = undefined;
+          if (!this.hovering) {
+            this.hovering = true;
+            void invoke("set_click_through", { ignore: false });
+          }
+        } else if (this.hovering && this.leaveTimer === undefined) {
+          this.leaveTimer = setTimeout(() => {
+            this.leaveTimer = undefined;
+            this.hovering = false;
+            void invoke("set_click_through", { ignore: true });
+          }, 60);
         }
         // Eyes follow the cursor anywhere on screen: x/y are window-relative
         // (can be far outside), normalised by half the screen size around her face.
@@ -143,6 +158,12 @@ export class StageRuntime {
     const now = performance.now();
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
+    this.frames++;
+    if (now - this.fpsAt >= 1000) {
+      useStage.getState().setFps(Math.round((this.frames * 1000) / (now - this.fpsAt)));
+      this.frames = 0;
+      this.fpsAt = now;
+    }
     const a = this.avatar;
     if (!a) return;
 

@@ -1,6 +1,7 @@
 import { isCompatible, msg, type AnyMessage, type MessageType, type PayloadMap } from "@hikari/protocol";
 
 type Handler<T extends MessageType> = (payload: PayloadMap[T], env: Extract<AnyMessage, { type: T }>) => void;
+type AnyHandler = (payload: never, env: never) => void;
 
 /**
  * WebSocket client to the Python core (ws://127.0.0.1:<port>/ws).
@@ -9,7 +10,7 @@ type Handler<T extends MessageType> = (payload: PayloadMap[T], env: Extract<AnyM
  */
 export class CoreClient {
   private ws?: WebSocket;
-  private handlers = new Map<MessageType, Set<Handler<MessageType>>>();
+  private handlers = new Map<MessageType, Set<AnyHandler>>();
   private backoff = 250;
   private closed = false;
   connected = false;
@@ -56,8 +57,10 @@ export class CoreClient {
   on<T extends MessageType>(type: T, h: Handler<T>): () => void {
     let set = this.handlers.get(type);
     if (!set) this.handlers.set(type, (set = new Set()));
-    set.add(h as Handler<MessageType>);
-    return () => set!.delete(h as Handler<MessageType>);
+    // Stored type-erased; dispatch is keyed by `type`, so payloads always match.
+    const erased = h as unknown as AnyHandler;
+    set.add(erased);
+    return () => set!.delete(erased);
   }
 
   /** Dispatch a message locally as if it came from core (used by the dev mock). */

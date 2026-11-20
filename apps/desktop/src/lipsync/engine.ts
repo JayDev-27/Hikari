@@ -104,10 +104,17 @@ export class LipSyncEngine {
   private blend(t: number): Visemes {
     const acc: Visemes = { ...ZERO_VISEMES };
     let wsum = 0;
+    // Bilabial closure gate: dominance blending alone lets neighbouring vowels
+    // leak through, but lips must seal on m/b/p. Ramp in/out over ~20 ms.
+    let closure = 0;
     // Only segments within a small window matter.
     for (const s of this.segs) {
       if (s.start > t + 0.25) break;
       if (s.end < t - 0.25) continue;
+      if (s.target.closed && t >= s.start && t <= s.end) {
+        const edge = Math.min(t - s.start, s.end - t);
+        closure = Math.max(closure, Math.min(1, edge / 0.02));
+      }
       const d = t < s.start ? s.start - t : t > s.end ? t - s.end : 0;
       const w = s.target.dominance * (0.75 + 0.5 * s.stress) * Math.exp(-d / s.target.spread);
       if (w < 1e-3) continue;
@@ -117,7 +124,7 @@ export class LipSyncEngine {
     if (wsum < 1e-3) return { ...ZERO_VISEMES };
     // Add a "rest" pseudo-segment so isolated short phonemes don't snap fully open.
     const rest = 0.15;
-    const norm = wsum + rest;
+    const norm = (wsum + rest) / (1 - closure);
     for (const key of KEYS) acc[key] /= norm;
     return acc;
   }

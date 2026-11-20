@@ -1,0 +1,27 @@
+{
+  "id": "hiyori",
+  "displayName": "Hiyori",
+  "renderer": "live2d",
+  "modelPath": "model/Hiyori.model3.json",
+  "scale": 1.0,
+  "expressionMap": {},
+  "motionMap": {
+    "idle": { "group": "Idle" },
+    "tap": { "group": "TapBody", "index": 0 },
+    "tap_body": { "group": "TapBody", "index": 0 },
+    "wave": { "group": "TapBody", "index": 0 },
+    "laugh": { "group": "Idle", "index": 2 },
+    "nod": { "group": "Idle", "index": 4 },
+    "clap": { "group": "TapBody", "index": 0 }
+  },
+  "hitAreas": { "Body": "body" },
+  "persona": "persona.md",
+  "voice": { "engine": "hima", "voiceId": "Sneha" },
+  "defaultLanguage": "hinglish",
+  "license": {
+    "source": "Live2D Inc. sample model (CubismWebSamples)",
+    "terms": "Live2D Free Material License — Original Character. Commercial use only for individuals / businesses under ¥10M annual sales. No design changes to Hiyori. Sample sound data not redistributed.",
+    "url": "https://www.live2d.com/en/learn/sample/momose-hiyori/",
+    "credit": "This content uses sample data owned and copyrighted by Live2D Inc."
+  }
+}
