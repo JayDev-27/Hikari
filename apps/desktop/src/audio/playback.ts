@@ -6,6 +6,9 @@ export interface ScheduledChunk {
   ctxEnd: number;
   text: string;
   chunk: TtsChunk;
+  /** Decoded mono samples, for latency-free loudness at any audible time. */
+  samples: Float32Array;
+  sampleRate: number;
 }
 
 /**
@@ -70,7 +73,10 @@ export class PlaybackQueue {
       this.sources = this.sources.filter((s) => s !== src);
       if (!this.sources.length && !this.pending.size) this.onDrained?.();
     };
-    const sc: ScheduledChunk = { seq: c.seq, ctxStart: start, ctxEnd: this.cursor, text: c.text, chunk: c };
+    const sc: ScheduledChunk = {
+      seq: c.seq, ctxStart: start, ctxEnd: this.cursor, text: c.text, chunk: c,
+      samples: buf.getChannelData(0), sampleRate: buf.sampleRate,
+    };
     this.scheduled.push(sc);
     if (this.scheduled.length > 64) this.scheduled.shift();
     this.onChunkScheduled?.(sc);
@@ -113,7 +119,25 @@ export class PlaybackQueue {
     return this.ctx.currentTime - (this.ctx.outputLatency || this.ctx.baseLatency || 0);
   }
 
-  /** RMS of the signal currently playing, 0..~1. */
+  /**
+   * RMS of the audio *heard* at AudioContext time `t` (20 ms window), computed
+   * from the decoded samples. Unlike an AnalyserNode (which sees audio when it is
+   * processed — 100+ ms before it is heard on Bluetooth), this is aligned with
+   * the lip-sync timeline regardless of output latency.
+   */
+  energyAt(t: number, windowS = 0.02): number {
+    const c = this.scheduled.find((s) => t >= s.ctxStart && t < s.ctxEnd);
+    if (!c) return 0;
+    const mid = Math.floor((t - c.ctxStart) * c.sampleRate);
+    const half = Math.floor((windowS * c.sampleRate) / 2);
+    const a = Math.max(0, mid - half);
+    const b = Math.min(c.samples.length, mid + half);
+    let sum = 0;
+    for (let i = a; i < b; i++) sum += c.samples[i] * c.samples[i];
+    return b > a ? Math.sqrt(sum / (b - a)) : 0;
+  }
+
+  /** RMS of the signal currently being processed (NOT latency-aligned; debug/fallback only). */
   rms(): number {
     this.analyser.getFloatTimeDomainData(this.timeBuf);
     let s = 0;

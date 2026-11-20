@@ -58,7 +58,9 @@ const consonants: Record<string, VisemeTarget> = {
 };
 
 const special: Record<string, VisemeTarget> = {
-  sil: { v: {}, dominance: 1.5, spread: 0.08, closed: true },
+  // Silence = resting posture: weak, short reach, NOT a closure (that's for m/b/p).
+  // Alone it still yields a closed mouth (all-zero target); next to speech it yields.
+  sil: V({}, 0.4, 0.03),
   br: V({ aa: 0.15 }, 0.8, 0.1), // breath: slight mouth-open
   sp: V({}, 0.6, 0.05),
 };

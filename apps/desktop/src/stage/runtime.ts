@@ -40,6 +40,10 @@ export class StageRuntime {
   private firstAudioMarked = false;
   private captionSeq = -1;
   private readonly scheduler = new FrameScheduler();
+  /** Dev/measurement hook: called per rendered frame with mouth opening (0..1). */
+  onFrame?: (t: number, open: number) => void;
+  /** Smoothed render→display interval (s), for lip-sync lead. */
+  private frameIntervalS = 1 / 60;
   private visible = true;
 
   constructor(coreUrl = "ws://127.0.0.1:8765/ws") {
@@ -214,14 +218,20 @@ export class StageRuntime {
     const a = this.avatar;
     if (!a) return;
 
-    const t = this.playback.audibleTime();
+    // Sample for when this frame is *displayed*, not rendered: a frame drawn now
+    // reaches the screen about one frame interval later (next vsync). Measured
+    // with the A/V sync probe: without this, lips trailed audio by one frame
+    // (+33 ms at 30 Hz). Interval tracked live (30/60/120 Hz, Low Power Mode).
+    this.frameIntervalS += (Math.min(0.05, Math.max(0.004, dt)) - this.frameIntervalS) * 0.1;
+    const t = this.playback.audibleTime() + this.frameIntervalS;
     // Caption follows what is audible now (chunks are scheduled well ahead of playback).
     const playing = this.playback.scheduled.find((c) => t >= c.ctxStart && t < c.ctxEnd);
     if (playing && playing.seq !== this.captionSeq) {
       this.captionSeq = playing.seq;
       useStage.getState().setCaption(playing.text);
     }
-    const rms = this.playback.isPlaying ? this.playback.rms() : 0;
+    // Loudness of what is heard at t (latency-aligned), for jaw scaling.
+    const rms = this.playback.isPlaying ? this.playback.energyAt(t) : 0;
     let fallback;
     if (this.playback.isPlaying && !this.lipsync.hasPending) {
       this.playback.analyser.getFloatFrequencyData(this.freq);
@@ -229,6 +239,7 @@ export class StageRuntime {
     }
     const vis = this.lipsync.sample(t, dt, Math.min(1, rms * 5), fallback);
     a.setVisemes(vis);
+    this.onFrame?.(now, visemesToLive2D(vis).open);
     if (this.frames % 6 === 0 && useStage.getState().debug) {
       useStage.getState().setAudio({ ctx: this.playback.ctx.state, mouth: Math.round(visemesToLive2D(vis).open * 100) / 100 });
     }

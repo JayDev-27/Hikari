@@ -21,6 +21,10 @@ export function Stage() {
         runtime.attach(avatar);
         // Dev-only: VITE_AUTOPLAY_MOCK=1 pnpm dev → play the mock turn on load (visual lip-sync check).
         if (import.meta.env.DEV && import.meta.env.VITE_AUTOPLAY_MOCK) setTimeout(() => runtime.playMock(), 1500);
+        // Dev-only: VITE_AVSYNC=1 pnpm dev → measure lip/audio sync, logs an AVSYNC line.
+        if (import.meta.env.DEV && import.meta.env.VITE_AVSYNC) {
+          setTimeout(() => void import("../dev/avSyncProbe").then((m) => m.runAvSyncProbe(runtime)).catch((e) => console.error("avsync probe failed:", e)), 2000);
+        }
       })
       .catch((e: unknown) => {
         console.error("avatar load failed:", e);
