@@ -67,7 +67,7 @@ Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · research and decision
 
 ## Getting started
 
-**Requirements:** macOS 13+ on Apple Silicon, Node ≥ 22 with pnpm, and Rust (via [rustup](https://rustup.rs)).
+**Requirements:** macOS 13+ on Apple Silicon, Node 24, pnpm 12, and Rust (via [rustup](https://rustup.rs)).
 
 ```bash
 git clone https://github.com/JayDev-27/Hikari.git
@@ -128,7 +128,7 @@ Bug fixes, docs improvements, and tests are welcome. For a bug report, include r
 
 Fork the repo, create a branch, and open a pull request against `main`. In the PR, explain what changed and how you verified it. Include a short screen recording for visible desktop changes. If you change the wire schema, run `pnpm gen:protocol` and commit the regenerated types.
 
-Run these checks from the repo root on macOS:
+Run these checks from the repo root on macOS with Clippy installed (`rustup component add clippy`):
 
 ```bash
 pnpm install --frozen-lockfile
