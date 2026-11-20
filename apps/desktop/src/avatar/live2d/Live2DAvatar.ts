@@ -179,8 +179,9 @@ export class Live2DAvatar implements AvatarController {
    */
   isBusy(): boolean {
     const mm = this.model.internalModel.motionManager as unknown as { state: { currentPriority: number } };
-    const lookMoving = Math.abs(this.look.tx - this.look.x) > 0.01 || Math.abs(this.look.ty - this.look.y) > 0.01;
-    return mm.state.currentPriority > MotionPriority.IDLE || lookMoving;
+    // Eye-follow is not "busy": the stage decides its rate from cursor proximity,
+    // so a far-away moving cursor doesn't force 60 fps while you work elsewhere.
+    return mm.state.currentPriority > MotionPriority.IDLE;
   }
 
   hitTest(x: number, y: number): string | null {

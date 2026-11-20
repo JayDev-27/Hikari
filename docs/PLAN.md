@@ -25,7 +25,7 @@ Status legend: ✅ done · 🟡 in progress · ⬜ not started
 
 ## Open questions
 
-0. **Idle CPU budget vs smooth idle.** At 30 fps idle Live2D costs ~25 % of a core (release, M2), far above the < 3 % target. Options: (a) accept ~25 %; (b) a "deep idle" tier (~10–15 fps after N s with nothing happening: estimated ~10–12 %, slightly choppier blinks); (c) a still frame after longer idle, waking on cursor or voice. Needs a decision.
+0. ~~Idle CPU budget vs smooth idle~~ — decided: keep 30 fps idle (~25 % of a core, release build on M2); deep idle was tried and rejected as laggy. The < 3 % target needs a different approach (e.g. a native renderer), so it's revisited at M8.
 
 1. Hima TTS licence — B to contact the author before shipping anything that bundles it.
 2. Peekaboo TCC attribution (Bridge host vs Hikari.app) — test in M7.

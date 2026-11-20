@@ -133,7 +133,12 @@ export class StageRuntime {
     this.unlisten.push(
       await listen<{ x: number; y: number; inside: boolean; gx: number; gy: number }>("stage://cursor", (e) => {
         const { x, y, inside } = e.payload;
-        this.scheduler.poke(performance.now()); // eyes catch up at the active rate
+        // Cursor near her → 60 fps (hover, eye contact). Far away → eyes still
+        // follow at the smooth 30 fps idle rate instead of forcing 60 while you work.
+        const NEAR = 160;
+        if (x > -NEAR && y > -NEAR && x < window.innerWidth + NEAR && y < window.innerHeight + NEAR) {
+          this.scheduler.poke(performance.now());
+        }
         // Click-through: interactive only while over a visible part of her.
         const hit = inside ? this.avatar?.hitTest(x, y) ?? null : null;
         const over = hit !== null;

@@ -4,6 +4,9 @@ Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 
 ## 2026-11-20 — Phase 0 / M0 (A)
 
+- **Deep idle tried and rejected (user call: "30 fps at idle was better, this looks lagging").** A 15 fps tier after 15 s of inactivity measured 19.4–21.5 % vs 24.7 % at 30 fps: too little saving for visibly choppier motion. Idle stays at 30 fps and ~25 % of a core is accepted for now. Two findings from the experiment:
+  - A release build that renders **zero frames** still costs ~9 % (Hikari's process ~5 %, the rest WebKit). Disabling the cursor poll didn't change it, and driving the calm tiers with timers instead of rAF saved only ~2 points. So the fixed cost is WebKit/WKWebView overhead, not our render loop. Revisit with Instruments if the budget matters later.
+  - Kept: a cursor moving **far** from her no longer forces 60 fps (only within 160 pt of the window does). Eyes still follow at the 30 fps idle rate, so using the mouse elsewhere doesn't double her cost.
 - **Render tiers** (`src/stage/frameScheduler.ts`): 60 fps active (speaking, gestures, hover, listening/thinking, eyes catching up, 800 ms tail), 30 fps idle, 0 when hidden via the tray. Skips rAF ticks, so it's vsync-aligned on 60/120 Hz; under macOS Low Power Mode WebKit caps rAF at 30 fps and both tiers get every tick.
 - **No pause on `document.visibilitychange`**: WebKit reported this floating panel as `hidden` at boot while it was on screen (release build, Chrome frontmost). Only the tray's explicit hide pauses rendering.
 - **Cursor poll** reads CoreGraphics (`CGEventGetLocation`, thread-safe, no TCC) and caches window geometry from window events. Four Tauri getters at 30 Hz were each a synchronous main-thread round trip. Polls at 30 Hz near her or while the cursor moves, 8 Hz otherwise, and not at all while hidden.
