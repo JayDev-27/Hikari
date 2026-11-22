@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "panels",
+  "description": "Character Studio and Chat windows: events to the stage, file picker, hide on close",
+  "windows": ["studio", "chat"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "dialog:allow-open",
+    "log:default"
+  ]
+}

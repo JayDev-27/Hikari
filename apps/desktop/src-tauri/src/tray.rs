@@ -24,13 +24,26 @@ pub fn toggle_muted<R: Runtime>(app: &AppHandle<R>) {
 
 pub fn setup<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let toggle = MenuItem::with_id(app, "toggle", "Hide Hikari", true, None::<&str>)?;
+    let chat = MenuItem::with_id(app, "chat", "Chat…", true, None::<&str>)?;
+    let studio = MenuItem::with_id(app, "studio", "Character Studio…", true, None::<&str>)?;
     let lock = CheckMenuItem::with_id(app, "lock", "Click-through lock", true, false, None::<&str>)?;
     let mute = CheckMenuItem::with_id(app, "mute", "Mute mic", true, false, None::<&str>)?;
     let panic = MenuItem::with_id(app, "panic", "Stop all actions", true, Some("CmdOrCtrl+Shift+Escape"))?;
     let quit = MenuItem::with_id(app, "quit", "Quit Hikari", true, Some("CmdOrCtrl+Q"))?;
     let menu = Menu::with_items(
         app,
-        &[&toggle, &lock, &mute, &PredefinedMenuItem::separator(app)?, &panic, &PredefinedMenuItem::separator(app)?, &quit],
+        &[
+            &toggle,
+            &chat,
+            &studio,
+            &PredefinedMenuItem::separator(app)?,
+            &lock,
+            &mute,
+            &PredefinedMenuItem::separator(app)?,
+            &panic,
+            &PredefinedMenuItem::separator(app)?,
+            &quit,
+        ],
     )?;
 
     let toggle_c = toggle.clone();
@@ -52,6 +65,11 @@ pub fn setup<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
                     // Frontend pauses its render loop while hidden.
                     let _ = app.emit_to(STAGE, "stage://visible", !visible);
                     let _ = toggle_c.set_text(if visible { "Show Hikari" } else { "Hide Hikari" });
+                }
+            }
+            "chat" | "studio" => {
+                if let Err(e) = crate::windows::show(app, ev.id().as_ref()) {
+                    log::warn!("show window: {e}");
                 }
             }
             "lock" => stage::set_locked(app, lock_c.is_checked().unwrap_or(false)),

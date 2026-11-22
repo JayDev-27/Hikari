@@ -2,6 +2,22 @@
 
 Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 
+## 2026-11-22 — M2 (A): characters, Character Studio, chat
+
+- **Protocol 0.2.0 (additive; B please review):** new UI→core `character.select {id, displayName, persona, defaultLanguage?, voice?}`, sent after `hello` and on every switch. The core puts `persona` (persona.md) into the system prompt and namespaces memory by `id`. `hello` now sends the generated `PROTOCOL_VERSION` instead of a hard-coded string.
+- **persona.md format** is fixed in `characters/PERSONA_FORMAT.md` (10 `##` sections, in order) so B's prompt builder can parse it. A unit test enforces it on every built-in persona, and checks that gesture tags are real protocol tags, that characters are adults, and that they're honest about being an AI.
+- **Characters:** 4 originals on Live2D samples, keeping the sample names: Hiyori (genki), Haru (kuudere), Mao (tsundere apprentice magician), Rice (sleepy gamer). Mao and Rice are added to `fetch-assets`. Reze, Makima and Rize Kamishiro are **persona text + empty import slot** (§4), with original writing and no quoted dialogue. Makima's "control" flavour is explicitly playful and never pressure; Rize has no gore. Mao's `exp_01–08` emotion mapping is a first guess.
+- **Built-in packs are bundled at build time** from `characters/` via Vite `import.meta.glob`, so no copy step can drift. Models are still fetched into `public/characters/`.
+- **Imports** (`src-tauri/src/packs.rs`) go to `<app data>/characters/<id>/`. Accepted: a Live2D folder, a `.model3.json`, a `.zip`, or a `.vrm`.
+  - Live2D: every referenced file is checked (a missing Moc/texture fails the import; missing motions only warn).
+  - VRM: licence read from the GLB JSON chunk (VRM 1.0 `VRMC_vrm.meta` / 0.x `VRM.meta`).
+  - Zips are extracted safely (zip-slip, symlinks, 1 GiB cap). Staging is atomic and removed on failure.
+  - An import into a slot keeps that character's persona. 5 Rust unit tests; CI now runs `cargo test`.
+- **`hikari-pack://localhost/<id>/<path>`** serves imported packs (async handler, `..`/encoded-traversal blocked via canonicalisation, CORS `*`). It's used because Tauri's `asset://` URLs encode `/` as `%2F`, which breaks the Live2D engine's relative texture paths. **Verified in the app:** an imported Live2D pack rendered with textures via this scheme.
+- **Windows:** Character Studio and Chat open from the tray, hide on close, and use a `show_window` command allow-listed to those two. In an accessory app, macOS 14+ cooperative activation means they come forward only on user action (tray click), not when opened programmatically at launch.
+- **Chat** talks through the stage via Tauri events (`chat://send` / `chat://event` / `chat://history`), so the core sees one UI connection. Typed text interrupts her if she's speaking. Typed **"switch to Mao" / "change to makima" / "Mao ko bulao"** switches characters locally (`switchIntent.ts`, one-typo tolerant, so "maxima" → Makima). An empty slot opens the Studio. **B:** voice switch requests need STT, so the core should detect them.
+- **Bug class fixed: leaked async listeners.** Unmounting before Tauri's `listen()` resolved left listeners attached, so every event was handled twice. It showed as duplicated chat lines, and would also have left a destroyed runtime reacting to ⌥Space. `util/subscriptions.ts` now owns all subscriptions.
+
 ## 2026-11-22 — M1 (A): microphone, push-to-talk, barge-in
 
 - **Protocol semantics (B, please review):** the UI now **sends** `turn.end {reason: "push_to_talk"}` when ⌥Space is released, meaning "end of user input". No schema change (the enum already had `push_to_talk`). In always-listening mode the UI sends audio with `pushToTalk: false` and the core's VAD decides turns. The protocol console's `--wav` sends the same `turn.end`.

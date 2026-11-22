@@ -1,38 +1,52 @@
 import type { Emotion, Language } from "@hikari/protocol";
 
-/** Runtime view of `characters/<id>/character.json` (see characters/README.md). */
-export interface CharacterPack {
+/** `characters/<id>/character.json` as stored (see characters/README.md). */
+export interface CharacterJson {
   id: string;
   displayName: string;
   renderer: "live2d" | "vrm";
-  /** URL the webview can fetch (dev: /characters/<id>/…; imported packs: asset://…). */
-  modelUrl: string;
+  /** Relative to the pack folder; null = empty import slot (franchise presets). */
+  modelPath: string | null;
   scale?: number;
   expressionMap?: Partial<Record<Emotion, string | number>>;
   motionMap?: Record<string, { group: string; index?: number }>;
   hitAreas?: Record<string, string>;
-  persona?: string;
+  persona?: string | null;
   voice?: { engine: string; voiceId?: string; clonePath?: string; rvcModel?: string };
   defaultLanguage?: Language;
-  license: { source: string; terms: string; url: string; credit?: string };
+  /** Ships without a model: "Import your own model for this character". */
+  importSlot?: boolean;
+  /** Created by the user's import (lives in the app data folder). */
+  imported?: boolean;
+  license: { source: string; terms: string; url: string; credit?: string; vrm?: unknown };
 }
 
-interface CharacterJson extends Omit<CharacterPack, "modelUrl"> {
-  modelPath: string | null;
-}
-
-export async function loadPack(id: string, base = "/characters"): Promise<CharacterPack> {
-  const res = await fetch(`${base}/${id}/character.json`);
-  // Vite's SPA fallback answers missing files with index.html (200 text/html).
-  if (!res.ok || !res.headers.get("content-type")?.includes("json")) {
-    throw new Error(`character pack '${id}' not found — run \`pnpm fetch:assets\``);
-  }
-  const json = (await res.json()) as CharacterJson;
-  if (!json.modelPath) throw new Error(`'${json.displayName}' has no model yet — import your own model for this character`);
-  // Absolute URL: Pixi's path resolver turns root-relative paths under a custom
-  // scheme into tauri://characters/… (drops the host) in production builds.
-  const modelUrl = new URL(`${base}/${id}/${json.modelPath}`, location.href).href;
-  return { ...json, modelUrl };
+/** A pack resolved for the runtime. */
+export interface CharacterPack extends CharacterJson {
+  source: "builtin" | "user";
+  /** Absolute URL the webview can load, or null for an empty slot. */
+  modelUrl: string | null;
+  /** persona.md contents (built-in persona, also kept for imported slot models). */
+  personaText: string;
 }
 
 export const DEFAULT_CHARACTER = "hiyori";
+export const ACTIVE_KEY = "hikari.character";
+
+export function activeCharacterId(): string {
+  // Dev/testing: VITE_CHARACTER=<id> picks the starting character.
+  if (import.meta.env.DEV && import.meta.env.VITE_CHARACTER) return import.meta.env.VITE_CHARACTER as string;
+  try {
+    return localStorage.getItem(ACTIVE_KEY) || DEFAULT_CHARACTER;
+  } catch {
+    return DEFAULT_CHARACTER;
+  }
+}
+
+export function setActiveCharacterId(id: string): void {
+  try {
+    localStorage.setItem(ACTIVE_KEY, id);
+  } catch {
+    /* storage unavailable: selection lasts this session */
+  }
+}

@@ -1,259 +1,721 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://hikari.local/protocol/0.1.0",
+  "$id": "https://hikari.local/protocol/0.2.0",
   "title": "HikariProtocol",
   "description": "Hikari UI <-> core wire protocol. Every frame is an Envelope (JSON text frame over WebSocket ws://127.0.0.1:<port>/ws). Bump protocolVersion on any change; minor = additive, major = breaking.",
-  "x-protocolVersion": "0.1.0",
+  "x-protocolVersion": "0.2.0",
   "$ref": "#/$defs/Envelope",
   "$defs": {
     "Envelope": {
       "type": "object",
-      "required": ["v", "type", "ts", "payload"],
+      "required": [
+        "v",
+        "type",
+        "ts",
+        "payload"
+      ],
       "properties": {
-        "v": { "type": "string", "description": "protocolVersion of the sender, semver", "const": "0.1.0" },
-        "type": { "$ref": "#/$defs/MessageType" },
-        "id": { "type": "string", "description": "Optional message id (uuid) for request/response pairing" },
-        "replyTo": { "type": "string", "description": "id of the message this answers" },
-        "turnId": { "type": "string", "description": "Conversation turn this message belongs to" },
-        "ts": { "type": "number", "description": "Sender wall-clock ms since epoch" },
-        "payload": { "type": "object" }
+        "v": {
+          "type": "string",
+          "description": "protocolVersion of the sender, semver",
+          "const": "0.2.0"
+        },
+        "type": {
+          "$ref": "#/$defs/MessageType"
+        },
+        "id": {
+          "type": "string",
+          "description": "Optional message id (uuid) for request/response pairing"
+        },
+        "replyTo": {
+          "type": "string",
+          "description": "id of the message this answers"
+        },
+        "turnId": {
+          "type": "string",
+          "description": "Conversation turn this message belongs to"
+        },
+        "ts": {
+          "type": "number",
+          "description": "Sender wall-clock ms since epoch"
+        },
+        "payload": {
+          "type": "object"
+        }
       },
       "additionalProperties": false
     },
     "MessageType": {
       "type": "string",
       "enum": [
-        "hello", "audio.in.chunk", "stt.partial", "stt.final", "turn.start", "turn.end",
-        "llm.token", "tts.chunk", "tts.end", "avatar.emotion", "avatar.gesture", "state", "barge_in",
-        "tool.request", "tool.confirm", "tool.result", "memory.query", "memory.results",
-        "memory.upsert", "memory.delete", "voice_lab.event", "provider.status", "latency.mark",
-        "text.in", "error"
+        "hello",
+        "audio.in.chunk",
+        "stt.partial",
+        "stt.final",
+        "turn.start",
+        "turn.end",
+        "llm.token",
+        "tts.chunk",
+        "tts.end",
+        "avatar.emotion",
+        "avatar.gesture",
+        "state",
+        "barge_in",
+        "tool.request",
+        "tool.confirm",
+        "tool.result",
+        "memory.query",
+        "memory.results",
+        "memory.upsert",
+        "memory.delete",
+        "voice_lab.event",
+        "provider.status",
+        "latency.mark",
+        "character.select",
+        "text.in",
+        "error"
       ]
     },
     "Hello": {
       "type": "object",
-      "required": ["role", "protocolVersion"],
+      "required": [
+        "role",
+        "protocolVersion"
+      ],
       "properties": {
-        "role": { "enum": ["ui", "core", "console"] },
-        "protocolVersion": { "type": "string" },
-        "capabilities": { "type": "array", "items": { "type": "string" } }
+        "role": {
+          "enum": [
+            "ui",
+            "core",
+            "console"
+          ]
+        },
+        "protocolVersion": {
+          "type": "string"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "AudioInChunk": {
       "type": "object",
-      "required": ["seq", "sampleRate", "encoding", "data"],
+      "required": [
+        "seq",
+        "sampleRate",
+        "encoding",
+        "data"
+      ],
       "properties": {
-        "seq": { "type": "integer", "minimum": 0 },
-        "sampleRate": { "type": "integer", "description": "16000 expected" },
-        "encoding": { "enum": ["pcm_s16le", "pcm_f32le"] },
-        "data": { "type": "string", "contentEncoding": "base64" },
-        "pushToTalk": { "type": "boolean" }
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sampleRate": {
+          "type": "integer",
+          "description": "16000 expected"
+        },
+        "encoding": {
+          "enum": [
+            "pcm_s16le",
+            "pcm_f32le"
+          ]
+        },
+        "data": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "pushToTalk": {
+          "type": "boolean"
+        }
       }
     },
     "SttText": {
       "type": "object",
-      "required": ["text"],
+      "required": [
+        "text"
+      ],
       "properties": {
-        "text": { "type": "string" },
-        "language": { "$ref": "#/$defs/Language" },
-        "confidence": { "type": "number" }
+        "text": {
+          "type": "string"
+        },
+        "language": {
+          "$ref": "#/$defs/Language"
+        },
+        "confidence": {
+          "type": "number"
+        }
       }
     },
     "TextIn": {
       "type": "object",
-      "required": ["text"],
-      "properties": { "text": { "type": "string" } }
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      }
     },
     "TurnEvent": {
       "type": "object",
       "properties": {
-        "reason": { "enum": ["vad", "push_to_talk", "text", "barge_in", "complete", "error", "cancelled"] }
+        "reason": {
+          "enum": [
+            "vad",
+            "push_to_talk",
+            "text",
+            "barge_in",
+            "complete",
+            "error",
+            "cancelled"
+          ]
+        }
       }
     },
     "LlmToken": {
       "type": "object",
-      "required": ["delta"],
-      "properties": { "delta": { "type": "string" }, "provider": { "type": "string" } }
+      "required": [
+        "delta"
+      ],
+      "properties": {
+        "delta": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        }
+      }
     },
     "Phoneme": {
       "type": "object",
-      "required": ["p", "start", "end"],
+      "required": [
+        "p",
+        "start",
+        "end"
+      ],
       "properties": {
-        "p": { "type": "string", "description": "IPA phoneme (espeak-style), or 'sil' / 'br' (breath)" },
-        "start": { "type": "number", "description": "ms from chunk start" },
-        "end": { "type": "number", "description": "ms from chunk start" },
-        "stress": { "type": "number", "description": "0..1 optional emphasis" }
+        "p": {
+          "type": "string",
+          "description": "IPA phoneme (espeak-style), or 'sil' / 'br' (breath)"
+        },
+        "start": {
+          "type": "number",
+          "description": "ms from chunk start"
+        },
+        "end": {
+          "type": "number",
+          "description": "ms from chunk start"
+        },
+        "stress": {
+          "type": "number",
+          "description": "0..1 optional emphasis"
+        }
       }
     },
     "TtsChunk": {
       "type": "object",
-      "required": ["seq", "sampleRate", "encoding", "pcm", "text"],
+      "required": [
+        "seq",
+        "sampleRate",
+        "encoding",
+        "pcm",
+        "text"
+      ],
       "properties": {
-        "seq": { "type": "integer", "minimum": 0, "description": "Order within turn; UI schedules gaplessly by seq" },
-        "sampleRate": { "type": "integer" },
-        "encoding": { "enum": ["pcm_s16le", "pcm_f32le"] },
-        "pcm": { "type": "string", "contentEncoding": "base64", "description": "Mono audio" },
-        "durationMs": { "type": "number" },
-        "text": { "type": "string", "description": "Sentence this chunk speaks (display text, any script)" },
-        "language": { "$ref": "#/$defs/Language" },
-        "phonemes": { "type": "array", "items": { "$ref": "#/$defs/Phoneme" } },
-        "phonemeSource": { "enum": ["tts", "aligner", "none"] }
+        "seq": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Order within turn; UI schedules gaplessly by seq"
+        },
+        "sampleRate": {
+          "type": "integer"
+        },
+        "encoding": {
+          "enum": [
+            "pcm_s16le",
+            "pcm_f32le"
+          ]
+        },
+        "pcm": {
+          "type": "string",
+          "contentEncoding": "base64",
+          "description": "Mono audio"
+        },
+        "durationMs": {
+          "type": "number"
+        },
+        "text": {
+          "type": "string",
+          "description": "Sentence this chunk speaks (display text, any script)"
+        },
+        "language": {
+          "$ref": "#/$defs/Language"
+        },
+        "phonemes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Phoneme"
+          }
+        },
+        "phonemeSource": {
+          "enum": [
+            "tts",
+            "aligner",
+            "none"
+          ]
+        }
       }
     },
     "AvatarEmotion": {
       "type": "object",
-      "required": ["name", "intensity"],
+      "required": [
+        "name",
+        "intensity"
+      ],
       "properties": {
-        "name": { "$ref": "#/$defs/Emotion" },
-        "intensity": { "type": "number", "minimum": 0, "maximum": 1 },
-        "valence": { "type": "number", "minimum": -1, "maximum": 1 },
-        "arousal": { "type": "number", "minimum": 0, "maximum": 1 },
-        "seq": { "type": "integer", "description": "tts chunk seq this applies from; absent = now" }
+        "name": {
+          "$ref": "#/$defs/Emotion"
+        },
+        "intensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "valence": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        },
+        "arousal": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "seq": {
+          "type": "integer",
+          "description": "tts chunk seq this applies from; absent = now"
+        }
       }
     },
     "AvatarGesture": {
       "type": "object",
-      "required": ["tag", "atMs"],
+      "required": [
+        "tag",
+        "atMs"
+      ],
       "properties": {
-        "tag": { "$ref": "#/$defs/GestureTag" },
-        "atMs": { "type": "number", "description": "Offset in ms from the start of tts chunk `seq`" },
-        "seq": { "type": "integer" },
-        "intensity": { "type": "number" }
+        "tag": {
+          "$ref": "#/$defs/GestureTag"
+        },
+        "atMs": {
+          "type": "number",
+          "description": "Offset in ms from the start of tts chunk `seq`"
+        },
+        "seq": {
+          "type": "integer"
+        },
+        "intensity": {
+          "type": "number"
+        }
       }
     },
     "State": {
       "type": "object",
-      "required": ["state"],
+      "required": [
+        "state"
+      ],
       "properties": {
-        "state": { "enum": ["idle", "listening", "thinking", "speaking", "working", "sleeping", "waking"] },
-        "detail": { "type": "string" }
+        "state": {
+          "enum": [
+            "idle",
+            "listening",
+            "thinking",
+            "speaking",
+            "working",
+            "sleeping",
+            "waking"
+          ]
+        },
+        "detail": {
+          "type": "string"
+        }
       }
     },
     "BargeIn": {
       "type": "object",
       "properties": {
-        "source": { "enum": ["ui", "core"] },
-        "playedUntilSeq": { "type": "integer" },
-        "playedMsInSeq": { "type": "number", "description": "So core can trim history to what was actually heard" }
+        "source": {
+          "enum": [
+            "ui",
+            "core"
+          ]
+        },
+        "playedUntilSeq": {
+          "type": "integer"
+        },
+        "playedMsInSeq": {
+          "type": "number",
+          "description": "So core can trim history to what was actually heard"
+        }
       }
     },
     "ToolRequest": {
       "type": "object",
-      "required": ["callId", "tool", "tier", "summary", "args"],
+      "required": [
+        "callId",
+        "tool",
+        "tier",
+        "summary",
+        "args"
+      ],
       "properties": {
-        "callId": { "type": "string" },
-        "tool": { "type": "string" },
-        "tier": { "enum": ["read", "act", "sensitive"] },
-        "summary": { "type": "string", "description": "Exact human-readable action shown in the confirm dialog" },
-        "args": { "type": "object" },
-        "needsConfirmation": { "type": "boolean" }
+        "callId": {
+          "type": "string"
+        },
+        "tool": {
+          "type": "string"
+        },
+        "tier": {
+          "enum": [
+            "read",
+            "act",
+            "sensitive"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "description": "Exact human-readable action shown in the confirm dialog"
+        },
+        "args": {
+          "type": "object"
+        },
+        "needsConfirmation": {
+          "type": "boolean"
+        }
       }
     },
     "ToolConfirm": {
       "type": "object",
-      "required": ["callId", "approved"],
+      "required": [
+        "callId",
+        "approved"
+      ],
       "properties": {
-        "callId": { "type": "string" },
-        "approved": { "type": "boolean" },
-        "via": { "enum": ["click", "voice"] }
+        "callId": {
+          "type": "string"
+        },
+        "approved": {
+          "type": "boolean"
+        },
+        "via": {
+          "enum": [
+            "click",
+            "voice"
+          ]
+        }
       }
     },
     "ToolResult": {
       "type": "object",
-      "required": ["callId", "ok"],
+      "required": [
+        "callId",
+        "ok"
+      ],
       "properties": {
-        "callId": { "type": "string" },
-        "ok": { "type": "boolean" },
+        "callId": {
+          "type": "string"
+        },
+        "ok": {
+          "type": "boolean"
+        },
         "result": {},
-        "error": { "type": "string" }
+        "error": {
+          "type": "string"
+        }
       }
     },
     "MemoryQuery": {
       "type": "object",
       "properties": {
-        "q": { "type": "string" },
-        "kind": { "enum": ["fact", "episode", "self", "summary"] },
-        "namespace": { "type": "string" },
-        "limit": { "type": "integer" },
-        "offset": { "type": "integer" }
+        "q": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "fact",
+            "episode",
+            "self",
+            "summary"
+          ]
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "offset": {
+          "type": "integer"
+        }
       }
     },
     "MemoryItem": {
       "type": "object",
-      "required": ["id", "kind", "text"],
+      "required": [
+        "id",
+        "kind",
+        "text"
+      ],
       "properties": {
-        "id": { "type": "string" },
-        "kind": { "enum": ["fact", "episode", "self", "summary"] },
-        "text": { "type": "string" },
-        "namespace": { "type": "string" },
-        "confidence": { "type": "number" },
-        "importance": { "type": "number" },
-        "emotion": { "type": "string" },
-        "createdAt": { "type": "number" },
-        "updatedAt": { "type": "number" },
-        "sourceTurnId": { "type": "string" }
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "fact",
+            "episode",
+            "self",
+            "summary"
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "importance": {
+          "type": "number"
+        },
+        "emotion": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "number"
+        },
+        "updatedAt": {
+          "type": "number"
+        },
+        "sourceTurnId": {
+          "type": "string"
+        }
       }
     },
     "MemoryResults": {
       "type": "object",
-      "required": ["items"],
+      "required": [
+        "items"
+      ],
       "properties": {
-        "items": { "type": "array", "items": { "$ref": "#/$defs/MemoryItem" } },
-        "total": { "type": "integer" }
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MemoryItem"
+          }
+        },
+        "total": {
+          "type": "integer"
+        }
       }
     },
     "MemoryDelete": {
       "type": "object",
-      "required": ["ids"],
-      "properties": { "ids": { "type": "array", "items": { "type": "string" } } }
+      "required": [
+        "ids"
+      ],
+      "properties": {
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     },
     "VoiceLabEvent": {
       "type": "object",
-      "required": ["op"],
+      "required": [
+        "op"
+      ],
       "properties": {
-        "op": { "type": "string", "description": "e.g. script.get, clip.saved, consent.check, train.progress, eval.report" },
-        "voiceId": { "type": "string" },
+        "op": {
+          "type": "string",
+          "description": "e.g. script.get, clip.saved, consent.check, train.progress, eval.report"
+        },
+        "voiceId": {
+          "type": "string"
+        },
         "data": {}
       }
     },
     "ProviderStatus": {
       "type": "object",
-      "required": ["capability", "provider", "status"],
+      "required": [
+        "capability",
+        "provider",
+        "status"
+      ],
       "properties": {
-        "capability": { "enum": ["llm", "stt", "tts", "embed"] },
-        "provider": { "type": "string" },
-        "model": { "type": "string" },
-        "status": { "enum": ["active", "failover", "benched", "ok", "error"] },
-        "reason": { "type": "string" },
-        "latencyMs": { "type": "number" }
+        "capability": {
+          "enum": [
+            "llm",
+            "stt",
+            "tts",
+            "embed"
+          ]
+        },
+        "provider": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "failover",
+            "benched",
+            "ok",
+            "error"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "latencyMs": {
+          "type": "number"
+        }
       }
     },
     "LatencyMark": {
       "type": "object",
-      "required": ["stage", "ms"],
+      "required": [
+        "stage",
+        "ms"
+      ],
       "properties": {
-        "stage": { "enum": ["eos", "stt_final", "llm_first_token", "tts_first_chunk", "audio_first_play"] },
-        "ms": { "type": "number", "description": "ms since end-of-speech for this turn" }
+        "stage": {
+          "enum": [
+            "eos",
+            "stt_final",
+            "llm_first_token",
+            "tts_first_chunk",
+            "audio_first_play"
+          ]
+        },
+        "ms": {
+          "type": "number",
+          "description": "ms since end-of-speech for this turn"
+        }
       }
     },
     "ErrorInfo": {
       "type": "object",
-      "required": ["code", "message"],
+      "required": [
+        "code",
+        "message"
+      ],
       "properties": {
-        "code": { "type": "string" },
-        "message": { "type": "string" },
-        "recoverable": { "type": "boolean" }
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "recoverable": {
+          "type": "boolean"
+        }
       }
     },
-    "Language": { "enum": ["en", "hi", "hinglish", "unknown"] },
+    "Language": {
+      "enum": [
+        "en",
+        "hi",
+        "hinglish",
+        "unknown"
+      ]
+    },
     "Emotion": {
-      "enum": ["neutral", "joy", "fun", "angry", "sorrow", "surprised", "shy", "sleepy", "thinking", "teasing"]
+      "enum": [
+        "neutral",
+        "joy",
+        "fun",
+        "angry",
+        "sorrow",
+        "surprised",
+        "shy",
+        "sleepy",
+        "thinking",
+        "teasing"
+      ]
     },
     "GestureTag": {
       "enum": [
-        "wave", "shrug", "facepalm", "laugh", "shy_look_away", "think_chin", "clap", "point",
-        "pout", "cross_arms", "head_pat_react", "nod", "head_tilt", "bow"
+        "wave",
+        "shrug",
+        "facepalm",
+        "laugh",
+        "shy_look_away",
+        "think_chin",
+        "clap",
+        "point",
+        "pout",
+        "cross_arms",
+        "head_pat_react",
+        "nod",
+        "head_tilt",
+        "bow"
       ]
+    },
+    "CharacterSelect": {
+      "type": "object",
+      "description": "UI → core: the active character changed (sent after hello and on every switch). The core loads this persona into the system prompt; memory is namespaced by id.",
+      "required": [
+        "id",
+        "displayName",
+        "persona"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Pack id (memory namespace)"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "persona": {
+          "type": "string",
+          "description": "persona.md contents (characters/PERSONA_FORMAT.md); may be empty for an imported model without a persona"
+        },
+        "defaultLanguage": {
+          "$ref": "#/$defs/Language"
+        },
+        "voice": {
+          "type": "object",
+          "properties": {
+            "engine": {
+              "type": "string"
+            },
+            "voiceId": {
+              "type": "string"
+            },
+            "clonePath": {
+              "type": "string"
+            },
+            "rvcModel": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   },
   "x-payloads": {
@@ -261,6 +723,7 @@
     "audio.in.chunk": "AudioInChunk",
     "stt.partial": "SttText",
     "stt.final": "SttText",
+    "character.select": "CharacterSelect",
     "text.in": "TextIn",
     "turn.start": "TurnEvent",
     "turn.end": "TurnEvent",

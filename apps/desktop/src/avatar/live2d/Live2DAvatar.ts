@@ -78,7 +78,7 @@ export class Live2DAvatar implements AvatarController {
     });
     host.prepend(a.app.canvas);
 
-    a.model = await Live2DModel.from(pack.modelUrl, { autoHitTest: false, autoFocus: false, autoUpdate: false });
+    a.model = await Live2DModel.from(pack.modelUrl!, { autoHitTest: false, autoFocus: false, autoUpdate: false });
     a.app.stage.addChild(a.model);
     a.core = (a.model.internalModel as unknown as { coreModel: CoreModel }).coreModel;
     const ids = a.core.getModel().parameters.ids;

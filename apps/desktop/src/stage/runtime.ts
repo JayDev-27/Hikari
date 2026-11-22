@@ -8,6 +8,11 @@ import { CoreClient } from "../core/client";
 import { LipSyncEngine, visemesFromSpectrum, visemesToLive2D } from "../lipsync/engine";
 import { mockTurn } from "../dev/mockReplay";
 import { useStage } from "../state/stage";
+import { Subscriptions } from "../util/subscriptions";
+import { matchSwitch } from "../avatar/switchIntent";
+import { listPacks } from "../avatar/packs";
+import type { CharacterPack } from "../avatar/characters";
+import { emitTo } from "@tauri-apps/api/event";
 import { FrameScheduler, type FrameTier } from "./frameScheduler";
 
 export const inTauri = "__TAURI_INTERNALS__" in window;
@@ -35,7 +40,7 @@ export class StageRuntime {
   private last = performance.now();
   private frames = 0;
   private fpsAt = performance.now();
-  private unlisten: Array<() => void> = [];
+  private readonly subs = new Subscriptions();
   private hovering = false;
   private leaveTimer?: ReturnType<typeof setTimeout>;
   private cursorInside = false;
@@ -87,6 +92,7 @@ export class StageRuntime {
   }
 
   attach(avatar: AvatarController): void {
+    if (this.avatar && this.avatar !== avatar) this.avatar.destroy();
     this.avatar = avatar;
     // Fresh per-pixel answer after a render: apply it now. Without this the
     // toggle lagged one cursor event behind — with a resting cursor, she stayed
@@ -97,10 +103,42 @@ export class StageRuntime {
     if (!this.raf) this.loop();
   }
 
+  /** Remove the current avatar (character switch / empty slot). */
+  detach(): void {
+    this.avatar?.destroy();
+    this.avatar = undefined;
+  }
+
+  /** Clickable region when there's no avatar (e.g. the empty-slot import prompt). */
+  fallbackHit?: (x: number, y: number) => boolean;
+
+  private character?: CharacterPack;
+
+  /** Active character changed: tell the core (persona + memory namespace). */
+  setCharacter(pack: CharacterPack): void {
+    this.character = pack;
+    this.sendCharacter();
+  }
+
+  private sendCharacter(): void {
+    const p = this.character;
+    if (!p || !this.core.connected) return;
+    this.core.send("character.select", {
+      id: p.id,
+      displayName: p.displayName,
+      persona: p.personaText,
+      ...(p.defaultLanguage ? { defaultLanguage: p.defaultLanguage } : {}),
+      ...(p.voice ? { voice: p.voice } : {}),
+    });
+  }
+
   start(): void {
-    this.core.onStatus = (ok) => useStage.getState().setCore(ok);
+    this.core.onStatus = (ok) => {
+      useStage.getState().setCore(ok);
+      if (ok) this.sendCharacter();
+    };
     this.core.connect();
-    if (inTauri) void this.wireTauri();
+    if (inTauri) this.wireTauri();
     // Always-listening mode opens the mic at start (macOS asks for permission the first time).
     if (this.voice.state.mode === "open") void this.voice.setMode("open").then(() => this.syncMic());
     this.syncMic();
@@ -134,6 +172,11 @@ export class StageRuntime {
       useStage.getState().setState(p.state);
     });
     c.on("latency.mark", (p) => useStage.getState().mark(p.stage, p.ms));
+    // Transcript for the chat window (one core connection; the chat talks via the stage).
+    c.on("stt.final", (p, env) => this.chat({ kind: "user", text: p.text, turnId: env.turnId, via: "voice" }));
+    c.on("llm.token", (p, env) => this.chat({ kind: "her", text: p.delta, turnId: env.turnId, append: true }));
+    c.on("tts.end", (_p, env) => this.chat({ kind: "end", text: "", turnId: env.turnId }));
+    c.on("error", (p, env) => this.chat({ kind: "system", text: `${p.code}: ${p.message}`, turnId: env.turnId }));
     c.on("barge_in", () => this.bargeIn("core"));
   }
 
@@ -154,6 +197,41 @@ export class StageRuntime {
     this.gestures = [];
     this.avatar?.setVisemes({ aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 });
     if (source === "ui") this.core.send("barge_in", { source, ...where });
+  }
+
+  private chatLog: ChatEvent[] = [];
+
+  /** Record + forward a transcript event to the chat window (keeps the last 200). */
+  chat(e: ChatEvent): void {
+    this.chatLog.push(e);
+    if (this.chatLog.length > 200) this.chatLog.shift();
+    if (inTauri) void emitTo("chat", "chat://event", e);
+  }
+
+  /** Text typed in the chat window. */
+  /** Set by the stage: switch to a character (chat "switch to …"). */
+  onSwitchCharacter?: (id: string) => void;
+
+  async sendText(text: string): Promise<void> {
+    const t = text.trim();
+    if (!t) return;
+    if (this.playback.isPlaying) this.bargeIn("ui");
+    this.chat({ kind: "user", text: t, via: "text" });
+    // Mid-session persona switch (§3): handled locally, not sent to the core.
+    const target = matchSwitch(t, await listPacks().catch(() => []));
+    if (target && this.onSwitchCharacter) {
+      const pack = (await listPacks()).find((p) => p.id === target.id);
+      this.chat({
+        kind: "system",
+        text: pack?.modelUrl
+          ? `Switching to ${target.displayName}…`
+          : `${target.displayName} needs a model first: import one in Character Studio (opened for you).`,
+      });
+      this.onSwitchCharacter(target.id);
+      return;
+    }
+    if (this.core.connected) this.core.send("text.in", { text: t });
+    else this.chat({ kind: "system", text: "Hikari's core isn't running — start it (dev: pnpm -F desktop fake-core)." });
   }
 
   /** Push mic state into the store (overlay). */
@@ -180,9 +258,8 @@ export class StageRuntime {
     for (const m of mockTurn()) this.core.inject(m);
   }
 
-  private async wireTauri(): Promise<void> {
-    this.unlisten.push(
-      await listen<{ x: number; y: number; inside: boolean; gx: number; gy: number }>("stage://cursor", (e) => {
+  private wireTauri(): void {
+      this.subs.add(listen<{ x: number; y: number; inside: boolean; gx: number; gy: number }>("stage://cursor", (e) => {
         const { x, y, inside } = e.payload;
         // Cursor near her → 60 fps (hover, eye contact). Far away → eyes still
         // follow at the smooth 30 fps idle rate instead of forcing 60 while you work.
@@ -194,14 +271,15 @@ export class StageRuntime {
         // hitTest answers from the last pixel readback; the fresh answer arrives
         // via avatar.onHitChange right after the next render (see attach()).
         this.cursorInside = inside;
-        this.applyHover(inside ? (this.avatar?.hitTest(x, y) ?? null) !== null : false);
+        const hit = this.avatar ? (this.avatar.hitTest(x, y) ?? null) !== null : (this.fallbackHit?.(x, y) ?? false);
+        this.applyHover(inside && hit);
         // Eyes follow the cursor anywhere on screen: x/y are window-relative
         // (can be far outside), normalised by half the screen size around her face.
         const dx = (x - window.innerWidth / 2) / (screen.width / 2);
         const dy = (y - window.innerHeight * 0.3) / (screen.height / 2);
         this.avatar?.lookAt(clamp(dx * 2, -1, 1), clamp(-dy * 2, -1, 1));
-      }),
-      await listen<{ pressed: boolean }>("hotkey://ptt", (e) => {
+      }));
+      this.subs.add(listen<{ pressed: boolean }>("hotkey://ptt", (e) => {
         if (e.payload.pressed) {
           if (this.playback.isPlaying) this.bargeIn("ui");
           void this.voice.pttDown().then(() => this.syncMic());
@@ -215,14 +293,15 @@ export class StageRuntime {
           // Dev: with no core running, releasing PTT plays the mock turn.
           setTimeout(() => this.playMock(), 300);
         }
-      }),
-      await listen<boolean>("hotkey://mute", (e) => void this.voice.setMuted(e.payload).then(() => this.syncMic())),
-      await listen<boolean>("stage://visible", (e) => this.setVisible(e.payload)),
-      await listen("hotkey://panic", () => {
+      }));
+      this.subs.add(listen<boolean>("hotkey://mute", (e) => void this.voice.setMuted(e.payload).then(() => this.syncMic())));
+      this.subs.add(listen<boolean>("stage://visible", (e) => this.setVisible(e.payload)));
+      this.subs.add(listen<{ text: string }>("chat://send", (e) => void this.sendText(e.payload.text)));
+      this.subs.add(listen("chat://hello", () => void emitTo("chat", "chat://history", this.chatLog)));
+      this.subs.add(listen("hotkey://panic", () => {
         this.bargeIn("ui");
         this.core.send("tool.confirm", { callId: "*", approved: false, via: "click" });
-      }),
-    );
+      }));
   }
 
   /**
@@ -327,7 +406,7 @@ export class StageRuntime {
   destroy(): void {
     this.voice.destroy();
     cancelAnimationFrame(this.raf);
-    this.unlisten.forEach((u) => u());
+    this.subs.dispose();
     this.core.close();
     this.avatar?.destroy();
   }
@@ -349,4 +428,13 @@ function savePref(key: string, value: string): void {
   } catch {
     /* storage unavailable: setting lasts for this session only */
   }
+}
+
+/** Transcript line for the chat window. `append`: streamed token to add to her current line. */
+export interface ChatEvent {
+  kind: "user" | "her" | "system" | "end";
+  text: string;
+  turnId?: string;
+  via?: "voice" | "text";
+  append?: boolean;
 }

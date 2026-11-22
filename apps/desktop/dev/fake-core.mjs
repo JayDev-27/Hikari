@@ -56,6 +56,9 @@ wss.on("connection", (ws) => {
         requester = ws;
         if (p.reason === "push_to_talk") void endUtterance(st, "push_to_talk");
         break;
+      case "character.select":
+        log(`character.select: ${p.displayName} (${p.id}), persona ${p.persona.length} chars, lang ${p.defaultLanguage ?? "?"}`);
+        break;
       case "text.in":
         requester = ws;
         void replyText(p.text);

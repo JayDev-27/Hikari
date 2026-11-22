@@ -1,0 +1,66 @@
+{
+  "id": "mao",
+  "displayName": "Mao",
+  "renderer": "live2d",
+  "modelPath": "model/Mao.model3.json",
+  "scale": 1.0,
+  "expressionMap": {
+    "neutral": "exp_01",
+    "joy": "exp_02",
+    "fun": "exp_03",
+    "surprised": "exp_04",
+    "angry": "exp_05",
+    "sorrow": "exp_06",
+    "shy": "exp_07",
+    "teasing": "exp_08"
+  },
+  "motionMap": {
+    "idle": {
+      "group": "Idle"
+    },
+    "tap": {
+      "group": "TapBody",
+      "index": 0
+    },
+    "tap_head": {
+      "group": "TapBody",
+      "index": 1
+    },
+    "tap_body": {
+      "group": "TapBody",
+      "index": 0
+    },
+    "wave": {
+      "group": "TapBody",
+      "index": 2
+    },
+    "laugh": {
+      "group": "TapBody",
+      "index": 3
+    },
+    "pout": {
+      "group": "TapBody",
+      "index": 4
+    },
+    "head_pat_react": {
+      "group": "TapBody",
+      "index": 5
+    }
+  },
+  "hitAreas": {
+    "Head": "head",
+    "Body": "body"
+  },
+  "persona": "persona.md",
+  "voice": {
+    "engine": "hima",
+    "voiceId": "Nandini"
+  },
+  "defaultLanguage": "hinglish",
+  "license": {
+    "source": "Live2D Inc. sample model (CubismWebSamples)",
+    "terms": "Live2D Free Material License — Original Character. Commercial use only for individuals / businesses under ¥10M annual sales. Sample sound data not redistributed.",
+    "url": "https://www.live2d.com/en/learn/sample/",
+    "credit": "This content uses sample data owned and copyrighted by Live2D Inc."
+  }
+}

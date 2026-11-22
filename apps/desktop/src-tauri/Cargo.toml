@@ -29,6 +29,9 @@ tauri-plugin-shell = "2.6.0"
 tauri-plugin-log = "2.10.2"
 log = "0.4.35"
 anyhow = "1.0.104"
+zip = { version = "9.8.1", default-features = false, features = ["deflate"] }
+tauri-plugin-dialog = "2.8.4"
+percent-encoding = "2.3.2"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
