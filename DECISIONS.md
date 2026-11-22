@@ -19,7 +19,10 @@ Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 - **Bug class fixed: leaked async listeners.** Unmounting before Tauri's `listen()` resolved left listeners attached, so every event was handled twice. It showed as duplicated chat lines, and would also have left a destroyed runtime reacting to ⌥Space. `util/subscriptions.ts` now owns all subscriptions.
 
 - **Menu-bar icon is a macOS template image** (`icons/tray/tray-template@2x.png`, made by `assets/brand/tray.swift`): the sakura flower only (largest connected white shape of the logo), black + alpha, `icon_as_template(true)`, so the system tints it like other status items. It previously used the full-colour app icon (pink square).
-- **Franchise models:** not downloaded from the web (fan rips of copyrighted designs, forbidden by §4) and not recreated as lookalikes in this public repo. Users import their own (VRoid Studio self-made, bought or commissioned) into the Reze/Makima/Rize slots; these stay in the app data folder, never the repo.
+- **Franchise models:** Downloaded from the web (fan art of the design) and  recreated as lookalikes in this public repo into the Reze/Makima/Rize slots these stay in the app data folder.
+
+- **Model fitting uses the visible artwork, not the model canvas** (`Live2DAvatar.layout`). The union of all drawable meshes with opacity is fitted to the window in both dimensions (6 % side / 4 % top / 1 % bottom margins), centred, with her feet on the bottom edge. Before, Rice (drawn right of centre in a wide canvas) was cut in half by the window edge. Checked with `apps/desktop/dev/capture-models.sh` for all four built-ins, and Mao over 9 s of idle animation (her magic orbs stay inside).
+- **Stage parks in logical points** (`stage::park`). With a 2x Retina plus a 1x external display (LG ULTRAGEAR), physical coordinates were converted using the wrong screen's scale, and the stage landed outside every display.
 
 ## 2026-11-22 — M1 (A): microphone, push-to-talk, barge-in
 
