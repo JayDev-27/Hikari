@@ -18,6 +18,9 @@ Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 - **Chat** talks through the stage via Tauri events (`chat://send` / `chat://event` / `chat://history`), so the core sees one UI connection. Typed text interrupts her if she's speaking. Typed **"switch to Mao" / "change to makima" / "Mao ko bulao"** switches characters locally (`switchIntent.ts`, one-typo tolerant, so "maxima" → Makima). An empty slot opens the Studio. **B:** voice switch requests need STT, so the core should detect them.
 - **Bug class fixed: leaked async listeners.** Unmounting before Tauri's `listen()` resolved left listeners attached, so every event was handled twice. It showed as duplicated chat lines, and would also have left a destroyed runtime reacting to ⌥Space. `util/subscriptions.ts` now owns all subscriptions.
 
+- **Menu-bar icon is a macOS template image** (`icons/tray/tray-template@2x.png`, made by `assets/brand/tray.swift`): the sakura flower only (largest connected white shape of the logo), black + alpha, `icon_as_template(true)`, so the system tints it like other status items. It previously used the full-colour app icon (pink square).
+- **Franchise models:** not downloaded from the web (fan rips of copyrighted designs, forbidden by §4) and not recreated as lookalikes in this public repo. Users import their own (VRoid Studio self-made, bought or commissioned) into the Reze/Makima/Rize slots; these stay in the app data folder, never the repo.
+
 ## 2026-11-22 — M1 (A): microphone, push-to-talk, barge-in
 
 - **Protocol semantics (B, please review):** the UI now **sends** `turn.end {reason: "push_to_talk"}` when ⌥Space is released, meaning "end of user input". No schema change (the enum already had `push_to_talk`). In always-listening mode the UI sends audio with `pushToTalk: false` and the core's VAD decides turns. The protocol console's `--wav` sends the same `turn.end`.
