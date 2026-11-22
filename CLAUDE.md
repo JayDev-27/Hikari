@@ -21,11 +21,13 @@ Rust via rustup (`source ~/.cargo/env`). Cubism Core must come from the official
 | Regenerate protocol types | `pnpm gen:protocol` (CI: `pnpm check:protocol`) |
 | Bundle `.app`/`.dmg` | `pnpm build` |
 | A/V sync regression (audible, ~6 s) | `pnpm -F desktop avsync` (exit 0 = within ±40 ms) |
+| Fake core for the app (until B's core exists) | `pnpm -F desktop fake-core` (echoes your voice; `console --say` makes Hikari speak via macOS `say`) |
 | Talk to the core without the app (B) | `pnpm -F desktop console [--say "…" \| --wav f.wav]` — see `apps/desktop/dev/protocol-console/README.md` |
 
 ## Conventions
 
 - Protocol changes: edit `packages/protocol/schema/protocol.schema.json`, bump `x-protocolVersion` + `Envelope.v` const, regenerate, PR touching both sides.
 - Dev without core: double-click Hikari or release ⌥Space with no core running → in-browser mock turn (`src/dev/mockReplay.ts`).
-- Core WebSocket: `ws://127.0.0.1:8765/ws`.
+- Core WebSocket: `ws://127.0.0.1:8765/ws`. UI sends `turn.end {reason: "push_to_talk"}` on ⌥Space release.
+- Dev mic mode override: `VITE_MIC_MODE=open pnpm dev` (always-listening).
 - Record decisions/assumptions in `DECISIONS.md`; asset terms in `docs/LICENSES.md`.

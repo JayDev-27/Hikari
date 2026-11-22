@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { AvatarController } from "../avatar/types";
 import { PlaybackQueue } from "../audio/playback";
+import { VoiceInput, type MicMode } from "../audio/voiceInput";
 import { CoreClient } from "../core/client";
 import { LipSyncEngine, visemesFromSpectrum, visemesToLive2D } from "../lipsync/engine";
 import { mockTurn } from "../dev/mockReplay";
@@ -25,6 +26,7 @@ export class StageRuntime {
   readonly playback = new PlaybackQueue();
   readonly lipsync = new LipSyncEngine();
   readonly core: CoreClient;
+  readonly voice: VoiceInput;
   private avatar?: AvatarController;
   private gestures: PendingGesture[] = [];
   private chunkStart = new Map<number, number>();
@@ -50,6 +52,23 @@ export class StageRuntime {
   constructor(coreUrl = "ws://127.0.0.1:8765/ws") {
     this.core = new CoreClient(coreUrl);
     this.freq = new Float32Array(this.playback.analyser.frequencyBinCount);
+    // VITE_MIC_MODE (dev) overrides the saved mode, e.g. for always-listening tests.
+    const mode = (import.meta.env.VITE_MIC_MODE as MicMode | undefined) ?? (loadPref("hikari.micMode", "ptt") as MicMode);
+    this.voice = new VoiceInput(this.core, this.playback.ctx, mode);
+    this.voice.mic.deviceId = loadPref("hikari.micDevice", "") || undefined;
+    this.voice.herSpeaking = () => this.playback.isPlaying;
+    this.voice.onLevel = (rms, voiced) => {
+      if (useStage.getState().debug) useStage.getState().setMic({ level: Math.min(1, rms * 6), voiced });
+    };
+    this.voice.onBarge = (a) => {
+      if (a === "duck") this.playback.duck(true);
+      else if (a === "unduck") this.playback.duck(false);
+      else if (a === "cut") this.bargeIn("ui");
+    };
+    this.voice.onError = (e) => {
+      console.error("microphone unavailable:", e);
+      useStage.getState().setMic({ open: false, error: e instanceof Error ? e.name : String(e) });
+    };
     this.wireProtocol();
     this.playback.onChunkScheduled = (sc) => {
       this.chunkStart.set(sc.seq, sc.ctxStart);
@@ -82,6 +101,9 @@ export class StageRuntime {
     this.core.onStatus = (ok) => useStage.getState().setCore(ok);
     this.core.connect();
     if (inTauri) void this.wireTauri();
+    // Always-listening mode opens the mic at start (macOS asks for permission the first time).
+    if (this.voice.state.mode === "open") void this.voice.setMode("open").then(() => this.syncMic());
+    this.syncMic();
     // Note: no document.visibilitychange pause — WebKit reports this floating,
     // mostly transparent panel as "hidden" while it is on screen (observed in
     // release builds). Only the tray's explicit hide pauses rendering.
@@ -134,6 +156,24 @@ export class StageRuntime {
     if (source === "ui") this.core.send("barge_in", { source, ...where });
   }
 
+  /** Push mic state into the store (overlay). */
+  syncMic(): void {
+    const v = this.voice.state;
+    useStage.getState().setMic({ mode: v.mode, muted: v.muted, open: v.open, label: v.label, error: v.open ? "" : useStage.getState().mic.error });
+  }
+
+  async setMicMode(mode: MicMode): Promise<void> {
+    savePref("hikari.micMode", mode);
+    await this.voice.setMode(mode);
+    this.syncMic();
+  }
+
+  async setMicDevice(deviceId: string): Promise<void> {
+    savePref("hikari.micDevice", deviceId);
+    await this.voice.mic.setDevice(deviceId);
+    this.syncMic();
+  }
+
   /** Play the built-in mock turn (no core needed). */
   playMock(): void {
     this.newTurn();
@@ -162,7 +202,13 @@ export class StageRuntime {
         this.avatar?.lookAt(clamp(dx * 2, -1, 1), clamp(-dy * 2, -1, 1));
       }),
       await listen<{ pressed: boolean }>("hotkey://ptt", (e) => {
-        if (e.payload.pressed && this.playback.isPlaying) this.bargeIn("ui");
+        if (e.payload.pressed) {
+          if (this.playback.isPlaying) this.bargeIn("ui");
+          void this.voice.pttDown().then(() => this.syncMic());
+        } else {
+          this.voice.pttUp();
+          this.syncMic();
+        }
         this.avatar?.setState(e.payload.pressed ? "listening" : "thinking");
         useStage.getState().setState(e.payload.pressed ? "listening" : "thinking");
         if (!e.payload.pressed && !this.core.connected) {
@@ -170,6 +216,7 @@ export class StageRuntime {
           setTimeout(() => this.playMock(), 300);
         }
       }),
+      await listen<boolean>("hotkey://mute", (e) => void this.voice.setMuted(e.payload).then(() => this.syncMic())),
       await listen<boolean>("stage://visible", (e) => this.setVisible(e.payload)),
       await listen("hotkey://panic", () => {
         this.bargeIn("ui");
@@ -278,6 +325,7 @@ export class StageRuntime {
   }
 
   destroy(): void {
+    this.voice.destroy();
     cancelAnimationFrame(this.raf);
     this.unlisten.forEach((u) => u());
     this.core.close();
@@ -286,3 +334,19 @@ export class StageRuntime {
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+/** Tiny persisted prefs (per-viewer conveniences; Settings UI arrives in M4). */
+function loadPref(key: string, fallback: string): string {
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+function savePref(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* storage unavailable: setting lasts for this session only */
+  }
+}

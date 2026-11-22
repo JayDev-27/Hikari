@@ -13,6 +13,9 @@ interface StageStore {
   /** Debug: AudioContext state and current mouth opening (0..1). */
   audio: { ctx: string; mouth: number };
   setAudio(a: { ctx: string; mouth: number }): void;
+  /** Mic: mode, mute, open, live level (0..1) and device label. */
+  mic: { mode: "ptt" | "open"; muted: boolean; open: boolean; level: number; voiced: boolean; label: string; error: string };
+  setMic(m: Partial<StageStore["mic"]>): void;
   setCore(v: boolean): void;
   setState(s: AvatarState): void;
   setCaption(c: string): void;
@@ -31,6 +34,8 @@ export const useStage = create<StageStore>((set) => ({
   tier: "–",
   audio: { ctx: "–", mouth: 0 },
   setAudio: (audio) => set({ audio }),
+  mic: { mode: "ptt", muted: false, open: false, level: 0, voiced: false, label: "", error: "" },
+  setMic: (m) => set((s) => ({ mic: { ...s.mic, ...m } })),
   setCore: (core) => set({ core }),
   setState: (state) => set({ state }),
   setCaption: (caption) => set({ caption }),

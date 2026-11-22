@@ -106,6 +106,13 @@ export class PlaybackQueue {
     };
   }
 
+  /** Barge-in duck: drop her to ~25 % while the user starts talking over her. */
+  duck(on: boolean): void {
+    const now = this.ctx.currentTime;
+    this.gain.gain.cancelScheduledValues(now);
+    this.gain.gain.setTargetAtTime(on ? 0.25 : 1, now, on ? 0.02 : 0.08);
+  }
+
   get isPlaying(): boolean {
     return this.sources.length > 0;
   }

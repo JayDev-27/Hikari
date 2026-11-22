@@ -145,6 +145,8 @@ async function streamWav(file, fast = false) {
       if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     }
   }
+  // End of push-to-talk input, exactly as the app sends it on ⌥Space release.
+  send("turn.end", { reason: "push_to_talk" });
   // End of input ≈ end of speech: start the latency clock here.
   beginTurn();
   log(C.dim(`sent ${seq} chunks; waiting for reply…`));

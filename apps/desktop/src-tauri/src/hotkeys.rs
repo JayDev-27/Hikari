@@ -24,7 +24,7 @@ pub fn setup<R: Runtime>(app: &AppHandle<R>) -> Result<(), Box<dyn std::error::E
                     let _ = app.emit("hotkey://ptt", Ptt { pressed: ev.state() == ShortcutState::Pressed });
                 } else if ev.state() == ShortcutState::Pressed {
                     if sc == &mute {
-                        let _ = app.emit("hotkey://mute-toggle", ());
+                        crate::tray::toggle_muted(app);
                     } else if sc == &panic {
                         let _ = app.emit("hotkey://panic", ());
                     }

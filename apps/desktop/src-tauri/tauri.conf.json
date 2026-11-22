@@ -31,12 +31,21 @@
     ],
     "security": {
       "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost blob: data:; connect-src 'self' ipc: http://ipc.localhost ws://127.0.0.1:* http://127.0.0.1:* asset: http://asset.localhost blob:; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src 'self' blob: asset: http://asset.localhost",
-      "assetProtocol": { "enable": true, "scope": ["$APPDATA/characters/**", "$RESOURCE/characters/**"] }
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPDATA/characters/**",
+          "$RESOURCE/characters/**"
+        ]
+      }
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["app", "dmg"],
+    "targets": [
+      "app",
+      "dmg"
+    ],
     "category": "Entertainment",
     "icon": [
       "icons/32x32.png",
@@ -46,7 +55,9 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "minimumSystemVersion": "13.0"
+      "minimumSystemVersion": "13.0",
+      "entitlements": "./Entitlements.plist",
+      "infoPlist": "./Info.plist"
     }
   }
 }

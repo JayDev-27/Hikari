@@ -13,7 +13,8 @@
     "fetch:assets": "node scripts/fetch-assets.mjs",
     "test": "vitest run",
     "console": "node dev/protocol-console/console.mjs",
-    "avsync": "bash dev/avsync.sh"
+    "avsync": "bash dev/avsync.sh",
+    "fake-core": "node dev/fake-core.mjs"
   },
   "dependencies": {
     "@hikari/protocol": "workspace:*",

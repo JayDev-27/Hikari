@@ -6,6 +6,22 @@ use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use crate::stage::{self, STAGE};
 
+/// Tray "Mute mic" item, kept so the ⌘⇧M hotkey can update its check mark.
+pub struct MuteItem<R: Runtime>(pub CheckMenuItem<R>);
+
+/// Single source of truth for mic mute (tray click and ⌘⇧M both land here).
+pub fn set_muted<R: Runtime>(app: &AppHandle<R>, muted: bool) {
+    if let Some(item) = app.try_state::<MuteItem<R>>() {
+        let _ = item.0.set_checked(muted);
+    }
+    let _ = app.emit("hotkey://mute", muted);
+}
+
+pub fn toggle_muted<R: Runtime>(app: &AppHandle<R>) {
+    let now = app.try_state::<MuteItem<R>>().and_then(|i| i.0.is_checked().ok()).unwrap_or(false);
+    set_muted(app, !now);
+}
+
 pub fn setup<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let toggle = MenuItem::with_id(app, "toggle", "Hide Hikari", true, None::<&str>)?;
     let lock = CheckMenuItem::with_id(app, "lock", "Click-through lock", true, false, None::<&str>)?;
@@ -20,6 +36,7 @@ pub fn setup<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let toggle_c = toggle.clone();
     let lock_c = lock.clone();
     let mute_c = mute.clone();
+    app.manage(MuteItem(mute.clone()));
     TrayIconBuilder::with_id("hikari")
         .icon(app.default_window_icon().cloned().expect("bundle icon"))
         .icon_as_template(false)
@@ -38,9 +55,8 @@ pub fn setup<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
                 }
             }
             "lock" => stage::set_locked(app, lock_c.is_checked().unwrap_or(false)),
-            "mute" => {
-                let _ = app.emit("hotkey://mute", mute_c.is_checked().unwrap_or(false));
-            }
+            // The menu already flipped the check mark; broadcast the new value.
+            "mute" => set_muted(app, mute_c.is_checked().unwrap_or(false)),
             "panic" => {
                 let _ = app.emit("hotkey://panic", ());
             }
