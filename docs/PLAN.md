@@ -5,7 +5,7 @@ Status legend: ✅ done · 🟡 in progress · ⬜ not started
 | M | Person A (Body & Desktop) | Person B (Brain & Voice) | Sync demo |
 |---|---|---|---|
 | M0 | 🟡 Tauri stage (NSPanel, transparent, all Spaces, per-pixel click-through), tray, hotkeys, Live2D renderer, lip-sync engine, playback queue, in-browser mock turn | ⬜ core scaffold (uv/FastAPI), Pydantic from protocol schema, `core/mock_server.py`, `scripts/fetch_models.py` | Mock server drives avatar mouth |
-| M1 | mic capture + device select, AEC check, playback barge-in (done in M0), latency overlay (stub done) | VAD (Silero) → Hima-ASR → smart-turn → LLM router → Hima TTS → aligner phonemes; `bench_pipeline.py` | Real voice conversation < 1.2 s |
+| M1 | 🟡 mic capture (16 kHz worklet, AEC/NS/AGC) ✅, device select ✅, PTT + always-listening ✅, mute ✅, local barge-in ✅, dev fake core ✅ — AEC with speakers + real-voice barge-in still to test | VAD (Silero) → Hima-ASR → smart-turn → LLM router → Hima TTS → aligner phonemes; `bench_pipeline.py` | Real voice conversation < 1.2 s |
 | M2 | Character Studio, pack import (.model3.json folder / zip / .vrm) + licence display, persona switcher | persona assembly, language detect, Hindi/English normaliser | Switch characters, talk in 3 language modes |
 | M3 | 4-layer gestures, states, VRM renderer + realism pass, Hindi viseme tuning, animation tuner | emotion engine + mood, gesture tags | Emotional Hinglish dialogue with gestures |
 | M4 | Settings: providers/keys (Keychain), RAM meters, profile switch | router failover, hardware profiles, lazy load/unload | Kill provider mid-reply → no break; 8 GB OK |

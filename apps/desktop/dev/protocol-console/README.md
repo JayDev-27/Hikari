@@ -15,7 +15,7 @@ pnpm -F desktop console --say "hi" --save out/ --raw      # save TTS audio, prin
 - **Handshake:** sends `hello {role: "console"}` and expects a `hello` back. It warns if none arrives, and fails on a major-version mismatch.
 - **Validation:** checks every incoming frame against `protocol.schema.json`, covering required fields, enums, types and nested phonemes, and prints exactly which field is wrong. `/send` also warns about invalid outgoing frames.
 - **Latency:** each turn prints client-side time from end of input to `stt.final`, first `llm.token`, first `tts.chunk` and `tts.end`. It adds any `latency.mark` the core reports and marks pass/fail against the 1.2 s first-audio target.
-- **WAV input:** any PCM WAV (8/16/24/32-bit, float, any channel count or sample rate) is downmixed, resampled to 16 kHz PCM16 and sent as 20 ms `audio.in.chunk` frames with `pushToTalk: true`. Sending is paced in real time unless you pass `--fast`.
+- **WAV input:** any PCM WAV (8/16/24/32-bit, float, any channel count or sample rate) is downmixed, resampled to 16 kHz PCM16 and sent as 20 ms `audio.in.chunk` frames with `pushToTalk: true`, followed by `turn.end {reason: "push_to_talk"}` (what the app sends when ⌥Space is released). Sending is paced in real time unless you pass `--fast`.
 - **TTS output:** with `--save <dir>`, each turn's `tts.chunk` audio is concatenated into `turn-<n>.wav`. The console also flags chunks that arrive without phonemes, because lip sync needs them.
 
 ## Interactive commands

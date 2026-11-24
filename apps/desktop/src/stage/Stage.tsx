@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { MicCapture } from "../audio/capture";
 import { useStage } from "../state/stage";
 import { StageRuntime } from "./runtime";
 import { loadAvatar } from "../avatar/loader";
@@ -67,8 +68,45 @@ function DebugOverlay({ rt }: { rt: React.RefObject<StageRuntime | null> }) {
       <div>
         ctx {audio.ctx} · mouth {audio.mouth.toFixed(2)}
       </div>
+      <MicRow rt={rt} />
       <button onClick={() => rt.current?.playMock()}>play mock turn</button>{" "}
       <button onClick={() => rt.current?.bargeIn()}>barge in</button>
+    </div>
+  );
+}
+
+function MicRow({ rt }: { rt: React.RefObject<StageRuntime | null> }) {
+  const mic = useStage((s) => s.mic);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  useEffect(() => {
+    // Device labels are only exposed after mic permission; refresh when the mic opens.
+    void MicCapture.inputs().then(setDevices).catch(() => setDevices([]));
+  }, [mic.open]);
+  const status = mic.muted ? "muted" : mic.error ? `error: ${mic.error}` : mic.open ? "open" : "closed";
+  return (
+    <div className="mic-row">
+      mic{" "}
+      <select value={mic.mode} onChange={(e) => void rt.current?.setMicMode(e.target.value as "ptt" | "open")}>
+        <option value="ptt">push-to-talk (⌥Space)</option>
+        <option value="open">always listening</option>
+      </select>{" "}
+      <span className={mic.error ? "bad" : mic.open ? "ok" : ""}>{status}</span>
+      <span className="meter" aria-label="mic level">
+        <span style={{ width: `${Math.round(mic.level * 100)}%` }} className={mic.voiced ? "voiced" : ""} />
+      </span>
+      <br />
+      <select
+        className="device"
+        value={rt.current?.voice.mic.deviceId ?? ""}
+        onChange={(e) => void rt.current?.setMicDevice(e.target.value)}
+      >
+        <option value="">default input</option>
+        {devices.map((d) => (
+          <option key={d.deviceId} value={d.deviceId}>
+            {d.label || "microphone"}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

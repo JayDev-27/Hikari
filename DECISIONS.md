@@ -2,6 +2,19 @@
 
 Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 
+## 2026-11-22 — M1 (A): microphone, push-to-talk, barge-in
+
+- **Protocol semantics (B, please review):** the UI now **sends** `turn.end {reason: "push_to_talk"}` when ⌥Space is released, meaning "end of user input". No schema change (the enum already had `push_to_talk`). In always-listening mode the UI sends audio with `pushToTalk: false` and the core's VAD decides turns. The protocol console's `--wav` sends the same `turn.end`.
+- **Capture in the WebView** (`src/audio/capture.ts` + `captureWorklet.ts`): `getUserMedia` with echoCancellation / noiseSuppression / autoGainControl on the *same AudioContext TTS plays on*, so WebKit's echo canceller has her voice as reference (research 03 §6, fallback design). An AudioWorklet downsamples to 16 kHz with a windowed-sinc filter (12 kHz test tone suppressed, no aliasing into the speech band) and posts 20 ms Int16 frames → `audio.in.chunk`.
+- **Push-to-talk (default):** the mic opens on the first press and closes 10 s after the last release (the orange mic indicator doesn't stay on). While warm, a 200 ms pre-roll keeps the first syllable. **Always-listening** keeps it open. **Mute** (tray or ⌘⇧M) closes it. Rust now owns the mute state, so the tray check mark and the hotkey stay in sync.
+- **Local barge-in** (`src/audio/localVad.ts`, always-listening only; in PTT, pressing the key interrupts): energy VAD with a minimum-statistics noise floor (quietest RMS over 1.5 s) ducks her to 25 % after 250 ms of speech and cuts her off at 450 ms. The core's Silero VAD will refine this. Three bugs found by its tests, all fixed:
+  1. a steady fan above the threshold read as endless speech;
+  2. the floor learned the user's own voice, so barge-in failed right after their turn;
+  3. the tail of the user's turn instantly "cut" her reply.
+- macOS: `Info.plist` (NSMicrophoneUsageDescription) and `Entitlements.plist` (`com.apple.security.device.audio-input`) for hardened-runtime builds. wry grants the WebView's media request, so only the macOS prompt appears.
+- **Dev fake core** (`pnpm -F desktop fake-core`): a protocol-true stand-in until B's core exists. It echoes your voice back (PTT release, or end of speech when always-listening) with loudness-based phonemes, and speaks `text.in` with macOS `say` (Lekha for Devanagari, Tara otherwise). Replies go to all UIs, so the console can make the app speak.
+- **Verified:** dev and release builds deliver 50 frames/s (20 ms) to the core. A console-driven reply played in the app with lip sync, caption and the speaking state, with no false barge-in during a 4.8 s reply. **Not verified:** echo cancellation with speakers (output was AirPods), the ⌥Space press path with a real key (synthetic keys need Accessibility), and an always-listening barge-in by a real voice.
+
 ## 2026-11-20 — Phase 0 / M0 (A)
 
 - **Hands-on cursor test** (`apps/desktop/dev/cursor.swift` moves the real cursor; click-through toggles are logged at debug level). It found a bug: the hit test answered from the *previous* pixel readback, so with the cursor resting on her she stayed click-through until the mouse moved again. Fresh readbacks now apply immediately (`onHitChange`). After the fix, 6/7 points were correct within 0.5 s: face and cardigan clickable; leg gap, empty window area and far away pass clicks through. The 7th point was on her hair's outer edge, so inconclusive. **Not tested by me:** clicking and dragging (synthetic clicks need Accessibility permission for the terminal, which isn't granted, and I won't change security settings) and eye-follow (screenshot caught a blink).

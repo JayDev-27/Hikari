@@ -84,3 +84,30 @@ body,
   text-align: center;
   font-size: 13px;
 }
+
+.debug select {
+  font: inherit;
+  max-width: 230px;
+}
+.mic-row {
+  margin: 4px 0;
+}
+.meter {
+  display: inline-block;
+  width: 60px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  vertical-align: middle;
+}
+.meter > span {
+  display: block;
+  height: 100%;
+  background: #8fb3ff;
+  transition: width 60ms linear;
+}
+.meter > span.voiced {
+  background: #7be495;
+}
