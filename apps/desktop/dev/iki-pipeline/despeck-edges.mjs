@@ -17,10 +17,12 @@
 //      of border, too long for 3, next to transparency or the outline's soft fringe) takes the dark
 //      paint's colour; hair is left out (a thin light
 //      strand looks the same).
-// Real light paint (an eye white, teeth, a cuff, skin) is an area or sits beside light paint, so 2-4
+//   5. wisps: a faint light texel (alpha under 48) floating off a garment's dark outline, with no light
+//      paint near, is cleared — the one change to alpha, and only to near-invisible backdrop.
+// Real light paint (an eye white, teeth, a cuff, skin) is an area or sits beside light paint, so 2-5
 // never touch it, and
-// the face's features (eyes, lashes, brows, mouth, nose) are left out of 2-4 outright: their fine
-// lines are drawn on light paint by design. Alpha never changes, so no silhouette does.
+// the face's features (eyes, lashes, brows, mouth, nose) are left out of 2-5 outright: their fine
+// lines are drawn on light paint by design. Alpha changes only for the wisps (5).
 import { readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 const req = createRequire((await import("node:path")).resolve(process.env.IKI_REPO ?? "../iki") + "/packages/mcp/package.json");
@@ -149,9 +151,27 @@ for (const [t, tex] of model.textures.entries()) {
       break;
     }
   }
-  const fixed = unmixed + specks + strips;
+  // 5. wisps: a faint (alpha under 48) light texel with dark opaque paint within 8 texels and no light
+  //    paint there is backdrop left floating off the outline: it is cleared (alpha 0).
+  let wisps = 0;
+  for (let y = 8; y < H - 8; y++) for (let x = 8; x < W - 8; x++) {
+    const p = y * W + x, i = p * 4;
+    if (!garment[p] || out[i + 3] === 0 || out[i + 3] >= 48 || luma(out, i) < 150) continue;
+    let dark = 0, light = false;
+    for (let dy = -8; dy <= 8 && !light; dy++) for (let dx = -8; dx <= 8; dx++) {
+      const k = ((y + dy) * W + x + dx) * 4;
+      if (out[k + 3] < 200) continue;
+      const L = luma(out, k);
+      if (L >= 120) { light = true; break; }
+      if (L < 80) dark++;
+    }
+    if (light || dark < 3) continue;
+    out[i + 3] = 0;
+    wisps++;
+  }
+  const fixed = unmixed + specks + strips + wisps;
   total += fixed;
-  console.log(`texture ${t} (${W}×${H}): ${bled} transparent texels bled, ${unmixed} edge texels unmixed, ${specks} speck texels, ${strips} border-strip texels`);
+  console.log(`texture ${t} (${W}×${H}): ${bled} transparent texels bled, ${unmixed} edge texels unmixed, ${specks} speck texels, ${strips} border-strip texels, ${wisps} faint wisps cleared`);
   if (flag !== "--dry" && (fixed || bled)) tex.source = `data:image/png;base64,${(await sharp(out, { raw: { width: W, height: H, channels: 4 } }).png().toBuffer()).toString("base64")}`;
 }
 if (flag !== "--dry") writeFileSync(file, JSON.stringify(model));
