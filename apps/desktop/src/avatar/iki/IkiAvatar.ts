@@ -158,6 +158,9 @@ export class IkiAvatar implements AvatarController {
       // A gesture already in progress is not restarted by a repeat request (a burst of identical cues).
       const now = performance.now();
       if (this.gesture?.name === gname && now - this.gesture.start < this.gesture.dur) return;
+      // A signature move finishes before another gesture starts: cutting one off mid-way snaps the painted
+      // flower arm away. Signatures only play while she is idle, so this drops at most one cue.
+      if (this.gesture?.name.startsWith("signature-") && now - this.gesture.start < this.gesture.dur * 0.9) return;
       // A little variation each time, so repeats never look canned.
       const dur = g.dur * 1000 * (0.92 + Math.random() * 0.16);
       this.gesture = { name: gname, pose: g.pose, start: now, dur, scale: 0.9 + Math.random() * 0.15 };
