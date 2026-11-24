@@ -1,8 +1,8 @@
 {
   "id": "reze",
   "displayName": "Reze",
-  "renderer": "live2d",
-  "modelPath": "model/Reze.model3.json",
+  "renderer": "iki",
+  "modelPath": "model/Reze.iki",
   "importSlot": true,
   "persona": "persona.md",
   "voice": {
@@ -16,222 +16,37 @@
     "url": "https://chainsawman.dog/movie_reze/character/"
   },
   "motionMap": {
-    "idle": {
-      "group": "Idle"
-    },
     "tap": {
-      "group": "TapBody",
+      "group": "Nod",
       "index": 0
     },
     "tap_head": {
-      "group": "TapBody",
-      "index": 10
-    },
-    "tap_body": {
-      "group": "TapBody",
+      "group": "Tilt",
       "index": 0
-    },
-    "wave": {
-      "group": "TapBody",
-      "index": 0
-    },
-    "shrug": {
-      "group": "TapBody",
-      "index": 1
-    },
-    "facepalm": {
-      "group": "TapBody",
-      "index": 2
-    },
-    "laugh": {
-      "group": "TapBody",
-      "index": 3
-    },
-    "shy_look_away": {
-      "group": "TapBody",
-      "index": 4
-    },
-    "think_chin": {
-      "group": "TapBody",
-      "index": 5
-    },
-    "clap": {
-      "group": "TapBody",
-      "index": 6
-    },
-    "point": {
-      "group": "TapBody",
-      "index": 7
-    },
-    "pout": {
-      "group": "TapBody",
-      "index": 8
-    },
-    "cross_arms": {
-      "group": "TapBody",
-      "index": 9
-    },
-    "head_pat_react": {
-      "group": "TapBody",
-      "index": 10
     },
     "nod": {
-      "group": "TapBody",
-      "index": 11
-    },
-    "head_tilt": {
-      "group": "TapBody",
-      "index": 12
-    },
-    "bow": {
-      "group": "TapBody",
-      "index": 13
-    },
-    "speech-calm": {
-      "group": "Speech",
+      "group": "Nod",
       "index": 0
     },
-    "speech-thoughtful": {
-      "group": "Speech",
-      "index": 1
-    },
-    "speech-playful": {
-      "group": "Speech",
-      "index": 2
-    },
-    "speech-surprised": {
-      "group": "Speech",
-      "index": 3
-    },
-    "signature-flower": {
-      "group": "Signature",
+    "head_tilt": {
+      "group": "Tilt",
       "index": 0
     }
   },
   "expressionMap": {
-    "neutral": "neutral",
-    "joy": "joy",
-    "fun": "fun",
-    "teasing": "teasing",
-    "angry": "angry",
-    "sorrow": "sorrow",
-    "shy": "shy",
-    "surprised": "surprised",
-    "thinking": "thinking",
-    "sleepy": "sleepy"
+    "joy": "smile",
+    "fun": "laugh",
+    "teasing": "smile",
+    "surprised": "surprised"
   },
   "hitAreas": {
     "Head": "head",
     "Body": "body"
   },
   "gazeScale": 0.56,
-  "speech": {
-    "defaultEmotion": "fun",
-    "motions": [
-      "speech-calm",
-      "speech-thoughtful"
-    ],
-    "emotionMotions": {
-      "joy": [
-        "speech-playful",
-        "speech-calm"
-      ],
-      "fun": [
-        "speech-playful",
-        "speech-calm"
-      ],
-      "teasing": [
-        "speech-playful",
-        "speech-thoughtful"
-      ],
-      "shy": [
-        "speech-thoughtful",
-        "speech-calm"
-      ],
-      "angry": [
-        "speech-calm",
-        "speech-thoughtful"
-      ],
-      "sorrow": [
-        "speech-thoughtful"
-      ],
-      "thinking": [
-        "speech-thoughtful",
-        "speech-calm"
-      ],
-      "surprised": [
-        "speech-surprised"
-      ],
-      "sleepy": [
-        "speech-calm"
-      ]
-    },
-    "intervalMs": 1900
-  },
   "signatureMotions": [
-    "signature-flower"
-  ],
-  "poseRig": {
-    "hands": [
-      {
-        "drawable": "leftArm1",
-        "wrist": [
-          -182.0,
-          -22.0
-        ],
-        "breadth": 1.12
-      },
-      {
-        "drawable": "rightArm1",
-        "wrist": [
-          188.0,
-          -17.0
-        ],
-        "breadth": 1.14
-      }
-    ],
-    "grip": {
-      "drawable": "Flower",
-      "arms": [
-        "rightArm1"
-      ],
-      "file": "poses/flower.png",
-      "origin": [
-        -118,
-        -502
-      ],
-      "size": [
-        340,
-        215
-      ],
-      "bodyIndices": [
-        72,
-        95
-      ],
-      "bodyPoints": [
-        -224.4767,
-        400.9072,
-        223.5114,
-        401.9912
-      ]
-    },
-    "arms": [
-      {
-        "drawable": "leftArm1",
-        "centers": [
-          0.804,
-          0.684,
-          0.362
-        ]
-      },
-      {
-        "drawable": "rightArm1",
-        "centers": [
-          0.421,
-          0.363,
-          0.716
-        ]
-      }
-    ]
-  }
+    "signature-flower",
+    "signature-wave-shy",
+    "signature-lean"
+  ]
 }

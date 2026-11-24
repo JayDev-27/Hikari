@@ -7,6 +7,10 @@ const RANGE: Record<string, [number, number]> = {
   ParamAngleX: [-30, 30], ParamAngleY: [-30, 30], ParamAngleZ: [-30, 30],
   ParamBodyAngleX: [-10, 10], ParamBodyAngleY: [-10, 10], ParamBodyAngleZ: [-10, 10],
   ParamEyeLOpen: [-1, 0], ParamEyeROpen: [-1, 0], ParamLegShift: [-1, 1],
+  ParamHandsBehind: [0, 1],
+  ParamOfferFlower: [0, 1],
+  ParamOfferLift: [0, 1],
+  ParamOfferReach: [0, 1],
 };
 
 function store(init: Record<string, number> = {}) {
@@ -22,16 +26,31 @@ describe("Iki gestures", () => {
   it.each(Object.keys(GESTURES))("%s starts and ends at rest and stays inside the rig's ranges", (name) => {
     const g = GESTURES[name];
     // "-raised" variants run on models with extended ranges (arm to 150, elbow open to −170).
-    const R = name.endsWith("-raised") ? { ...RANGE, ParamArmR: [-8, 150] as [number, number], ParamElbowR: [-170, 90] as [number, number] } : RANGE;
+    const R = { ...RANGE };
+    if (name === "wave-raised") R.ParamElbowR = [-170, 90];
+    if (name === "signature-wave-shy") R.ParamElbowR = [-170, 170];
     for (const [id, v] of Object.entries(g.pose(0))) expect(Math.abs(v), `${id} at t=0`).toBeLessThan(1e-6);
     for (const [id, v] of Object.entries(g.pose(1))) expect(Math.abs(v), `${id} at t=1`).toBeLessThan(1e-6);
     for (let t = 0; t <= 1; t += 0.01) {
       for (const [id, v] of Object.entries(g.pose(t))) {
-        const [lo, hi] = R[id] ?? [-Infinity, Infinity];
+        expect(R[id], `${name} drives undeclared parameter ${id}`).toBeDefined();
+        const [lo, hi] = R[id];
         expect(v, `${name} ${id} at t=${t.toFixed(2)}`).toBeGreaterThanOrEqual(lo - 1e-9);
         expect(v, `${name} ${id} at t=${t.toFixed(2)}`).toBeLessThanOrEqual(hi + 1e-9);
       }
     }
+  });
+
+  it("lifts Reze's hand before the flower appears, then extends it while she smiles", () => {
+    const flower = GESTURES["signature-flower"];
+    expect(flower.expression).toBe("smile");
+    expect(flower.pose(0.2).ParamOfferLift).toBeGreaterThan(0.7);
+    expect(flower.pose(0.2).ParamOfferFlower).toBe(0);
+    expect(flower.pose(0.34).ParamOfferFlower).toBe(1);
+    expect(flower.pose(0.34).ParamOfferReach).toBeLessThan(0.3);
+    expect(flower.pose(0.55).ParamOfferReach).toBe(1);
+    expect(flower.pose(0.79).ParamOfferReach).toBeLessThan(0.1);
+    expect(flower.pose(0.79).ParamOfferFlower).toBeGreaterThan(0.99);
   });
 
   it("offsets do not accumulate on parameters nothing else writes (the stuck-arm bug)", () => {

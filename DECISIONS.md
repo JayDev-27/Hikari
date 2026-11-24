@@ -2,6 +2,25 @@
 
 Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 
+## 2026-11-24 — Reze as an Iki model (A)
+
+- Reze uses `model/Reze.iki`. The previous pack configuration is preserved in
+  `characters/reze/source/character.live2d.json`. The original Live2D assets are still available locally.
+- Cut the visible 448×1528 PSD composite at 2.06× on a 1100×4096 canvas. Preserve the painted
+  closed smile and use the PSD's hidden speaking mouth as the interior for the keyed lip set.
+  The attached offer artwork supplies the foreshortened right arm, gripping hand and white
+  flower for the offer pose.
+- Keep the visible brows attached to the face. The expressions are smile, laugh and surprise.
+  The offer lifts the right arm, brings the white flower forward and lifts the corners of her
+  smile. The right elbow's inward range supports the shy wave. The lean uses `ParamLegShift`
+  and passes the forearms behind the shorts.
+- Blend the fringe and locks into the face warp along painted contact edges. Let the tips sway
+  and hold the shoulders against the armholes while rotating the arms. Extend the tied hair
+  under the neck using the source palette where the standing layers conceal it.
+- The 1:1 hair check measured 42 of 97,725 pixels outside the 2 px tolerance (0.043%).
+  Iki reported zero unexpected folds over 2,209 poses. The flower offer, shy wave, lean, and
+  point stayed inside the native stage, and three repeated flower cues produced one offer.
+
 ## 2026-11-24 — Makima as an Iki model, cut from her reference (A)
 
 - **Renderer `iki`** (`src/avatar/iki/IkiAvatar.ts`, `@ikijs/engine` 0.13.0 / `@ikijs/format` 0.12.0, MIT). The user asked to use zeikar/iki strictly. Makima's pack now points at `model/Makima.iki`; her Live2D config is kept in `characters/makima/source/character.live2d.json`.

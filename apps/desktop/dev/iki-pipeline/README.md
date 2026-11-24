@@ -31,3 +31,9 @@ Needs an Iki checkout built once (`pnpm install && pnpm -r --filter './packages/
 
 `makima.landmarks.json` and `makima.arms.json` are the final landmarks (1.62× picture, chin at 550, 517)
 and arm outlines.
+
+`assemble-reze.sh` rebuilds Reze from her local PSD with the Reze landmarks and arm outlines.
+It uses Python with `psd-tools` and Pillow to flatten the visible layers and extract the source
+mouth interior. It cuts the white flower and reaching hand from `source/Flower-offer.png`.
+Use `--reuse-cut` after reviewing an existing cut in `iki-char/cut/`.
+See [Reze's build and verification](../../../../docs/IKI.md#reze).

@@ -155,10 +155,12 @@ export class IkiAvatar implements AvatarController {
     const g = GESTURES[gname];
     if (g) {
       // A gesture already in progress is not restarted by a repeat request (a burst of identical cues).
-      if (this.gesture?.name === gname && performance.now() - this.gesture.start < this.gesture.dur * 0.85) return;
+      const now = performance.now();
+      if (this.gesture?.name === gname && now - this.gesture.start < this.gesture.dur) return;
       // A little variation each time, so repeats never look canned.
-      this.gesture = { name: gname, pose: g.pose, start: performance.now(), dur: g.dur * 1000 * (0.92 + Math.random() * 0.16), scale: 0.9 + Math.random() * 0.15 };
-      this.busyUntil = performance.now() + g.dur * 1000;
+      const dur = g.dur * 1000 * (0.92 + Math.random() * 0.16);
+      this.gesture = { name: gname, pose: g.pose, start: now, dur, scale: 0.9 + Math.random() * 0.15 };
+      this.busyUntil = now + dur;
       const exprId = g.expression ?? GESTURE_TO_EXPRESSION[name as GestureTag];
       if (exprId && this.motion.playExpression(exprId)) window.setTimeout(() => !this.destroyed && this.motion.stopExpression(), g.dur * 1000);
       return;
@@ -227,11 +229,23 @@ export class IkiAvatar implements AvatarController {
     if (this.gesture) {
       const t = (now - this.gesture.start) / this.gesture.dur;
       if (t >= 1) this.gesture = null;
-      else for (const [id, v] of Object.entries(this.gesture.pose(t))) target[id] = v * this.gesture.scale;
+      else for (const [id, v] of Object.entries(this.gesture.pose(t))) {
+        // The painted offer must fully cover the hanging arm at its peak.
+        const varies = id !== "ParamOfferFlower" && id !== "ParamOfferLift" && id !== "ParamOfferReach";
+        target[id] = varies ? v * this.gesture.scale : v;
+      }
     }
+    // The gesture already eases the short exchange of the two painted arms.
+    const offer = target.ParamOfferFlower;
+    delete target.ParamOfferFlower;
     target = this.springs.step(target, dt);
-    const life = idlePose(now / 1000, this.leg.v, this.state === "speaking", Math.min(1, this.mouth.open * 1.4));
-    applyOffsets(access, addPoses(life, target, { ParamLegShift: this.leg.v }), this.bases);
+    if (offer !== undefined) target.ParamOfferFlower = offer;
+    // Fade out the idle weight shift as a signature takes weight onto one leg.
+    // The sum then stays within the leg warp's range, even on the same side.
+    const gestureLeg = target.ParamLegShift ?? 0;
+    const idleLeg = this.leg.v * (1 - Math.abs(gestureLeg));
+    const life = idlePose(now / 1000, idleLeg + gestureLeg, this.state === "speaking", Math.min(1, this.mouth.open * 1.4));
+    applyOffsets(access, addPoses(life, target, { ParamLegShift: idleLeg }), this.bases);
     if (this.mouth.open > 0.01 || this.state === "speaking") {
       this.player.setParameter(StandardParameter.MouthOpen, Math.min(1, this.mouth.open * 1.1));
       if (this.params.has(StandardParameter.MouthForm)) this.player.setParameter(StandardParameter.MouthForm, this.mouth.form);

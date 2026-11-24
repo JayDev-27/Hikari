@@ -79,6 +79,45 @@ beside the waist, as in her wave reference (`wave-raised`). Without the extensio
 In-app check: hot module reload swaps `Stage.tsx` but keeps the running avatar object on its old code.
 Restart `pnpm dev` before judging a gesture change in the window.
 
+## Reze
+
+The reference is the visible composite of `characters/reze/source/Reze.psd`. The 448×1528 art
+is resized to 923×3148 and placed at (4, 48) on the transparent 1100×4096 canvas. The source chin
+at about (265, 220) lands at (550, 501). The PSD stores opaque paint just under full opacity.
+`align-reze.mjs` sets source alpha values of 250–254 to 255 so the cutter can fill behind the
+paint, while retaining the softer edge pixels.
+
+With `IKI_REPO` set to a built Iki checkout, run these commands from the Hikari root.
+
+```sh
+uv run --no-project --with psd-tools bash apps/desktop/dev/iki-pipeline/assemble-reze.sh
+cp characters/reze/iki-char/Reze.iki characters/reze/model/Reze.iki
+node apps/desktop/scripts/sync-packs.mjs
+```
+
+- The cut uses `reze.landmarks.json`. The hidden `Speaking mouth` layer provides the painted
+  interior, and the closed smile comes from the visible composite. The local
+  `source/Flower-offer.png` is the attached pose reference. The build cuts the reaching arm,
+  hand, and white flower from it as one layer.
+- `reze.arms.json` follows the source contours at the armholes, sides of the shirt, and left
+  hand where it touches the shorts. The cleanup restores the visible collar from the transparent
+  cut and interpolates under hair drawn in front of the body. The atlas trim removes excess
+  hidden cheek and hair fill after rigging, keeping the cheek and ear mesh intact. The fringe
+  and locks follow the face where their edges touch, and the shoulder joints follow the shirt
+  near the armholes. The ties fade away toward the free ends.
+- The right elbow reaches +170° as well as −170° for the shy wave. Reze lifts her hand, turns
+  the grip into view, and extends the white flower toward the viewer. The closed smile's
+  corners lift with the smile parameter. During the
+  lean, the leg shift reduces the idle weight shift and the forearms pass behind the shorts.
+- At rest, run `hair-tol.mjs <rest-head-1x.png> <picture.png> 280 20 480 600 reze <diff.png>`.
+  On the 1100×4096 render the measured box has 97,725 reference hair pixels and 42 beyond
+  2 px (0.043%, limit 0.5%). The full-size blend, face, hands and feet comparisons, dark
+  motion renders and native stage captures are in the local `characters/reze/iki-char/qa/`.
+- In a fresh `VITE_CHARACTER=reze pnpm dev` session, send `avatar.gesture` cues from the local
+  WebSocket core on port 8765 and capture the stage window with `screencapture`. The flower
+  offer ran once with three repeated cues during playback. The desktop test suite, typecheck
+  and lint passed.
+
 ## Verification that caught real defects
 
 - **Overlay at matched scale** (`overlay.mjs`): reference | model | 50 % blend, chin and face centre

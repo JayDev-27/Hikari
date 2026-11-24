@@ -1,5 +1,5 @@
 /**
- * Body language for Iki models in Hikari: idle life, gestures and Makima's signature moves, all on
+ * Body language for Iki models in Hikari: idle life, gestures and character signatures, all on
  * Iki's standard full-body parameters (ParamArmL/R raise the arm outward, ParamElbowL/R bend the
  * forearm toward the body, ParamAngleX/Y/Z turn/nod/tilt the head, ParamBodyAngle* the torso).
  *
@@ -48,10 +48,14 @@ export const GESTURES: Record<string, Gesture> = {
   /** Raised-hand wave as in her reference: elbow low beside the waist, forearm upright, hand at chin height, the
    *  forearm swaying from the elbow. Needs a model whose elbow opens to −170 (dev/iki-pipeline/extend-arms.mjs). */
   "wave-raised": { dur: 3.0, expression: "smile", pose: (t) => {
-    // The forearm folds up first and the shoulder follows a little, so the hand rises close to the body.
-    const fold = envelope(t, 0.06, 0.28), lift = envelope(t, 0.26, 0.25);
+    // Up: the forearm folds first and the shoulder follows. Down: the shoulder lowers first and the forearm unfolds
+    // last. Either way the forearm passes horizontal with the elbow at her side, so the hand stays close to the body.
+    const fold = envelope(t, 0.06, 0.16), lift = envelope(t, 0.26, 0.36);
     const s = Math.sin((t - 0.2) * Math.PI * 7) * smoother((t - 0.18) / 0.12) * smoother((0.84 - t) / 0.1);
-    return { ParamArmR: (22 + 2 * s) * lift, ParamElbowR: (-158 + 10 * s) * fold, ParamAngleZ: -5 * lift, ParamAngleX: -6 * lift, ParamBodyAngleZ: -1.5 * lift };
+    // While the forearm swings through horizontal (fold half-way, shoulder still low) the upper arm tucks in, so the
+    // hand passes close to the body instead of sweeping out to the window edge.
+    const tuck = -8 * Math.sin(Math.PI * fold) * (1 - lift);
+    return { ParamArmR: (22 + 2 * s) * lift + tuck, ParamElbowR: (-158 + 10 * s) * fold, ParamAngleZ: -5 * lift, ParamAngleX: -6 * lift, ParamBodyAngleZ: -1.5 * lift };
   } },
 
   // Makima's signature moves.
@@ -61,6 +65,52 @@ export const GESTURES: Record<string, Gesture> = {
   "signature-smile": { dur: 4.2, expression: "smile", pose: (t) => { const e = envelope(t, 0.18, 0.25); const shut = smoother((t - 0.15) / 0.2) * smoother((0.85 - t) / 0.15); return { ParamAngleZ: 9 * e, ParamAngleY: 3 * e, ParamAngleX: -3 * e, ParamEyeLOpen: -0.9 * shut, ParamEyeROpen: -0.9 * shut, ParamBodyAngleZ: 2 * e }; } },
   /** "Bang": the arm comes up and out, a small recoil, held a beat, smile. */
   "signature-bang": { dur: 3.4, expression: "smile", pose: (t) => { const up = smoother(t / 0.14) * smoother((1 - t) / 0.3); const kick = Math.max(0, Math.sin(Math.PI * clamp01((t - 0.32) / 0.1))) * smoother((1 - t) / 0.3); return { ParamArmR: (25 + 5 * kick) * up, ParamElbowR: (-6 + 4 * kick) * up, ParamAngleZ: (-6 - 2 * kick) * up, ParamAngleX: -7 * up, ParamAngleY: (2 + 2 * kick) * up, ParamBodyAngleZ: -1.5 * up }; } },
+
+  "signature-flower": { dur: 4.8, expression: "smile", pose: (t) => {
+    const lift = smoother((t - 0.04) / 0.23) * smoother((0.98 - t) / 0.2);
+    const offer = smoother((t - 0.25) / 0.055) * smoother((0.85 - t) / 0.055);
+    const reach = smoother((t - 0.27) / 0.22) * smoother((0.82 - t) / 0.17);
+    const tilt = envelope(t, 0.22, 0.27);
+    return {
+      ParamArmR: -5 * lift,
+      ParamElbowR: 20 * lift,
+      ParamOfferLift: lift,
+      ParamOfferFlower: offer,
+      ParamOfferReach: reach,
+      ParamAngleZ: 9 * tilt,
+      ParamAngleY: -3 * tilt,
+      ParamBodyAngleY: 3 * reach,
+      ParamEyeLOpen: -0.12 * tilt,
+      ParamEyeROpen: -0.12 * tilt,
+    };
+  } },
+  "signature-wave-shy": { dur: 3.6, pose: (t) => {
+    const lift = envelope(t, 0.22, 0.29);
+    const sway = Math.sin((t - 0.25) * Math.PI * 8) * envelope(t, 0.32, 0.36);
+    return {
+      ParamArmR: 5 * lift,
+      ParamElbowR: 149 * lift + 4 * sway,
+      ParamAngleZ: -7 * lift,
+      ParamAngleY: -4 * lift,
+      ParamEyeLOpen: -0.45 * lift,
+      ParamEyeROpen: -0.45 * lift,
+    };
+  } },
+  "signature-lean": { dur: 5.5, expression: "smile", pose: (t) => {
+    const shift = envelope(t, 0.18, 0.23);
+    const tuck = envelope(t, 0.23, 0.29);
+    return {
+      ParamLegShift: 0.78 * shift,
+      ParamArmL: -4 * tuck,
+      ParamArmR: -4 * tuck,
+      ParamElbowL: 13 * tuck,
+      ParamElbowR: 15 * tuck,
+      ParamHandsBehind: envelope(t, 0.11, 0.14),
+      ParamBodyAngleZ: -2.5 * shift,
+      ParamAngleZ: 11 * shift,
+      ParamAngleX: 5 * shift,
+    };
+  } },
 };
 
 /** Life when nothing else plays: relaxed arms that sway a little with breath and weight, talking emphasis. */
