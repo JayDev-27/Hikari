@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, restoreBases } from "./gestures";
+import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, resolveGesture, restoreBases } from "./gestures";
 
 /** Iki's standard full-body ranges (as auto-rigged), plus eye openness 0..1. */
 const RANGE: Record<string, [number, number]> = {
@@ -21,11 +21,13 @@ function store(init: Record<string, number> = {}) {
 describe("Iki gestures", () => {
   it.each(Object.keys(GESTURES))("%s starts and ends at rest and stays inside the rig's ranges", (name) => {
     const g = GESTURES[name];
+    // "-raised" variants run on models with extended ranges (arm to 150, elbow open to −170).
+    const R = name.endsWith("-raised") ? { ...RANGE, ParamArmR: [-8, 150] as [number, number], ParamElbowR: [-170, 90] as [number, number] } : RANGE;
     for (const [id, v] of Object.entries(g.pose(0))) expect(Math.abs(v), `${id} at t=0`).toBeLessThan(1e-6);
     for (const [id, v] of Object.entries(g.pose(1))) expect(Math.abs(v), `${id} at t=1`).toBeLessThan(1e-6);
     for (let t = 0; t <= 1; t += 0.01) {
       for (const [id, v] of Object.entries(g.pose(t))) {
-        const [lo, hi] = RANGE[id] ?? [-Infinity, Infinity];
+        const [lo, hi] = R[id] ?? [-Infinity, Infinity];
         expect(v, `${name} ${id} at t=${t.toFixed(2)}`).toBeGreaterThanOrEqual(lo - 1e-9);
         expect(v, `${name} ${id} at t=${t.toFixed(2)}`).toBeLessThanOrEqual(hi + 1e-9);
       }
@@ -77,6 +79,14 @@ describe("Iki gestures", () => {
     }
     const left = idlePose(10, -0.8, false, 0), right = idlePose(10, 0.8, false, 0);
     expect(left.ParamBodyAngleZ).toBeGreaterThan(right.ParamBodyAngleZ);
+  });
+
+  it("uses the raised wave only when the model's arm ranges allow them", () => {
+    expect(resolveGesture("wave", 150, -170)).toBe("wave-raised");
+    expect(resolveGesture("wave", 150, -120)).toBe("wave"); // elbow cannot open far enough
+    expect(resolveGesture("signature-bang", 150, -170)).toBe("signature-bang");
+    expect(resolveGesture("wave", 32, -10)).toBe("wave");
+    expect(resolveGesture("clap", 150, -170)).toBe("clap");
   });
 
   it("adds poses", () => {

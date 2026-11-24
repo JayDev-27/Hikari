@@ -4,7 +4,7 @@ import type { Emotion, GestureTag } from "@hikari/protocol";
 import type { CharacterPack } from "../characters";
 import type { AvatarController, AvatarEvent, AvatarState, Visemes } from "../types";
 import { visemesToLive2D } from "../../lipsync/engine";
-import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, restoreBases, type Pose } from "./gestures";
+import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, resolveGesture, restoreBases, type Pose } from "./gestures";
 
 /**
  * Renderer for Iki models (`.iki`, https://github.com/zeikar/iki): rigs made by Iki's
@@ -53,7 +53,7 @@ export class IkiAvatar implements AvatarController {
   private mouth = { open: 0, form: 0 };
   private look = { x: 0, y: 0, active: false };
   private busyUntil = 0;
-  private gesture: { pose: (t: number) => Pose; start: number; dur: number; scale: number } | null = null;
+  private gesture: { name: string; pose: (t: number) => Pose; start: number; dur: number; scale: number } | null = null;
   /** Values our offsets were added to last frame, restored before IkiMotion runs (see gestures.ts). */
   private bases = new Map<string, number>();
   private springs = new SpringSet(8.5);
@@ -145,16 +145,19 @@ export class IkiAvatar implements AvatarController {
 
   playMotion(name: GestureTag | string, opts?: { interrupt?: boolean }): void {
     void opts;
-    console.warn(`[iki-debug] playMotion ${name} t=${Math.round(performance.now())}`);
     const mapped = this.pack.motionMap?.[name];
     if (mapped && this.motion.playMotion(mapped.group, mapped.index ?? 0)) {
       this.busyUntil = performance.now() + 2500;
       return;
     }
-    const g = GESTURES[name];
+    const range = (id: string) => this.model.parameters.find((p) => p.id === id);
+    const gname = resolveGesture(name, range("ParamArmR")?.max ?? 0, range("ParamElbowR")?.min ?? 0);
+    const g = GESTURES[gname];
     if (g) {
+      // A gesture already in progress is not restarted by a repeat request (a burst of identical cues).
+      if (this.gesture?.name === gname && performance.now() - this.gesture.start < this.gesture.dur * 0.85) return;
       // A little variation each time, so repeats never look canned.
-      this.gesture = { pose: g.pose, start: performance.now(), dur: g.dur * 1000 * (0.92 + Math.random() * 0.16), scale: 0.9 + Math.random() * 0.15 };
+      this.gesture = { name: gname, pose: g.pose, start: performance.now(), dur: g.dur * 1000 * (0.92 + Math.random() * 0.16), scale: 0.9 + Math.random() * 0.15 };
       this.busyUntil = performance.now() + g.dur * 1000;
       const exprId = g.expression ?? GESTURE_TO_EXPRESSION[name as GestureTag];
       if (exprId && this.motion.playExpression(exprId)) window.setTimeout(() => !this.destroyed && this.motion.stopExpression(), g.dur * 1000);
@@ -211,7 +214,6 @@ export class IkiAvatar implements AvatarController {
     const access = { get: (id: string) => this.player.getParameter(id), set: (id: string, v: number) => this.player.setParameter(id, v), has: (id: string) => this.params.has(id) };
     restoreBases(access, this.bases);
     this.motion.update(now);
-    if (Math.floor(now / 2000) !== Math.floor((now - dt * 1000) / 2000)) console.warn(`[iki-debug] t=${Math.round(now)} afterMotion ArmR=${this.player.getParameter("ParamArmR").toFixed(1)} ArmL=${this.player.getParameter("ParamArmL").toFixed(1)} ElbR=${this.player.getParameter("ParamElbowR").toFixed(1)} BodyZ=${this.player.getParameter("ParamBodyAngleZ").toFixed(1)} active=${JSON.stringify(this.motion.activeMotion())}`);
     // What the app drives goes after the motion update, so it wins.
     if (this.params.has("ParamLegShift")) {
       // Shift the weight from one leg to the other every 7–12 s, easing over ~2 s.

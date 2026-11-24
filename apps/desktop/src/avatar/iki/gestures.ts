@@ -45,13 +45,22 @@ export const GESTURES: Record<string, Gesture> = {
   pout: { dur: 2.0, pose: (t) => { const e = envelope(t); return { ParamAngleZ: -5 * e, ParamAngleX: 8 * e }; } },
   head_pat_react: { dur: 2.2, expression: "smile", pose: (t) => { const e = envelope(t); return { ParamAngleY: -6 * e, ParamAngleZ: 6 * e }; } },
 
+  /** Raised-hand wave as in her reference: elbow low beside the waist, forearm upright, hand at chin height, the
+   *  forearm swaying from the elbow. Needs a model whose elbow opens to −170 (dev/iki-pipeline/extend-arms.mjs). */
+  "wave-raised": { dur: 3.0, expression: "smile", pose: (t) => {
+    // The forearm folds up first and the shoulder follows a little, so the hand rises close to the body.
+    const fold = envelope(t, 0.06, 0.28), lift = envelope(t, 0.26, 0.25);
+    const s = Math.sin((t - 0.2) * Math.PI * 7) * smoother((t - 0.18) / 0.12) * smoother((0.84 - t) / 0.1);
+    return { ParamArmR: (22 + 2 * s) * lift, ParamElbowR: (-158 + 10 * s) * fold, ParamAngleZ: -5 * lift, ParamAngleX: -6 * lift, ParamBodyAngleZ: -1.5 * lift };
+  } },
+
   // Makima's signature moves.
   /** Her composed stance: hands folded low in front, head inclined, a calm closed-lip smile. */
   "signature-clasp": { dur: 7.5, expression: "smile", pose: (t) => { const e = envelope(t, 0.12, 0.14); return { ParamElbowL: 62 * e, ParamElbowR: 70 * e, ParamArmL: -1 * e, ParamArmR: -2 * e, ParamAngleZ: 5 * e, ParamAngleY: -3 * e, ParamEyeLOpen: -0.22 * e, ParamEyeROpen: -0.22 * e, ParamBodyAngleZ: 1 * e }; } },
   /** Her knowing smile: head tilted, eyes closing into the smile, a slight lean. */
   "signature-smile": { dur: 4.2, expression: "smile", pose: (t) => { const e = envelope(t, 0.18, 0.25); const shut = smoother((t - 0.15) / 0.2) * smoother((0.85 - t) / 0.15); return { ParamAngleZ: 9 * e, ParamAngleY: 3 * e, ParamAngleX: -3 * e, ParamEyeLOpen: -0.9 * shut, ParamEyeROpen: -0.9 * shut, ParamBodyAngleZ: 2 * e }; } },
   /** "Bang": the arm comes up and out, a small recoil, held a beat, smile. */
-  "signature-bang": { dur: 3.4, expression: "smile", pose: (t) => { const up = smoother(t / 0.14) * smoother((1 - t) / 0.3); const kick = Math.max(0, Math.sin(Math.PI * clamp01((t - 0.32) / 0.1))) * smoother((1 - t) / 0.3); return { ParamArmR: (27 + 5 * kick) * up, ParamElbowR: (-6 + 4 * kick) * up, ParamAngleZ: (-6 - 2 * kick) * up, ParamAngleX: -7 * up, ParamAngleY: (2 + 2 * kick) * up, ParamBodyAngleZ: -1.5 * up }; } },
+  "signature-bang": { dur: 3.4, expression: "smile", pose: (t) => { const up = smoother(t / 0.14) * smoother((1 - t) / 0.3); const kick = Math.max(0, Math.sin(Math.PI * clamp01((t - 0.32) / 0.1))) * smoother((1 - t) / 0.3); return { ParamArmR: (25 + 5 * kick) * up, ParamElbowR: (-6 + 4 * kick) * up, ParamAngleZ: (-6 - 2 * kick) * up, ParamAngleX: -7 * up, ParamAngleY: (2 + 2 * kick) * up, ParamBodyAngleZ: -1.5 * up }; } },
 };
 
 /** Life when nothing else plays: relaxed arms that sway a little with breath and weight, talking emphasis. */
@@ -99,6 +108,13 @@ export class SpringSet {
     }
     return out;
   }
+}
+
+/** Use the raised variant of a gesture when the model's arm ranges allow it (see dev/iki-pipeline/extend-arms.mjs). */
+export function resolveGesture(name: string, armMax: number, elbowMin: number): string {
+  const raised = armMax >= 32 && elbowMin <= -168;
+  if (raised && name === "wave") return "wave-raised";
+  return name;
 }
 
 export interface ParamAccess {

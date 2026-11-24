@@ -26,7 +26,14 @@ user or an AI agent should drive it.
 | Head too big / then too small | Face width misread (hair edge taken for the ears), then over-corrected | Measured the face from skin pixels; finally the whole figure is cut at one scale |
 | Green fringe on the lips | The chroma-key leaves anti-aliased green under the key threshold | Despill the lip layers (clamp g to max(r, b)); reported upstream |
 | No neck, small hands, short legs | Generated body and arm parts at their own proportions | Body, legs and arms cut from the reference too; arms split into movable layers |
+| White border around trousers, shoes, hair | Edge pixels of the picture are part backdrop (light grey-blue); on a dark desktop that reads as a white rim | `defringe.mjs` unmixes each edge pixel against what the picture shows just outside it (backdrop, braid or shirt) |
+| Left arm always up, right always bent | Renderer bug: gesture/lean offsets were added to the previous frame's value; iki's idle never resets the arm parameters, so they crept to their limits | `gestures.ts` restores each parameter's base before `IkiMotion.update` and adds offsets after (unit-tested over 600 frames) |
+| Gestures felt robotic | Linear in/out, identical every time, dead-straight idle arms | Critically damped springs, smootherstep envelopes, ±10 % variation, relaxed elbows with slow sway, arms reacting to the weight shift, talking emphasis |
 | Legs never move | Iki plants the legs by design (no leg rig) | Added `ParamLegShift`: a per-vertex warp on the body mesh (hips shift, relaxed knee bends, feet planted), animated by Hikari |
+| Wave was a sideways swing, not a raised hand | Iki's auto-rig stops the shoulder at 32 and lets the elbow fold only toward the body | `extend-arms.mjs` keeps the same slope but lets the shoulder go to 150 and the elbow open to −170. `wave-raised` is her reference pose (shoulder 22, elbow about −158 with a forearm sway: elbow low beside the waist, forearm upright, hand at chin height; the forearm folds first). It replaces `wave` on models with those ranges (`resolveGesture`). With the shoulder barely lifted, no shoulder kink shows |
+| Pale "ear" above the shoulder and dark ticks on the shirt when an arm lifts | split-arms leaves a torso corner above each sleeve root; tiny hair-tip and outline fragments sit on the cloth beside the parts that cover them at rest | `trim-shoulders.mjs` clips the torso above each shoulder outline (measured on the picture) and inks it; `despeck-dark.mjs` recolours dark bits of 12 px or less ringed by light cloth on the body and sleeves |
+| Same gesture restarted by a burst of identical cues | `playMotion` restarted on every call | A gesture already playing is not restarted until 85 % of it has run. Verified in the app: three `wave` cues 0.4 s apart gave one start and two skips |
+| Flecks and a light strip at the neck during 15–20° head tilts | The body under the side locks held smears, stray hair outlines, pinholes and a broken shoulder outline; tilts uncover it | `restore-visible.mjs` makes the visible body beside the locks equal to the picture (braid and backdrop transparent). `repaint-under-hair.mjs` repaints only what the front hair hides: harmonic fill, silhouette clipped to the cut, pinholes and islands removed, and hidden collar/shoulder lines measured on the picture and inked. Only layers drawn in front of the body count as hiding it; `hair_back` is behind it |
 
 Upstream: the lip-set green spill and the long-neck shoulder row are fixed in
 [zeikar/iki#71](https://github.com/zeikar/iki/pull/71) (open), with agent pitfalls added to the plugin's skills.
@@ -56,11 +63,21 @@ are git-ignored.
    edge pixels and costs ~1 % hair accuracy) and add the leg warp (`add-legs.mjs`).
 7. **Verify** (next section), then copy to `characters/<id>/model/<Name>.iki`.
 
+Her signature moves (`characters/makima/character.json` `signatureMotions`, played when idle): **signature-clasp**
+(hands folded low in front, head inclined, calm smile, eyes half-lowered: her composed stance),
+**signature-smile** (head tilted, eyes closing into the smile) and **signature-bang** (arm out and down to about 30°, a small recoil,
+smile; the hand stays open because the picture has no finger-gun drawing). A level arm runs past the narrow
+stage window, so the bang stays diagonal.
+
 Hikari side: `src/avatar/iki/IkiAvatar.ts` frames the drawn figure (measured once at rest), drives
 mouth, gaze, expressions and the model's clips, adds the idle weight shift, and plays procedural
-arm gestures (wave = arm swinging out, point, shrug, clap, cross arms, think, facepalm, bow) on
+arm gestures (wave, point, shrug, clap, cross arms, think, facepalm, bow) on
 `ParamArmL/R` and `ParamElbowL/R` when the model has no clip for them. Iki's elbow bends only toward the
-body, so a raised-hand wave needs a drawn raised forearm, which a single picture does not have.
+body. After `extend-arms.mjs` it also opens the other way (to −170), so the forearm stands up from a low elbow
+beside the waist, as in her wave reference (`wave-raised`). Without the extension the wave falls back to an outward swing.
+
+In-app check: hot module reload swaps `Stage.tsx` but keeps the running avatar object on its old code.
+Restart `pnpm dev` before judging a gesture change in the window.
 
 ## Verification that caught real defects
 
