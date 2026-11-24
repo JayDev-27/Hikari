@@ -1,0 +1,46 @@
+name: Rust checks
+
+# The Tauri shell builds against macOS frameworks, so this needs a macOS runner (free for this public repo, but
+# GitHub's macOS runners queue for minutes). It only runs when Rust or its workflow changes.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/desktop/src-tauri/**"
+      - ".github/workflows/rust.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/desktop/src-tauri/**"
+      - ".github/workflows/rust.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  rust:
+    name: Rust format, Clippy and tests (macOS)
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust, rustfmt and Clippy
+        run: rustup toolchain install 1.100.0 --profile minimal --component rustfmt,clippy
+
+      - name: Check Rust formatting
+        run: cargo +1.100.0 fmt --check --manifest-path apps/desktop/src-tauri/Cargo.toml
+
+      - name: Check Rust with Clippy
+        run: cargo +1.100.0 clippy --locked --all-targets --manifest-path apps/desktop/src-tauri/Cargo.toml -- -D warnings
+
+      - name: Run Rust tests
+        run: cargo +1.100.0 test --locked --manifest-path apps/desktop/src-tauri/Cargo.toml

@@ -1,5 +1,8 @@
 name: Code checks
 
+# Runs on free GitHub-hosted Ubuntu runners (free for this public repo). The Rust/Tauri checks need macOS and
+# live in rust.yml, which only runs when Rust code changes: macOS runners queue for minutes, Ubuntu starts at once.
+
 on:
   workflow_dispatch:
   pull_request:
@@ -12,13 +15,14 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A newer push to a pull request replaces its older run; every push to main gets a result of its own.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  frontend-and-protocol:
-    name: Frontend, protocol, and models
+  frontend:
+    name: Frontend, protocol and packs
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -45,29 +49,56 @@ jobs:
       - name: Check TypeScript types
         run: pnpm typecheck
 
-      - name: Audit Live2D and Iki model rigs
-        run: pnpm -F desktop audit:models
-
-      - name: Run unit & integration tests
+      - name: Run desktop tests (gestures, Iki/Live2D packs, protocol, runtime)
         run: pnpm -F desktop test
+
+      - name: Audit Live2D rigs (skipped without the licensed Cubism Core)
+        run: pnpm -F desktop audit:models
 
       - name: Build desktop frontend
         run: pnpm -F desktop build
 
-  rust-native:
-    name: Rust Tauri and native stage (macOS)
-    runs-on: macos-latest
-    timeout-minutes: 15
+  scripts:
+    name: Pipeline scripts, data and guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install Rust and Clippy
-        run: rustup toolchain install 1.100.0 --profile minimal --component clippy
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
 
-      - name: Check Rust with Clippy
-        run: cargo +1.100.0 clippy --locked --all-targets --manifest-path apps/desktop/src-tauri/Cargo.toml -- -D warnings
+      - name: Node scripts parse (model pipeline, dev tools, protocol)
+        run: |
+          fail=0
+          for f in $(git ls-files '*.mjs' '*.js' | grep -E '^(apps/desktop/(dev|scripts)|packages|scripts)/'); do
+            node --check "$f" || { echo "::error file=$f::does not parse"; fail=1; }
+          done
+          exit $fail
 
-      - name: Run Rust tests
-        run: cargo +1.100.0 test --locked --manifest-path apps/desktop/src-tauri/Cargo.toml
+      - name: Shell scripts parse (assemble-*.sh and dev tools)
+        run: |
+          fail=0
+          for f in $(git ls-files '*.sh'); do bash -n "$f" || { echo "::error file=$f::does not parse"; fail=1; }; done
+          exit $fail
+
+      - name: Python scripts compile (model pipeline)
+        run: git ls-files '*.py' | xargs -r python3 -m py_compile
+
+      - name: Character packs, fixtures and protocol JSON are valid
+        run: |
+          fail=0
+          for f in $(git ls-files '*.json' | grep -E '^(characters|fixtures|packages/protocol)/'); do
+            python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$f" || { echo "::error file=$f::invalid JSON"; fail=1; }
+          done
+          exit $fail
+
+      - name: No licensed Cubism Core or secrets committed
+        run: |
+          if git ls-files | grep -iE 'live2dcubismcore|(^|/)\.env($|\.)|credentials\.json$'; then
+            echo "::error::Cubism Core (licence) or a secrets file is committed; remove it (see CLAUDE.md)"
+            exit 1
+          fi
