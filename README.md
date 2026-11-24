@@ -192,6 +192,14 @@ cargo clippy --locked --all-targets --manifest-path apps/desktop/src-tauri/Cargo
 
 GitHub Actions runs two workflows. **Code checks** runs on Ubuntu for every push and pull request: lint, types, tests, the Live2D rig audit, the frontend build, plus parse checks for pipeline scripts, JSON validity for character packs, and a guard against committing Cubism Core or secrets. **Rust checks** runs on macOS only when the Tauri shell changes: `cargo fmt`, Clippy and tests. Dependabot proposes dependency updates weekly.
 
+### Contributors
+
+Thanks to everyone who has helped build Hikari. This picture updates itself: your avatar appears here after your first contribution is merged.
+
+<a href="https://github.com/JayDev-27/Hikari/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=JayDev-27/Hikari" alt="Avatars of Hikari's contributors">
+</a>
+
 ## 📜 Assets & licences
 
 Hikari's own code is under the [MIT License](LICENSE). Third-party models, runtimes and SDKs keep their own licences; [`docs/LICENSES.md`](docs/LICENSES.md) lists each one.
