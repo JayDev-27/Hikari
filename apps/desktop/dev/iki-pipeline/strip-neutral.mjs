@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { renameSync } from "node:fs";
 const req = createRequire((await import("node:path")).resolve(process.env.IKI_REPO ?? "../iki") + "/packages/mcp/package.json");
 const sharp = (await import(req.resolve("sharp"))).default;
-const [f, minYS, bodyF] = process.argv.slice(2);
+const [f, minYS, bodyF, profile] = process.argv.slice(2);
 const body = bodyF ? await sharp(bodyF).ensureAlpha().raw().toBuffer({ resolveWithObject: true }) : null;
 let moved = 0;
 const { data, info } = await sharp(f).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -13,6 +13,7 @@ for (let y = +minYS; y < info.height; y++) for (let x = 0; x < info.width; x++) 
   const i = (y * info.width + x) * 4; if (!data[i + 3]) continue;
   const r = data[i], g = data[i + 1], b = data[i + 2];
   const warm = r - Math.max(g, b), lum = 0.3 * r + 0.59 * g + 0.11 * b;
+  if (profile === "plum" && b - g > 7 && r - b > -24 && r - g > 3) continue;
   if ((lum > 120 && warm < 14) || (lum <= 120 && warm < 4)) {
     // collar/shirt paint the cut read as hair: hand it to the body where the body has none, instead of leaving a hole
     // only the collar's DARK strokes that touch the shirt go to the body; pale backdrop slivers and detached bits are dropped

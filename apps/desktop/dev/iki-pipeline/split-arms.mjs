@@ -13,6 +13,7 @@ const torso = Buffer.from(data);
 const side = arms.torsoSides ?? { R: [[250, 645], [335, 1150]], L: [[850, 645], [765, 1150]] };
 const [top, bottom] = arms.rows ?? [620, 1945];
 const [fillTop, fillBottom] = arms.fillRows ?? [645, 1150];
+const fillTorso = arms.fillTorso !== false;
 const lineX = ([[x0, y0], [x1, y1]], y) => x0 + ((x1 - x0) * (y - y0)) / (y1 - y0);
 // The gap between each arm and the torso/trousers, top to bottom: body paint outside it is arm.
 const bound = arms.bounds ?? { R: [[262, 620], [330, 1150], [300, 1250], [250, 1500], [240, 1945]], L: [[838, 620], [770, 1150], [800, 1250], [850, 1500], [860, 1945]] };
@@ -30,7 +31,7 @@ for (const key of ["R", "L"]) {
   // fill the torso under the sleeve: removed pixels inside the torso's side line take the nearest torso pixel in their row
   let filled = 0;
   for (const [x, y] of removed) {
-    if (y < fillTop || y > fillBottom) continue;
+    if (!fillTorso || y < fillTop || y > fillBottom) continue;
     const lx = lineX(side[key], y);
     const inside = key === "R" ? x > lx : x < lx; if (!inside) continue;
     const step = key === "R" ? 1 : -1;
@@ -46,7 +47,7 @@ for (const key of ["R", "L"]) {
 // Clean up the torso side the sleeves hid: smooth the filled cloth vertically, cut a clean antialiased silhouette
 // along the side line, and ink it with the drawing's outline colour, so a bent arm reveals a drawn contour, not streaks.
 const LINE = [58, 52, 50];
-for (const key of ["R", "L"]) {
+for (const key of fillTorso ? ["R", "L"] : []) {
   const filledMask = new Uint8Array(W * H);
   for (let y = fillTop; y <= fillBottom; y++) {
     const lx = lineX(side[key], y);

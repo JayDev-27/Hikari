@@ -90,7 +90,9 @@ offer.warps = [{
   keyforms: [
     { value: 0, offsets: warpOffsets(offer, (x, y) => {
       const towardHand = Math.min(1, Math.max(0, (0.38 - y) / 0.63));
-      return [(-27 - 57 * x) * towardHand, -99 * towardHand];
+      // The grip and bloom start smaller and lower. The shoulder holds its
+      // painted position as the hand grows toward the viewer.
+      return [(-34 - 87 * x) * towardHand, (-119 - 57 * y) * towardHand];
     }) },
     { value: 1, offsets: warpOffsets(offer, () => [0, 0]) },
   ],

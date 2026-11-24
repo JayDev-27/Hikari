@@ -24,6 +24,9 @@
       "group": "Tilt",
       "index": 0
     },
+    "tap_body": {
+      "group": "signature-flower"
+    },
     "nod": {
       "group": "Nod",
       "index": 0

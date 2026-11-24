@@ -31,7 +31,7 @@ const sharp = (await import(req.resolve("sharp"))).default;
 const [file, flag] = process.argv.slice(2);
 const model = JSON.parse(readFileSync(file, "utf8"));
 const luma = (d, i) => 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2];
-const FEATURE = /eye|iris|lash|brow|mouth|lip|teeth|tongue|nose|blush|smile/;
+const FEATURE = /eye|iris|lash|brow|mouth|lip|teeth|tongue|nose|blush|smile|glasses/;
 let total = 0;
 for (const [t, tex] of model.textures.entries()) {
   const m = /^data:image\/png;base64,(.*)$/.exec(tex.source);
