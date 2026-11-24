@@ -1,8 +1,8 @@
 mod hotkeys;
 mod packs;
-mod windows;
 mod stage;
 mod tray;
+mod windows;
 
 use std::sync::Arc;
 
@@ -11,7 +11,11 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::new()
-                .level(if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info })
+                .level(if cfg!(debug_assertions) {
+                    log::LevelFilter::Debug
+                } else {
+                    log::LevelFilter::Info
+                })
                 // Keep dependency chatter out of the debug log.
                 .level_for("tao", log::LevelFilter::Info)
                 .level_for("wry", log::LevelFilter::Info)

@@ -21,7 +21,12 @@ pub fn setup<R: Runtime>(app: &AppHandle<R>) -> Result<(), Box<dyn std::error::E
         tauri_plugin_global_shortcut::Builder::new()
             .with_handler(move |app, sc, ev| {
                 if sc == &ptt {
-                    let _ = app.emit("hotkey://ptt", Ptt { pressed: ev.state() == ShortcutState::Pressed });
+                    let _ = app.emit(
+                        "hotkey://ptt",
+                        Ptt {
+                            pressed: ev.state() == ShortcutState::Pressed,
+                        },
+                    );
                 } else if ev.state() == ShortcutState::Pressed {
                     if sc == &mute {
                         crate::tray::toggle_muted(app);

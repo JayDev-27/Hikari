@@ -7,8 +7,8 @@
 //! coordinates; the frontend hit-tests against the avatar's alpha / hit areas and
 //! calls `set_click_through` only when the answer flips.
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use serde::Serialize;
@@ -27,7 +27,11 @@ pub struct StageState {
 
 impl Default for StageState {
     fn default() -> Self {
-        Self { ignoring: AtomicBool::new(false), locked: AtomicBool::new(false), visible: AtomicBool::new(true) }
+        Self {
+            ignoring: AtomicBool::new(false),
+            locked: AtomicBool::new(false),
+            visible: AtomicBool::new(true),
+        }
     }
 }
 
@@ -50,8 +54,17 @@ pub fn set_click_through<R: Runtime>(
 ) -> Result<(), String> {
     let ignore = ignore || state.locked.load(Ordering::Relaxed);
     if state.ignoring.swap(ignore, Ordering::Relaxed) != ignore {
-        window.set_ignore_cursor_events(ignore).map_err(|e| e.to_string())?;
-        log::debug!("stage click-through: {}", if ignore { "on (clicks pass through)" } else { "off (Hikari takes clicks)" });
+        window
+            .set_ignore_cursor_events(ignore)
+            .map_err(|e| e.to_string())?;
+        log::debug!(
+            "stage click-through: {}",
+            if ignore {
+                "on (clicks pass through)"
+            } else {
+                "off (Hikari takes clicks)"
+            }
+        );
     }
     Ok(())
 }
@@ -87,7 +100,9 @@ fn macos_float(window: &WebviewWindow) -> tauri::Result<()> {
     let panel = window
         .to_panel::<StagePanel>()
         .map_err(|e| tauri::Error::Anyhow(anyhow::anyhow!("to_panel: {e:?}")))?;
-    if let Err(e) = panel.set_style_mask(StyleMask::empty().borderless().nonactivating_panel().into()) {
+    if let Err(e) =
+        panel.set_style_mask(StyleMask::empty().borderless().nonactivating_panel().into())
+    {
         log::warn!("stage style mask: {e:?}");
     }
     panel.set_collection_behavior(
@@ -115,12 +130,22 @@ fn macos_float(window: &WebviewWindow) -> tauri::Result<()> {
 /// a 1x external monitor) physical coordinates are converted with whichever
 /// screen's scale the window is on, which put her completely off-screen.
 pub fn park<R: Runtime>(window: &WebviewWindow<R>) -> tauri::Result<()> {
-    let Some(mon) = window.primary_monitor()? else { return Ok(()) };
+    let Some(mon) = window.primary_monitor()? else {
+        return Ok(());
+    };
     let mscale = mon.scale_factor();
     let area = mon.work_area();
-    let (ax, ay) = (area.position.x as f64 / mscale, area.position.y as f64 / mscale);
-    let (aw, ah) = (area.size.width as f64 / mscale, area.size.height as f64 / mscale);
-    let size = window.outer_size()?.to_logical::<f64>(window.scale_factor()?);
+    let (ax, ay) = (
+        area.position.x as f64 / mscale,
+        area.position.y as f64 / mscale,
+    );
+    let (aw, ah) = (
+        area.size.width as f64 / mscale,
+        area.size.height as f64 / mscale,
+    );
+    let size = window
+        .outer_size()?
+        .to_logical::<f64>(window.scale_factor()?);
     let x = ax + aw - size.width - 24.0;
     let y = ay + ah - size.height;
     window.set_position(tauri::LogicalPosition::new(x.max(ax), y.max(ay)))
@@ -138,7 +163,9 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
 
     // Start click-through; the first cursor event over her flips it off.
     window.set_ignore_cursor_events(true)?;
-    app.state::<Arc<StageState>>().ignoring.store(true, Ordering::Relaxed);
+    app.state::<Arc<StageState>>()
+        .ignoring
+        .store(true, Ordering::Relaxed);
 
     spawn_cursor_poll(window, app.state::<Arc<StageState>>().inner().clone());
     Ok(())
@@ -189,14 +216,18 @@ fn cursor_points<R: Runtime>(w: &WebviewWindow<R>) -> Option<(f64, f64)> {
 /// 8 Hz when it is far away and still, and not at all while she is hidden.
 /// Emits only on change.
 fn spawn_cursor_poll<R: Runtime>(window: WebviewWindow<R>, state: Arc<StageState>) {
-    let geo = Arc::new(std::sync::RwLock::new(read_geometry(&window).unwrap_or_default()));
+    let geo = Arc::new(std::sync::RwLock::new(
+        read_geometry(&window).unwrap_or_default(),
+    ));
     {
         let geo = geo.clone();
         let w = window.clone();
         window.on_window_event(move |ev| {
             let relevant = matches!(
                 ev,
-                tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) | tauri::WindowEvent::ScaleFactorChanged { .. }
+                tauri::WindowEvent::Moved(_)
+                    | tauri::WindowEvent::Resized(_)
+                    | tauri::WindowEvent::ScaleFactorChanged { .. }
             );
             if let (true, Some(g)) = (relevant, read_geometry(&w)) {
                 *geo.write().unwrap() = g;
@@ -224,9 +255,22 @@ fn spawn_cursor_poll<R: Runtime>(window: WebviewWindow<R>, state: Arc<StageState
                 last_motion = std::time::Instant::now();
                 let (rx, ry) = (cx - g.x, cy - g.y);
                 let inside = rx >= 0.0 && ry >= 0.0 && rx < g.w && ry < g.h;
-                let _ = window.emit_to(STAGE, "stage://cursor", CursorEvent { x: rx, y: ry, inside, gx: cx, gy: cy });
+                let _ = window.emit_to(
+                    STAGE,
+                    "stage://cursor",
+                    CursorEvent {
+                        x: rx,
+                        y: ry,
+                        inside,
+                        gx: cx,
+                        gy: cy,
+                    },
+                );
             }
-            let near = cx > g.x - NEAR && cx < g.x + g.w + NEAR && cy > g.y - NEAR && cy < g.y + g.h + NEAR;
+            let near = cx > g.x - NEAR
+                && cx < g.x + g.w + NEAR
+                && cy > g.y - NEAR
+                && cy < g.y + g.h + NEAR;
             let recent = last_motion.elapsed() < Duration::from_secs(1);
             std::thread::sleep(Duration::from_millis(if near || recent { 33 } else { 125 }));
         }
