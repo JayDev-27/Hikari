@@ -20,8 +20,11 @@ export function Header({ onOpenDownload }: HeaderProps) {
   const [soundOn, setSoundOn] = useState(false);
   const [isDarkSurface, setIsDarkSurface] = useState(true);
   const waveCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const gainRef = useRef<GainNode | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const dataArrayRef = useRef<Uint8Array | null>(null);
 
   useEffect(() => {
     const syncHeaderTone = () => {
@@ -42,44 +45,60 @@ export function Header({ onOpenDownload }: HeaderProps) {
     };
   }, []);
 
-  // Subtle ambient generative chord via WebAudio (only starts on explicit click)
+  // Ethereal Hikari ambient track with smooth fade and real-time frequency analysis
   const toggleSound = async () => {
     if (soundOn) {
-      if (gainRef.current && audioCtxRef.current) {
-        gainRef.current.gain.setTargetAtTime(0.0001, audioCtxRef.current.currentTime, 0.15);
+      if (audioRef.current && gainRef.current && audioCtxRef.current) {
+        const now = audioCtxRef.current.currentTime;
+        gainRef.current.gain.cancelScheduledValues(now);
+        gainRef.current.gain.setValueAtTime(gainRef.current.gain.value, now);
+        gainRef.current.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+        setTimeout(() => {
+          audioRef.current?.pause();
+        }, 320);
       }
       setSoundOn(false);
       return;
     }
 
     try {
+      if (!audioRef.current) {
+        const audio = new Audio('/media/hikari-ambient.mp3');
+        audio.loop = true;
+        audio.crossOrigin = 'anonymous';
+        audioRef.current = audio;
+      }
+
       const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!audioCtxRef.current) {
         const ctx = new Ctx();
-        const master = ctx.createGain();
-        master.gain.value = 0.0001;
-        master.connect(ctx.destination);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 64;
+        const gain = ctx.createGain();
+        gain.gain.value = 0.0001;
 
-        // Warm glass pad triad (D4, A4, F#5)
-        [293.66, 440.0, 739.99].forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const oscGain = ctx.createGain();
-          osc.type = idx === 2 ? 'triangle' : 'sine';
-          osc.frequency.value = freq;
-          oscGain.gain.value = idx === 2 ? 0.014 : 0.025;
-          osc.connect(oscGain);
-          oscGain.connect(master);
-          osc.start();
-        });
+        const source = ctx.createMediaElementSource(audioRef.current);
+        source.connect(analyser);
+        analyser.connect(gain);
+        gain.connect(ctx.destination);
 
         audioCtxRef.current = ctx;
-        gainRef.current = master;
+        gainRef.current = gain;
+        analyserRef.current = analyser;
+        dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
       }
+
       if (audioCtxRef.current.state === 'suspended') {
         await audioCtxRef.current.resume();
       }
-      if (gainRef.current) {
-        gainRef.current.gain.setTargetAtTime(0.45, audioCtxRef.current.currentTime, 0.25);
+
+      await audioRef.current.play();
+
+      if (gainRef.current && audioCtxRef.current) {
+        const now = audioCtxRef.current.currentTime;
+        gainRef.current.gain.cancelScheduledValues(now);
+        gainRef.current.gain.setValueAtTime(gainRef.current.gain.value, now);
+        gainRef.current.gain.exponentialRampToValueAtTime(0.75, now + 0.5);
       }
       setSoundOn(true);
     } catch {
@@ -89,11 +108,12 @@ export function Header({ onOpenDownload }: HeaderProps) {
 
   useEffect(() => {
     return () => {
+      audioRef.current?.pause();
       audioCtxRef.current?.close().catch(() => {});
     };
   }, []);
 
-  // Lusion circular waveform canvas
+  // Lusion circular waveform canvas responsive to actual music dynamics
   useEffect(() => {
     const canvas = waveCanvasRef.current;
     if (!canvas) return;
@@ -110,7 +130,15 @@ export function Header({ onOpenDownload }: HeaderProps) {
       ctx.lineWidth = 2.4;
       ctx.strokeStyle = isDarkSurface ? '#f4f3fa' : '#09080f';
 
-      const amp = soundOn ? 6.5 : 0;
+      let audioAmp = 0;
+      const data = dataArrayRef.current;
+      if (soundOn && analyserRef.current && data) {
+        analyserRef.current.getByteFrequencyData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) sum += data[i];
+        audioAmp = (sum / data.length / 255) * 8.0;
+      }
+      const amp = soundOn ? Math.max(3.2, audioAmp) : 0;
       const t = now * 0.006;
 
       for (let x = 6; x <= w - 6; x += 2) {
