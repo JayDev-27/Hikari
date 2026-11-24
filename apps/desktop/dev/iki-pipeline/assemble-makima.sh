@@ -41,3 +41,5 @@ node $P/call.mjs "$PWD" auto_rig_from_layers iki-char/full/rig.json 2>&1 | grep 
 echo assembled
 node $P/add-legs.mjs iki-char/full/makima.iki 1480 3390
 node $P/extend-arms.mjs iki-char/full/makima.iki 150
+# Lone light specks left on dark outlines (trousers, hair) by the light backdrop: recoloured, face features untouched.
+node $P/despeck-edges.mjs iki-char/full/makima.iki

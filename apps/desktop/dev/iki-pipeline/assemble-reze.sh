@@ -65,5 +65,7 @@ node "$P/pose-reze.mjs" iki-char/reze-rigged.iki
 mkdir -p iki-char/armpit
 C='{"x":230,"y":620,"w":200,"h":220}'
 node "$P/call.mjs" "$PWD" render_poses "{\"modelPath\":\"iki-char/reze-rigged.iki\",\"outDir\":\"iki-char/armpit\",\"poses\":[{\"name\":\"rest\",\"values\":{},\"crop\":$C},{\"name\":\"lifted\",\"values\":{\"ParamArmR\":9,\"ParamElbowR\":-158},\"crop\":$C}]}" >/dev/null
-node "$P/armpit-patch.mjs" iki-char/reze-rigged.iki iki-char/armpit/rest.png iki-char/armpit/lifted.png 230,620,200,220 722 750
+node "$P/armpit-patch.mjs" iki-char/reze-rigged.iki iki-char/armpit/rest.png iki-char/armpit/lifted.png 230,620,200,220 742 726
+# The offer arm (painted from the offer picture) toned to the body's skin: median skin ratio from render_poses.
+node "$P/tone-part.mjs" iki-char/reze-rigged.iki offer_arm_R 1.0298,1.0464,1.0452
 mv iki-char/reze-rigged.iki iki-char/Reze.iki

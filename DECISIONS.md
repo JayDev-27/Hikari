@@ -28,6 +28,20 @@ Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 - The flower offer no longer uses `ParamOfferLift` (it squashed the upper arm into a stub). She
   bends her own arm in across the waist (elbow 110°), the painted offer arm cuts in over ~70 ms
   (a slow dissolve showed two half-transparent arms), and the hand then comes forward.
+- The lifted arm's armpit is painted (`armpit-patch.mjs`): a skin patch behind the arm, collapsed
+  to nothing at rest by ParamArmR keyforms, so the rest pose stays pixel-identical. Its crease runs
+  up to the torso (742 → 726 canvas px), so the open gap ends in a clean V, not a hanging tab.
+- The offer arm is toned to her own arm's skin (`tone-part.mjs`, gains = ratio of the two arms'
+  median skin in render_poses: 1.030/1.046/1.045); the offer art's own shading is kept.
+
+## 2026-11-24 — Light edges taken out of Makima's dark paint (A)
+
+- The last of the "white border" on her trousers was the light backdrop of the source picture in
+  three places: the RGB of transparent texels (mixed into the outline by texture filtering), edge
+  texels pre-mixed with it, and strips/specks of it one to three texels wide along the outline.
+  `despeck-edges.mjs` bleeds paint into transparent texels and recolours the other two from the
+  dark paint beside them; light areas, skin, cuffs and the face's features are never touched.
+  Render: 42 → 5 light outline px; app: bright (luma > 100) trouser-edge px per frame 3–10 → 0–2.
 
 ## 2026-11-24 — Makima as an Iki model, cut from her reference (A)
 
