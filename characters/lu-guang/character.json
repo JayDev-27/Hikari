@@ -1,7 +1,7 @@
 {
   "id": "lu-guang",
   "displayName": "Lu Guang",
-  "renderer": "live2d",
+  "renderer": "iki",
   "importSlot": true,
   "persona": "persona.md",
   "voice": {
@@ -10,228 +10,48 @@
   },
   "defaultLanguage": "hinglish",
   "license": {
-    "source": "Hikari fan illustration and Cubism rig based on the official Link Click character sheet.",
+    "source": "Hikari fan illustration based on the official Link Click character sheet, cut from the local Lu Guang PSD.",
     "terms": "AI-assisted fan artwork and Hikari animation. Link Click and its character designs belong to their respective rights holders.",
     "url": "https://link-click.jp/1st/character/"
   },
-  "modelPath": "model/Lu.model3.json",
-  "motionMap": {
-    "idle": {
-      "group": "Idle"
-    },
-    "tap": {
-      "group": "TapBody",
-      "index": 0
-    },
-    "tap_head": {
-      "group": "TapBody",
-      "index": 10
-    },
-    "tap_body": {
-      "group": "TapBody",
-      "index": 0
-    },
-    "wave": {
-      "group": "TapBody",
-      "index": 0
-    },
-    "shrug": {
-      "group": "TapBody",
-      "index": 1
-    },
-    "facepalm": {
-      "group": "TapBody",
-      "index": 2
-    },
-    "laugh": {
-      "group": "TapBody",
-      "index": 3
-    },
-    "shy_look_away": {
-      "group": "TapBody",
-      "index": 4
-    },
-    "think_chin": {
-      "group": "TapBody",
-      "index": 5
-    },
-    "clap": {
-      "group": "TapBody",
-      "index": 6
-    },
-    "point": {
-      "group": "TapBody",
-      "index": 7
-    },
-    "pout": {
-      "group": "TapBody",
-      "index": 8
-    },
-    "cross_arms": {
-      "group": "TapBody",
-      "index": 9
-    },
-    "head_pat_react": {
-      "group": "TapBody",
-      "index": 10
-    },
-    "nod": {
-      "group": "TapBody",
-      "index": 11
-    },
-    "head_tilt": {
-      "group": "TapBody",
-      "index": 12
-    },
-    "bow": {
-      "group": "TapBody",
-      "index": 13
-    },
-    "signature-study-photo": {
-      "group": "Signature",
-      "index": 0
-    },
-    "speech-calm": {
-      "group": "Speech",
-      "index": 0
-    },
-    "speech-thoughtful": {
-      "group": "Speech",
-      "index": 1
-    },
-    "speech-playful": {
-      "group": "Speech",
-      "index": 2
-    },
-    "speech-surprised": {
-      "group": "Speech",
-      "index": 3
-    }
-  },
-  "expressionMap": {
-    "neutral": "neutral",
-    "joy": "joy",
-    "fun": "fun",
-    "teasing": "teasing",
-    "angry": "angry",
-    "sorrow": "sorrow",
-    "shy": "shy",
-    "surprised": "surprised",
-    "thinking": "thinking",
-    "sleepy": "sleepy"
-  },
+  "modelPath": "model/Lu.iki",
   "hitAreas": {
     "Head": "head",
     "Body": "body"
   },
-  "speech": {
-    "defaultEmotion": "thinking",
-    "motions": [
-      "speech-calm",
-      "speech-thoughtful"
-    ],
-    "emotionMotions": {
-      "joy": [
-        "speech-playful",
-        "speech-calm"
-      ],
-      "fun": [
-        "speech-playful",
-        "speech-calm"
-      ],
-      "teasing": [
-        "speech-playful",
-        "speech-thoughtful"
-      ],
-      "shy": [
-        "speech-thoughtful",
-        "speech-calm"
-      ],
-      "angry": [
-        "speech-calm",
-        "speech-thoughtful"
-      ],
-      "sorrow": [
-        "speech-thoughtful"
-      ],
-      "thinking": [
-        "speech-thoughtful",
-        "speech-calm"
-      ],
-      "surprised": [
-        "speech-surprised"
-      ],
-      "sleepy": [
-        "speech-calm"
-      ]
+  "gazeScale": 0.29,
+  "motionMap": {
+    "tap": {
+      "group": "Nod"
     },
-    "intervalMs": 2650
+    "tap_head": {
+      "group": "Tilt"
+    },
+    "tap_body": {
+      "group": "signature-study-photo"
+    },
+    "nod": {
+      "group": "Nod"
+    },
+    "head_tilt": {
+      "group": "Tilt"
+    }
   },
-  "gazeScale": 0.56,
+  "expressionMap": {
+    "joy": "smile",
+    "fun": "smile",
+    "teasing": "smile",
+    "angry": "angry",
+    "sorrow": "sad",
+    "shy": "smile",
+    "surprised": "surprised"
+  },
+  "idleTempo": 0.52,
+  "idleAmplitude": 0.23,
+  "armLiftMax": 19,
   "signatureMotions": [
-    "signature-study-photo"
-  ],
-  "poseRig": {
-    "hands": [
-      {
-        "drawable": "leftArm1",
-        "wrist": [
-          -244.0,
-          -9.0
-        ],
-        "breadth": 1.2
-      },
-      {
-        "drawable": "rightArm1",
-        "wrist": [
-          243.5,
-          -9.0
-        ],
-        "breadth": 1.19
-      }
-    ],
-    "grip": {
-      "drawable": "Photo",
-      "arms": [
-        "leftArm1"
-      ],
-      "file": "poses/photo.png",
-      "origin": [
-        -227,
-        -461
-      ],
-      "size": [
-        306,
-        193
-      ],
-      "bodyIndices": [
-        90,
-        119
-      ],
-      "bodyPoints": [
-        -287.5106,
-        406.0112,
-        288.481,
-        405.2509
-      ]
-    },
-    "arms": [
-      {
-        "drawable": "leftArm1",
-        "centers": [
-          0.795,
-          0.511,
-          0.235
-        ]
-      },
-      {
-        "drawable": "rightArm1",
-        "centers": [
-          0.196,
-          0.467,
-          0.767
-        ]
-      }
-    ]
-  }
+    "signature-study-photo",
+    "signature-folded-nod",
+    "signature-quiet-thought"
+  ]
 }

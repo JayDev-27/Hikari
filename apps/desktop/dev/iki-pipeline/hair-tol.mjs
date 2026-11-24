@@ -6,9 +6,10 @@ const [render, pic, X, Y, w, h, profile, diff] = process.argv.slice(2); const W 
 const reze = profile === "reze";
 const rize = profile === "rize";
 const cheng = profile === "cheng";
+const lu = profile === "lu";
 const model = sharp(render).resize(W, H);
 const reference = sharp(pic).extract({ left: +X, top: +Y, width: W, height: H });
-const alpha = reze || rize || cheng;
+const alpha = reze || rize || cheng || lu;
 const a = await (alpha ? model.ensureAlpha() : model.flatten({ background: "#c6d0dd" }).removeAlpha()).raw().toBuffer();
 const b = await (alpha ? reference.ensureAlpha() : reference.removeAlpha()).raw().toBuffer();
 const hair = (d, p) => { const i = p * 3, r = d[i], g = d[i + 1], bl = d[i + 2]; return r > 120 && r - g > 55 && r - bl > 50 && g < 150; };
@@ -44,7 +45,15 @@ const chengEye = (x, y) => {
   const cx = x + +X, cy = y + +Y;
   return cy >= 285 && cy <= 341 && ((cx >= 474 && cx <= 524) || (cx >= 574 && cx <= 627));
 };
-const inHair = cheng ? chengHair : rize ? plum : reze ? purple : hair;
+const luHair = (d, p) => {
+  const x = p % W + +X, y = Math.floor(p / W) + +Y;
+  const i = p * 4, r = d[i], g = d[i + 1], bl = d[i + 2];
+  if (d[i + 3] < 100 || y >= 376) return false;
+  if (y < 275) return true;
+  if (y >= 320 && y <= 348 && ((x >= 460 && x <= 522) || (x >= 570 && x <= 637))) return false;
+  return r > 116 && r - bl < 19 && bl >= g - 6;
+};
+const inHair = lu ? luHair : cheng ? chengHair : rize ? plum : reze ? purple : hair;
 for (let p = 0; p < W * H; p++) { A[p] = inHair(a, p); B[p] = inHair(b, p); }
 const near = (M, x, y, r = 2) => { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < W && yy < H && M[yy * W + xx]) return true; } return false; };
 let mism = 0, tol = 0; const bad = new Uint8Array(W * H);

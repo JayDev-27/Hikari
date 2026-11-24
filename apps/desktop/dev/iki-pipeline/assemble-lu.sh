@@ -39,6 +39,7 @@ for f in final/{hair_back,hair_front,hair_side_L,hair_side_R,arm_L,arm_R,body}.p
 done
 node "$P/restore-visible.mjs" final picture.png 433,419,668,578 layers/body.png
 node "$P/repaint-under-hair.mjs" final 423,410,675,579 2
+python3 "$P/refine-lu-layers.py" .
 cd ..
 node --input-type=module <<'JS'
 import { readdirSync, writeFileSync } from 'node:fs';
@@ -55,3 +56,19 @@ if rg -q '^INVALID' iki-char/rig.log; then exit 1; fi
 test -s iki-char/lu-rigged.iki
 node "$P/add-legs.mjs" iki-char/lu-rigged.iki 1506 2945
 node "$P/extend-arms.mjs" iki-char/lu-rigged.iki 150
+node "$P/pose-lu.mjs" iki-char/lu-rigged.iki
+node --input-type=module <<'JS'
+import { writeFileSync } from 'node:fs';
+const boxes = { R: { x: 165, y: 713, w: 173, h: 316 }, L: { x: 767, y: 713, w: 178, h: 316 } };
+const poses = Object.entries(boxes).flatMap(([side, crop]) => [0, 20].map(lift => ({
+  name: `before-${side}-${lift}`, crop, values: { [`ParamArm${side}`]: lift },
+})));
+writeFileSync('iki-char/armpits.json', JSON.stringify({ modelPath: 'iki-char/lu-rigged.iki', outDir: 'iki-char/armpits', poses }));
+JS
+node "$P/call.mjs" "$PWD" render_poses iki-char/armpits.json > iki-char/armpits-before.log
+cp iki-char/lu-rigged.iki iki-char/lu-before-armpits.iki
+node "$P/armpit-patch.mjs" iki-char/lu-rigged.iki iki-char/armpits/before-R-0.png iki-char/armpits/before-R-20.png 165,713,173,316 851 951 R 166,163,156
+node "$P/armpit-patch.mjs" iki-char/lu-rigged.iki iki-char/armpits/before-L-0.png iki-char/armpits/before-L-20.png 767,713,178,316 851 951 L 166,163,156
+cp iki-char/lu-rigged.iki iki-char/lu-before-edges.iki
+node "$P/despeck-edges.mjs" iki-char/lu-rigged.iki
+mv iki-char/lu-rigged.iki iki-char/Lu.iki

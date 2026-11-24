@@ -2,6 +2,20 @@
 
 Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 
+## 2026-11-25 — Lu Guang as an Iki model (A)
+
+- Cut the visible full-body PSD and keep the original silver fringe, sleeve seams,
+  hands and shoes. Use the PSD's speaking-mouth paint for the keyed mouth. The
+  photograph is hidden in the PSD, so the study gesture uses the painted hand alone.
+- Project the sleeves through the actual shoulder and elbow pivots for the raised
+  hand and the higher folded arms. Keep the original hand proportions. Give the
+  study, folded-arm nod and chin pose long holds and small head movements.
+- Keep the sleeves attached near the tops of their painted seams. Draw the two
+  armpit fills from that shirt palette, with both collapsed at rest, and limit
+  ordinary shoulder lift to 19°.
+- Use a 0.52× idle tempo, 0.23× idle amplitude and critically damped springs. The
+  nod and tilt clips use smaller angles and longer eases.
+
 ## 2026-11-24 — Cheng Xiaoshi as an Iki model (A)
 
 - Use the visible full-body PSD for the head, clothes and limbs. Keep the blond edges and

@@ -276,6 +276,45 @@ export const GESTURES: Record<string, Gesture> = {
       ParamLegShift: 0.58 * lift,
     };
   } },
+  "signature-study-photo": { dur: 8.6, timed: true, pose: (t) => {
+    const raise = envelope(t, 0.28, 0.27);
+    const focus = smoother((t - 0.18) / 0.17) * smoother((0.90 - t) / 0.18);
+    return {
+      ParamLuStudy: raise,
+      ParamAngleX: -6 * focus,
+      ParamAngleZ: 5 * focus,
+      ParamEyeBallX: -0.26 * focus,
+      ParamEyeLOpen: -0.22 * focus,
+      ParamEyeROpen: -0.22 * focus,
+      ParamBrowLY: -0.07 * focus,
+      ParamBrowRY: -0.07 * focus,
+    };
+  } },
+  "signature-folded-nod": { dur: 7.9, timed: true, pose: (t) => {
+    const left = smoother((t - 0.06) / 0.25) * smoother((1 - t) / 0.32);
+    const right = smoother(t / 0.24) * smoother((0.94 - t) / 0.24);
+    const nod = smoother((t - 0.35) / 0.14) * smoother((0.71 - t) / 0.15);
+    return {
+      ParamLuFoldL: left,
+      ParamLuFoldR: right,
+      ParamAngleY: -5.5 * nod,
+      ParamEyeLOpen: -0.10 * nod,
+      ParamEyeROpen: -0.10 * nod,
+      ParamMouthForm: 0.23 * left,
+    };
+  } },
+  "signature-quiet-thought": { dur: 7.4, timed: true, pose: (t) => {
+    const raise = envelope(t, 0.31, 0.31);
+    const consider = smoother((t - 0.22) / 0.19) * smoother((0.88 - t) / 0.20);
+    return {
+      ParamLuThought: raise,
+      ParamAngleY: -3 * consider,
+      ParamAngleZ: 3 * consider,
+      ParamEyeLOpen: -0.16 * consider,
+      ParamEyeROpen: -0.16 * consider,
+      ParamMouthForm: -0.12 * consider,
+    };
+  } },
 };
 
 /** Life when nothing else plays: relaxed arms that sway a little with breath and weight, talking emphasis. */

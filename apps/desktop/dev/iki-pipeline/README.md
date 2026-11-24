@@ -54,3 +54,8 @@ See [Rize's build and verification](../../../../docs/IKI.md#rize).
 arm outlines record the hair spikes, eye contours, and raglan seams. `pose-cheng.mjs` ties the
 sleeve roots to the torso and brings the painted palms together for the photo dive.
 See [Cheng Xiaoshi's build and verification](../../../../docs/IKI.md#cheng-xiaoshi).
+
+`assemble-lu.sh` rebuilds Lu Guang from his local full-body PSD. The Lu landmarks trace
+the silver fringe and the locks in front of his ears. `pose-lu.mjs` uses the original
+sleeve and hand paint for the study, folded arms and hand-to-chin poses.
+See [Lu Guang's build and verification](../../../../docs/IKI.md#lu-guang).

@@ -18,6 +18,11 @@ const RANGE: Record<string, [number, number]> = {
   ParamRizeBook: [0, 1],
   ParamChengClap: [0, 1],
   ParamChengClapDepth: [0, 1],
+  ParamLuStudy: [0, 1],
+  ParamLuThought: [0, 1],
+  ParamLuFoldL: [0, 1],
+  ParamLuFoldR: [0, 1],
+  ParamEyeBallX: [-1, 1],
   ParamChengPalm: [0, 1],
   ParamMouthOpenY: [0, 1],
   ParamBrowLY: [-1, 1],
@@ -164,6 +169,36 @@ describe("Iki gestures", () => {
     expect(wink.ParamEyeLOpen ?? 0).toBe(0);
   });
 
+  it("holds Lu Guang's hand at eye level and narrows his gaze after the lift starts", () => {
+    const study = GESTURES["signature-study-photo"].pose;
+    expect(study(0.15).ParamLuStudy).toBeGreaterThan(0.4);
+    expect(study(0.15).ParamEyeLOpen).toBeCloseTo(0);
+    expect(study(0.33).ParamLuStudy).toBe(1);
+    expect(study(0.66).ParamLuStudy).toBe(1);
+    expect(study(0.5).ParamEyeLOpen).toBeCloseTo(-0.22);
+    expect(study(0.5).ParamEyeBallX).toBeLessThan(0);
+    expect(study(0.91).ParamLuStudy).toBeLessThan(0.25);
+  });
+
+  it("holds Lu Guang's folded arms through one small nod and a faint smile", () => {
+    const fold = GESTURES["signature-folded-nod"].pose;
+    expect(fold(0.15).ParamLuFoldR).toBeGreaterThan(fold(0.15).ParamLuFoldL);
+    expect(fold(0.32).ParamLuFoldL).toBe(1);
+    expect(fold(0.32).ParamAngleY).toBeCloseTo(0);
+    expect(fold(0.50).ParamAngleY).toBeCloseTo(-5.5);
+    expect(fold(0.66).ParamLuFoldL).toBe(1);
+    expect(fold(0.66).ParamLuFoldR).toBe(1);
+    expect(fold(0.48).ParamMouthForm).toBeCloseTo(0.23);
+  });
+
+  it("lifts Lu Guang's hand to his chin, holds it, then releases quietly", () => {
+    const thought = GESTURES["signature-quiet-thought"].pose;
+    expect(thought(0.35).ParamLuThought).toBe(1);
+    expect(thought(0.65).ParamLuThought).toBe(1);
+    expect(thought(0.5).ParamAngleY).toBeCloseTo(-3);
+    expect(thought(0.88).ParamLuThought).toBeLessThan(0.35);
+  });
+
   it("offsets do not accumulate on parameters nothing else writes (the stuck-arm bug)", () => {
     const p = store({ ParamArmL: 0, ParamElbowR: 0 });
     const bases = new Map<string, number>();
@@ -246,19 +281,25 @@ describe("Iki gestures", () => {
     expect(point.ParamArmR - point.ParamElbowR).toBeCloseTo(24, 5);
   });
 
-  it("lets the wave's forearm flick past horizontal with the stiffer elbow spring", () => {
-    const g = GESTURES["wave-raised"], dur = g.dur;
-    const sideways = (springs: SpringSet) => {
-      let n = 0;
-      for (let f = 0; f < dur * 60; f++) {
-        const e = springs.step(g.pose(f / 60 / dur), 1 / 60).ParamElbowR;
-        if (e < -45 && e > -135) n++;
+  it("takes at most 0.12 s through horizontal in each direction of the raised wave", () => {
+    const wave = GESTURES["wave-raised"];
+    for (const duration of [0.92 * wave.dur, wave.dur, 1.08 * wave.dur]) {
+      for (const framesPerSecond of [30, 60, 120]) {
+        for (const idleElbow of [0, 7.5]) {
+          let rising = 0, falling = 0;
+          for (let frame = 0; frame < duration * framesPerSecond; frame++) {
+            const t = frame / framesPerSecond / duration;
+            const angle = wave.pose(t).ParamElbowR + idleElbow;
+            if (angle > -135 && angle < -45) {
+              if (t < 0.5) rising++;
+              else falling++;
+            }
+          }
+          expect(rising / framesPerSecond).toBeLessThanOrEqual(0.12);
+          expect(falling / framesPerSecond).toBeLessThanOrEqual(0.12);
+        }
       }
-      return n / 60;
-    };
-    const slow = sideways(new SpringSet(8.5)), fast = sideways(new SpringSet(8.5, { ParamElbowR: 20 }));
-    expect(fast).toBeLessThan(slow);
-    expect(fast).toBeLessThan(0.25); // up and down together, ~0.12 s each way (was 0.48 s)
+    }
   });
 
   it("adds poses", () => {

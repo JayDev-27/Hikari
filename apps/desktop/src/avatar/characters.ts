@@ -38,6 +38,8 @@ export interface CharacterJson {
   armLiftMax?: number;
   /** Iki idle motion and weight-shift frequency multiplier. */
   idleTempo?: number;
+  /** Iki idle sway and weight-shift amplitude multiplier. */
+  idleAmplitude?: number;
   /** Iki gesture spring damping ratio. The default is critically damped. */
   springDamping?: number;
   expressionMap?: Partial<Record<Emotion, string | number>>;

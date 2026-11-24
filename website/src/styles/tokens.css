@@ -1,0 +1,50 @@
+:root {
+  /* Editorial light surfaces (Lusion-derived cool lavender off-white) */
+  --bg-editorial: #f0f1fa;
+  --bg-editorial-soft: rgba(240, 241, 250, 0.78);
+  --bg-pure: #ffffff;
+  --bg-pill-light: #e4e6ef;
+  --bg-pill-dark: #221e2b;
+
+  /* Deep portals & stark transitions */
+  --bg-portal: #0d0b14;
+  --bg-portal-elevated: #161321;
+  --bg-black: #000000;
+
+  /* Typography & hairline ink */
+  --ink-primary: #09080f;
+  --ink-secondary: #373346;
+  --ink-muted: #5a556b;
+  --ink-on-dark: #f4f3fa;
+  --ink-on-dark-muted: rgba(244, 243, 250, 0.68);
+  --border-light: rgba(9, 8, 15, 0.1);
+  --border-dark: rgba(244, 243, 250, 0.14);
+
+  /* Hikari Liquid Glass chromatic accents */
+  --accent-cobalt: #1a2ffb;
+  --accent-cobalt-deep: #0b1bd8;
+  --accent-violet: #8832f7;
+  --accent-sakura: #ff7eb6;
+  --accent-mint: #6be5a1;
+
+  /* Lusion fluid 12-column editorial grid */
+  --grid-gap: 2vw;
+  --base-padding-x: max(5vw, 24px);
+  --base-padding-y: clamp(24px, 3.6vw, 48px);
+  --portal-radius: 20px;
+
+  /* Type families */
+  --font-display: 'Space Grotesk', 'Plus Jakarta Sans', 'Noto Sans Devanagari', -apple-system, sans-serif;
+  --font-body: 'Plus Jakarta Sans', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Easing */
+  --ease-lusion: cubic-bezier(0.4, 0, 0.1, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (min-width: 900px) {
+  :root {
+    --base-padding-x: max(5vw, 40px);
+  }
+}

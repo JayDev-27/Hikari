@@ -195,6 +195,51 @@ node apps/desktop/scripts/sync-packs.mjs
   windows. Three repeat cues and a competing head tilt produced one clap. The idle clap
   reached the chest 18.92 s after connecting, and a separate body click played one clap.
 
+## Lu Guang
+
+The reference is the visible composite of `characters/lu-guang/source/Lu Guang.psd`.
+The 576×1536 art is scaled about 1.90× to 1094×2918 and placed at (8, 46) on the
+1100×4096 transparent canvas. The chin lands at about (550, 468). The previous
+configuration is preserved in `characters/lu-guang/source/character.live2d.json`.
+
+With `IKI_REPO` set to a built Iki checkout, run these commands from the Hikari root.
+
+```sh
+uv run --no-project --with psd-tools bash apps/desktop/dev/iki-pipeline/assemble-lu.sh
+cp characters/lu-guang/iki-char/Lu.iki characters/lu-guang/model/Lu.iki
+node apps/desktop/scripts/sync-packs.mjs
+```
+
+- `lu.landmarks.json` traces the spikes, parting and the tips of the front locks.
+  Its `bodyOnly` regions include the dark shirt, trousers and collar outline. The
+  PSD's speaking-mouth paint supplies the lips and interior.
+- The pale-pixel cleanup starts below the hair. `refine-lu-layers.py` transfers
+  the narrow locks to the layers in front of the ears, trims hidden back-hair
+  fill, carries the neck shade behind the jaw and restores the sleeve seams.
+  The pack caps ordinary arm lifts at 19°. The next degree exposed the patch edge.
+- Click Lu Guang's body for Study Photo. He raises his painted hand to eye level,
+  narrows his gaze and holds it, then lowers it. The visible reference leaves his
+  hand empty. The other signatures are a slow nod with folded arms and a
+  hand-to-chin pause. The 0.52× idle tempo, 0.23× idle amplitude and critically
+  damped springs keep the weight shifts small and give him time to settle.
+- The raised wave folds its elbow before the shoulder rises and straightens it
+  after the shoulder lowers. Using the authored elbow curve keeps each pass
+  through horizontal under 0.12 s at 30, 60 and 120 fps.
+- The 1:1 comparison found 18 of 61,232 hair pixels beyond 2 px (0.029%, limit
+  0.5%). Applying the two armpit patches changed zero rest-pose pixels. The
+  light-edge counts on the dark backdrop went from 35 to 31 at the trouser thigh,
+  4 to 4 at the knee, and 11 to 7 at the hem.
+- Restart `VITE_CHARACTER=lu-guang pnpm dev` before capturing the stage. Drive
+  the gestures from a local WebSocket core on `ws://127.0.0.1:8765/ws`. The
+  same-scale overlays, dark-background crops and native captures are indexed
+  at `characters/lu-guang/iki-char/qa/verification.md`.
+- The 17 scripted gestures stayed within the 840×1280 stage at capture time, with
+  zero click-taking transitions in their capture windows or the idle window.
+  Three repeated study cues and a competing head tilt produced one held pose.
+  Three repeated wave cues also produced one raise and return.
+  The idle pose reached eye level about 20.24 s after connecting. A separate
+  body-click capture also showed one raise, hold and return.
+
 ## Verification that caught real defects
 
 - **Overlay at matched scale** (`overlay.mjs`): reference | model | 50 % blend, chin and face centre

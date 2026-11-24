@@ -63,7 +63,7 @@ export class IkiAvatar implements AvatarController {
   private gesture: { name: string; pose: (t: number) => Pose; start: number; dur: number; scale: number; timed: boolean } | null = null;
   /** Values our offsets were added to last frame, restored before IkiMotion runs (see gestures.ts). */
   private bases = new Map<string, number>();
-  // Elbows follow faster: the wave's forearm flicks past horizontal instead of hanging out at her side.
+  // Elbows follow faster than the shoulder and torso.
   private springs: SpringSet;
   /** Idle weight shift between the legs (ParamLegShift, a Hikari addition to the model): current and target. */
   private leg = { v: 0, target: 0.6, next: 0 };
@@ -232,6 +232,7 @@ export class IkiAvatar implements AvatarController {
     restoreBases(access, this.bases);
     this.motion.update(now);
     const idleTempo = Math.max(0.25, this.pack.idleTempo ?? 1);
+    const idleAmplitude = Math.max(0, Math.min(1, this.pack.idleAmplitude ?? 1));
     // What the app drives goes after the motion update, so it wins.
     if (this.params.has("ParamLegShift")) {
       // Shift the weight from one leg to the other every 7–12 s, easing over ~2 s.
@@ -247,7 +248,10 @@ export class IkiAvatar implements AvatarController {
       const t = (now - this.gesture.start) / this.gesture.dur;
       if (t >= 1) this.gesture = null;
       else for (const [id, v] of Object.entries(this.gesture.pose(t))) {
-        if (this.gesture.timed || TIMED_PARAMETERS.has(id)) timed[id] = v;
+        // Keep the raised wave's forearm on its authored arc. Spring lag
+        // and amplitude variation can leave that hand out to the side.
+        const waveElbow = this.gesture.name === "wave-raised" && id === "ParamElbowR";
+        if (waveElbow || this.gesture.timed || TIMED_PARAMETERS.has(id)) timed[id] = v;
         else target[id] = v * this.gesture.scale;
       }
       limitArmLift(target, this.pack.armLiftMax);
@@ -256,15 +260,19 @@ export class IkiAvatar implements AvatarController {
     // Fade out the idle weight shift as a signature takes weight onto one leg.
     // The sum then stays within the leg warp's range, even on the same side.
     const gestureLeg = target.ParamLegShift ?? 0;
-    const idleLeg = this.leg.v * (1 - Math.abs(gestureLeg));
+    const idleLeg = this.leg.v * idleAmplitude * (1 - Math.abs(gestureLeg));
     const life = idlePose(now / 1000 * idleTempo, idleLeg + gestureLeg, this.state === "speaking", Math.min(1, this.mouth.open * 1.4));
+    for (const id of Object.keys(life)) life[id] *= idleAmplitude;
     // A timed gesture places the arms exactly (palms that must meet), so idle arm sway fades out under it.
     const clapArms = 1 - smoother(Math.abs(timed.ParamElbowL ?? 0) / 40);
-    const rightArmIdle = clapArms * (1 - (timed.ParamGlassesReach ?? 0));
+    const guidedRightArm = Math.max(timed.ParamGlassesReach ?? 0, timed.ParamLuStudy ?? 0,
+      timed.ParamLuThought ?? 0, timed.ParamLuFoldR ?? 0);
+    const rightArmIdle = clapArms * (1 - guidedRightArm);
+    const leftArmIdle = clapArms * (1 - (timed.ParamLuFoldL ?? 0));
     life.ParamArmR *= rightArmIdle;
     life.ParamElbowR *= rightArmIdle;
-    life.ParamArmL *= clapArms;
-    life.ParamElbowL *= clapArms;
+    life.ParamArmL *= leftArmIdle;
+    life.ParamElbowL *= leftArmIdle;
     if (this.mouth.open > 0.01 || this.state === "speaking") {
       this.player.setParameter(StandardParameter.MouthOpen, Math.min(1, this.mouth.open * 1.1));
       if (this.params.has(StandardParameter.MouthForm)) this.player.setParameter(StandardParameter.MouthForm, this.mouth.form);
