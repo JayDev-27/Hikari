@@ -8,13 +8,14 @@
 //      neighbours' mean colour (it stays transparent; this is the usual edge padding).
 //   2. unmix: an antialiased edge texel (alpha under 255) of dark paint carries colour pre-mixed with
 //      the backdrop, sometimes a texel or two outside the outline. One with dark (luma < 80) opaque
-//      paint within 3 texels and no light opaque paint there (skin, a cuff: their own edge), at least
+//      paint within 3 texels (6 for a faint one, alpha under 100: a wisp of backdrop off the outline) and no light opaque paint there (skin, a cuff: their own edge), at least
 //      40 levels lighter than that paint, takes its median colour, its alpha kept.
 //   3. specks: a small group of light texels (luma ≥ 110, up to 12 texels: a strip of border a texel
 //      or two wide) touching transparency, with dark (luma < 80) opaque paint around it, takes that
 //      paint's median colour.
 //   4. strips: a light strip one to three texels wide along a garment's dark edge (a long thin line
-//      of border, too long for 3) takes the dark paint's colour; hair is left out (a thin light
+//      of border, too long for 3, next to transparency or the outline's soft fringe) takes the dark
+//      paint's colour; hair is left out (a thin light
 //      strand looks the same).
 // Real light paint (an eye white, teeth, a cuff, skin) is an area or sits beside light paint, so 2-4
 // never touch it, and
@@ -61,10 +62,11 @@ for (const [t, tex] of model.textures.entries()) {
       continue;
     }
     if (!allow[p]) continue;
-    if (d[i + 3] < 255) { // 2. unmix, against the opaque paint within 3 texels
+    if (d[i + 3] < 255) { // 2. unmix, against the opaque paint within 3 texels (6 for a faint wisp)
       const dark = [];
       let light = false;
-      for (let dy = -3; dy <= 3 && !light; dy++) for (let dx = -3; dx <= 3; dx++) {
+      const R = d[i + 3] < 100 ? 6 : 3;
+      for (let dy = -R; dy <= R && !light; dy++) for (let dx = -R; dx <= R; dx++) {
         const yy = y + dy, xx = x + dx;
         if (yy < 0 || yy >= H || xx < 0 || xx >= W) continue;
         const k = (yy * W + xx) * 4;
@@ -133,7 +135,7 @@ for (const [t, tex] of model.textures.entries()) {
     const p = y * W + x;
     if (!garment[p] || out[p * 4 + 3] < 20 || cur(p) < 85) continue;
     for (const step of [1, -1, W, -W]) {
-      if (out[(p - step) * 4 + 3] >= 20) continue; // transparency on the other side
+      if (out[(p - step) * 4 + 3] >= 200) continue; // the edge (transparent or its soft fringe) on the other side
       const walked = [p];
       let q = p + step, dark = -1;
       for (let k = 0; k < 3; k++, q += step) {

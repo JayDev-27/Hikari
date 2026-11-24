@@ -41,7 +41,9 @@ Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
   texels pre-mixed with it, and strips/specks of it one to three texels wide along the outline.
   `despeck-edges.mjs` bleeds paint into transparent texels and recolours the other two from the
   dark paint beside them; light areas, skin, cuffs and the face's features are never touched.
-  Render: 42 → 5 light outline px; app: bright (luma > 100) trouser-edge px per frame 3–10 → 0–2.
+  Strips are found next to transparency or the outline's soft fringe, and faint wisps (alpha < 100)
+  up to 6 texels off it. Render: 42 → 1 light outline px; app: light (luma > 75) trouser-edge px per
+  frame 11–22 → 0–4, bright (> 100) 3–10 → 0–2.
 
 ## 2026-11-24 — Makima as an Iki model, cut from her reference (A)
 
