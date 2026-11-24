@@ -8,3 +8,6 @@ apps/desktop/src-tauri/gen/
 models/
 apps/desktop/public/characters/
 apps/desktop/public/live2d/
+
+# Iki character workdirs (generated parts, layers, renders)
+characters/*/iki-char/

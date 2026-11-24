@@ -1,0 +1,198 @@
+{
+  "Version": 3,
+  "Parameters": [
+    {
+      "Id": "ParamAngleX",
+      "GroupId": "ParamGroupFace",
+      "Name": "Angle X"
+    },
+    {
+      "Id": "ParamAngleY",
+      "GroupId": "ParamGroupFace",
+      "Name": "Angle Y"
+    },
+    {
+      "Id": "ParamAngleZ",
+      "GroupId": "ParamGroupFace",
+      "Name": "Angle Z"
+    },
+    {
+      "Id": "ParamBreath",
+      "GroupId": "ParamGroupBody",
+      "Name": "Breath"
+    },
+    {
+      "Id": "ParamHairSwing",
+      "GroupId": "ParamGroupPhysics",
+      "Name": "Hair Swing"
+    },
+    {
+      "Id": "ParamClothSwing",
+      "GroupId": "ParamGroupPhysics",
+      "Name": "Cloth Swing"
+    },
+    {
+      "Id": "ParamWind",
+      "GroupId": "ParamGroupPhysics",
+      "Name": "Wind"
+    },
+    {
+      "Id": "ParamBodyAngleX",
+      "GroupId": "ParamGroupBody",
+      "Name": "Body Rotation X"
+    },
+    {
+      "Id": "ParamMouthOpenY",
+      "GroupId": "ParamGroupMouth",
+      "Name": "Mouth Open"
+    },
+    {
+      "Id": "ParamMouthForm",
+      "GroupId": "ParamGroupMouth",
+      "Name": "Mouth Shape"
+    },
+    {
+      "Id": "ParamEyeLOpen",
+      "GroupId": "ParamGroupEyes",
+      "Name": "Left Eye Open"
+    },
+    {
+      "Id": "ParamEyeROpen",
+      "GroupId": "ParamGroupEyes",
+      "Name": "Right Eye Open"
+    },
+    {
+      "Id": "ParamEyeBallX",
+      "GroupId": "ParamGroupEyeballs",
+      "Name": "Eyeball X"
+    },
+    {
+      "Id": "ParamEyeBallY",
+      "GroupId": "ParamGroupEyeballs",
+      "Name": "Eyeball Y"
+    },
+    {
+      "Id": "ParamBrowLY",
+      "GroupId": "ParamGroupBrows",
+      "Name": "Left Brow Up/Down"
+    },
+    {
+      "Id": "ParamBrowRY",
+      "GroupId": "ParamGroupBrows",
+      "Name": "Right Brow Up/Down"
+    },
+    {
+      "Id": "ParamShoulderL",
+      "GroupId": "ParamGroupArmL",
+      "Name": "Left Shoulder"
+    },
+    {
+      "Id": "ParamElbowL",
+      "GroupId": "ParamGroupArmL",
+      "Name": "Left Elbow"
+    },
+    {
+      "Id": "ParamWristL",
+      "GroupId": "ParamGroupArmL",
+      "Name": "Left Wrist"
+    },
+    {
+      "Id": "ParamDepthL",
+      "GroupId": "ParamGroupArmL",
+      "Name": "Left Arm Depth"
+    },
+    {
+      "Id": "ParamShoulderR",
+      "GroupId": "ParamGroupArmR",
+      "Name": "Right Shoulder"
+    },
+    {
+      "Id": "ParamElbowR",
+      "GroupId": "ParamGroupArmR",
+      "Name": "Right Elbow"
+    },
+    {
+      "Id": "ParamWristR",
+      "GroupId": "ParamGroupArmR",
+      "Name": "Right Wrist"
+    },
+    {
+      "Id": "ParamDepthR",
+      "GroupId": "ParamGroupArmR",
+      "Name": "Right Arm Depth"
+    },
+    {
+      "Id": "ParamSignatureHands",
+      "GroupId": "ParamGroupProps",
+      "Name": "Signature Hands"
+    }
+  ],
+  "ParameterGroups": [
+    {
+      "Id": "ParamGroupFace",
+      "GroupId": "",
+      "Name": "Face"
+    },
+    {
+      "Id": "ParamGroupBody",
+      "GroupId": "",
+      "Name": "Body"
+    },
+    {
+      "Id": "ParamGroupPhysics",
+      "GroupId": "",
+      "Name": "Physics"
+    },
+    {
+      "Id": "ParamGroupMouth",
+      "GroupId": "",
+      "Name": "Mouth"
+    },
+    {
+      "Id": "ParamGroupEyes",
+      "GroupId": "",
+      "Name": "Eyes"
+    },
+    {
+      "Id": "ParamGroupEyeballs",
+      "GroupId": "",
+      "Name": "Eyeballs"
+    },
+    {
+      "Id": "ParamGroupBrows",
+      "GroupId": "",
+      "Name": "Brows"
+    },
+    {
+      "Id": "ParamGroupArmL",
+      "GroupId": "",
+      "Name": "Arm L"
+    },
+    {
+      "Id": "ParamGroupArmR",
+      "GroupId": "",
+      "Name": "Arm R"
+    },
+    {
+      "Id": "ParamGroupProps",
+      "GroupId": "",
+      "Name": "Props"
+    }
+  ],
+  "Parts": [
+    {
+      "Id": "PartRoot",
+      "Name": "Root"
+    }
+  ],
+  "CombinedParameters": [
+    [
+      "ParamAngleX",
+      "ParamAngleY"
+    ],
+    [
+      "ParamEyeBallX",
+      "ParamEyeBallY"
+    ]
+  ]
+}

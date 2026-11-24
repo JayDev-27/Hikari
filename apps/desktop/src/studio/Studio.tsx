@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { emitTo } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open } from "@tauri-apps/plugin-dialog";
-import { activeCharacterId, setActiveCharacterId, type CharacterPack } from "../avatar/characters";
+import { ACTIVE_KEY, activeCharacterId, setActiveCharacterId, type CharacterPack } from "../avatar/characters";
 import { deleteUserPack, importModel, listPacks, type ImportResult } from "../avatar/packs";
+import { CharacterPreview } from "./CharacterPreview";
 import { Subscriptions } from "../util/subscriptions";
 
 /** First paragraph of the persona's "## Identity" section (or of the file). */
@@ -12,6 +13,8 @@ export function personaSummary(md: string): string {
   const text = (m ? m[1] : md.replace(/^#.*$/m, "")).trim();
   return text.split(/\n\s*\n/)[0]?.replace(/\s+/g, " ").trim() ?? "";
 }
+
+const rendererLabel = { live2d: "Live2D", vrm: "VRM", iki: "Iki" };
 
 type Notice = { kind: "ok" | "error"; text: string; warnings?: string[]; license?: CharacterPack["license"] };
 
@@ -27,7 +30,12 @@ export function Studio() {
   useEffect(() => {
     let live = true;
     void listPacks().then((p) => live && setPacks(p));
+    const syncActive = (event: StorageEvent) => {
+      if (event.key === ACTIVE_KEY && event.newValue) setActive(event.newValue);
+    };
+    window.addEventListener("storage", syncActive);
     return () => {
+      window.removeEventListener("storage", syncActive);
       live = false;
     };
   }, []);
@@ -67,6 +75,7 @@ export function Studio() {
 
   // Drag & drop onto the window: import into the selected slot, else as a new character.
   useEffect(() => {
+    if (!("__TAURI_INTERNALS__" in window)) return;
     const subs = new Subscriptions();
     subs.add(
       getCurrentWebview().onDragDropEvent((e) => {
@@ -112,7 +121,7 @@ export function Studio() {
               {p.id === active && <span className="dot" title="Active" />}
             </span>
             <span className="badges">
-              {p.modelUrl ? <span className="badge">{p.renderer === "vrm" ? "VRM" : "Live2D"}</span> : <span className="badge warn">needs model</span>}
+              {p.modelUrl ? <span className="badge">{rendererLabel[p.renderer]}</span> : <span className="badge warn">needs model</span>}
               {p.imported && <span className="badge">imported</span>}
             </span>
           </button>
@@ -159,6 +168,8 @@ export function Studio() {
                 models aren't allowed.
               </p>
             )}
+
+            {(pack.renderer === "live2d" || pack.renderer === "iki") && pack.modelUrl && <CharacterPreview key={pack.modelUrl} pack={pack} />}
 
             {pack.personaText && (
               <section>

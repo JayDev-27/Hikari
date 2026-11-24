@@ -1,0 +1,213 @@
+{
+  "id": "makima",
+  "displayName": "Makima",
+  "renderer": "live2d",
+  "modelPath": "model/Makima.model3.json",
+  "importSlot": true,
+  "persona": "persona.md",
+  "voice": {
+    "engine": "hima",
+    "voiceId": "Meera"
+  },
+  "defaultLanguage": "hinglish",
+  "license": {
+    "source": "Hikari Live2D model and illustrations based on the official Chainsaw Man character sheet.",
+    "terms": "Hikari fan artwork and rig. The underlying character design belongs to its respective rights holders. No franchise voice recording is included.",
+    "url": "https://chainsawman.dog/movie_reze/character/"
+  },
+  "motionMap": {
+    "idle": {
+      "group": "Idle"
+    },
+    "tap": {
+      "group": "TapBody",
+      "index": 0
+    },
+    "tap_head": {
+      "group": "TapBody",
+      "index": 10
+    },
+    "tap_body": {
+      "group": "TapBody",
+      "index": 0
+    },
+    "wave": {
+      "group": "TapBody",
+      "index": 0
+    },
+    "shrug": {
+      "group": "TapBody",
+      "index": 1
+    },
+    "facepalm": {
+      "group": "TapBody",
+      "index": 2
+    },
+    "laugh": {
+      "group": "TapBody",
+      "index": 3
+    },
+    "shy_look_away": {
+      "group": "TapBody",
+      "index": 4
+    },
+    "think_chin": {
+      "group": "TapBody",
+      "index": 5
+    },
+    "clap": {
+      "group": "TapBody",
+      "index": 6
+    },
+    "point": {
+      "group": "TapBody",
+      "index": 7
+    },
+    "pout": {
+      "group": "TapBody",
+      "index": 8
+    },
+    "cross_arms": {
+      "group": "TapBody",
+      "index": 9
+    },
+    "head_pat_react": {
+      "group": "TapBody",
+      "index": 10
+    },
+    "nod": {
+      "group": "TapBody",
+      "index": 11
+    },
+    "head_tilt": {
+      "group": "TapBody",
+      "index": 12
+    },
+    "bow": {
+      "group": "TapBody",
+      "index": 13
+    },
+    "speech-calm": {
+      "group": "Speech",
+      "index": 0
+    },
+    "speech-thoughtful": {
+      "group": "Speech",
+      "index": 1
+    },
+    "speech-playful": {
+      "group": "Speech",
+      "index": 2
+    },
+    "speech-surprised": {
+      "group": "Speech",
+      "index": 3
+    },
+    "signature-hand-sign": {
+      "group": "Signature",
+      "index": 0
+    }
+  },
+  "expressionMap": {
+    "neutral": "neutral",
+    "joy": "joy",
+    "fun": "fun",
+    "teasing": "teasing",
+    "angry": "angry",
+    "sorrow": "sorrow",
+    "shy": "shy",
+    "surprised": "surprised",
+    "thinking": "thinking",
+    "sleepy": "sleepy"
+  },
+  "hitAreas": {
+    "Head": "head",
+    "Body": "body"
+  },
+  "gazeScale": 0.56,
+  "speech": {
+    "defaultEmotion": "neutral",
+    "motions": [
+      "speech-calm",
+      "speech-thoughtful"
+    ],
+    "emotionMotions": {
+      "joy": [
+        "speech-playful",
+        "speech-calm"
+      ],
+      "fun": [
+        "speech-playful",
+        "speech-calm"
+      ],
+      "teasing": [
+        "speech-playful",
+        "speech-thoughtful"
+      ],
+      "shy": [
+        "speech-thoughtful",
+        "speech-calm"
+      ],
+      "angry": [
+        "speech-calm",
+        "speech-thoughtful"
+      ],
+      "sorrow": [
+        "speech-thoughtful"
+      ],
+      "thinking": [
+        "speech-thoughtful",
+        "speech-calm"
+      ],
+      "surprised": [
+        "speech-surprised"
+      ],
+      "sleepy": [
+        "speech-calm"
+      ]
+    },
+    "intervalMs": 2500
+  },
+  "signatureMotions": [],
+  "poseRig": {
+    "hands": [
+      {
+        "drawable": "HandL",
+        "wrist": [
+          -164.5,
+          16.5
+        ],
+        "breadth": 1
+      },
+      {
+        "drawable": "HandR",
+        "wrist": [
+          157.5,
+          -4.5
+        ],
+        "breadth": 1
+      }
+    ],
+    "joinedBreadth": 1,
+    "arms": [
+      {
+        "drawable": "leftArm1",
+        "handDrawable": "HandL",
+        "centers": [
+          0.7,
+          0.652,
+          0.38
+        ]
+      },
+      {
+        "drawable": "rightArm1",
+        "handDrawable": "HandR",
+        "centers": [
+          0.364,
+          0.418,
+          0.538
+        ]
+      }
+    ]
+  }
+}

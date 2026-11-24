@@ -148,7 +148,7 @@ Third-party models and runtimes aren't committed. [`docs/LICENSES.md`](docs/LICE
 
 - **Live2D Cubism Core** is proprietary (Live2D PSLA). It's fetched from the official SDK, bundled only inside the built app, and never redistributed in this repo.
 - **Sample models** (Hiyori, Haru) are under the Live2D Free Material License. *This content uses sample data owned and copyrighted by Live2D Inc.*
-- **Franchise characters** ship as persona text plus an empty model slot only. Import a model you own; ripped models and voice-actor clones are never included.
+- **Makima, Reze, Rize Kamishiro, Lu Guang and Cheng Xiaoshi** include native Live2D models and individual personas. Their hand gestures, hair and clothing animate in both Character Studio and the desktop stage. Select one in Character Studio or type `switch to Reze` in chat. Studio also accepts a custom model for each character.
 - **Voice cloning** requires a recorded consent file for any voice other than your own.
 
 ## License

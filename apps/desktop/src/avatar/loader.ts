@@ -25,5 +25,13 @@ export async function loadAvatar(host: HTMLElement, pack: CharacterPack): Promis
     avatar.onDestroy = () => ro.disconnect();
     return avatar;
   }
+  if (pack.renderer === "iki") {
+    const { IkiAvatar } = await import("./iki/IkiAvatar");
+    const avatar = await IkiAvatar.create(host, pack);
+    const ro = new ResizeObserver(() => avatar.resize());
+    ro.observe(host);
+    avatar.onDestroy = () => ro.disconnect();
+    return avatar;
+  }
   throw new Error("VRM renderer lands in M3");
 }

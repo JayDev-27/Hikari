@@ -14,13 +14,12 @@ import { listPacks } from "../avatar/packs";
 import type { CharacterPack } from "../avatar/characters";
 import { emitTo } from "@tauri-apps/api/event";
 import { FrameScheduler, type FrameTier } from "./frameScheduler";
+import type { AvatarEmotion, AvatarGesture, Emotion } from "@hikari/protocol";
 
 export const inTauri = "__TAURI_INTERNALS__" in window;
 
-interface PendingGesture {
-  seq: number;
-  atMs: number;
-  tag: string;
+interface PendingGesture extends AvatarGesture {
+  receivedAt: number;
 }
 
 /**
@@ -34,6 +33,14 @@ export class StageRuntime {
   readonly voice: VoiceInput;
   private avatar?: AvatarController;
   private gestures: PendingGesture[] = [];
+  private emotions = new Map<number, AvatarEmotion>();
+  private speechEmotion?: Emotion;
+  private lastEmotionSeq = -1;
+  private speechStreamEnded = false;
+  private nextSpeechMotion = 0;
+  private speechMotionIndex = 0;
+  private nextSignatureMotion = Infinity;
+  private signatureMotionIndex = 0;
   private chunkStart = new Map<number, number>();
   private freq: Float32Array<ArrayBuffer>;
   private raf = 0;
@@ -84,11 +91,6 @@ export class StageRuntime {
         useStage.getState().mark("audio_first_play", performance.now() - this.turnStartAt + lead);
       }
     };
-    this.playback.onDrained = () => {
-      this.avatar?.setState("idle");
-      useStage.getState().setState("idle");
-      setTimeout(() => !this.playback.isPlaying && useStage.getState().setCaption(""), 2500);
-    };
   }
 
   attach(avatar: AvatarController): void {
@@ -116,7 +118,14 @@ export class StageRuntime {
 
   /** Active character changed: tell the core (persona + memory namespace). */
   setCharacter(pack: CharacterPack): void {
+    if (this.character !== undefined && this.character.id !== pack.id) {
+      if (this.playback.isPlaying) this.bargeIn("ui");
+      else this.resetSpeechAnimation();
+      this.speechMotionIndex = 0;
+    }
     this.character = pack;
+    this.nextSignatureMotion = performance.now() + 18000;
+    this.signatureMotionIndex = 0;
     this.sendCharacter();
   }
 
@@ -165,9 +174,13 @@ export class StageRuntime {
     const c = this.core;
     c.on("tts.chunk", (p) => this.playback.enqueue(p));
     c.on("turn.start", () => this.newTurn());
-    c.on("avatar.emotion", (p) => this.avatar?.setExpression(p.name, p.intensity));
-    c.on("avatar.gesture", (p) => this.gestures.push({ seq: p.seq ?? -1, atMs: p.atMs, tag: p.tag }));
+    c.on("avatar.emotion", (p) => {
+      if (p.seq === undefined) this.applyEmotion(p);
+      else if (p.seq >= this.lastEmotionSeq) this.emotions.set(p.seq, p);
+    });
+    c.on("avatar.gesture", (p) => this.gestures.push({ ...p, receivedAt: performance.now() }));
     c.on("state", (p) => {
+      if (p.state === "idle" && this.playback.isPlaying) return;
       this.avatar?.setState(p.state);
       useStage.getState().setState(p.state);
     });
@@ -175,7 +188,10 @@ export class StageRuntime {
     // Transcript for the chat window (one core connection; the chat talks via the stage).
     c.on("stt.final", (p, env) => this.chat({ kind: "user", text: p.text, turnId: env.turnId, via: "voice" }));
     c.on("llm.token", (p, env) => this.chat({ kind: "her", text: p.delta, turnId: env.turnId, append: true }));
-    c.on("tts.end", (_p, env) => this.chat({ kind: "end", text: "", turnId: env.turnId }));
+    c.on("tts.end", (_p, env) => {
+      this.speechStreamEnded = true;
+      this.chat({ kind: "end", text: "", turnId: env.turnId });
+    });
     c.on("error", (p, env) => this.chat({ kind: "system", text: `${p.code}: ${p.message}`, turnId: env.turnId }));
     c.on("barge_in", () => this.bargeIn("core"));
   }
@@ -183,19 +199,38 @@ export class StageRuntime {
   private newTurn(): void {
     this.playback.reset();
     this.lipsync.clear();
-    this.gestures = [];
-    this.chunkStart.clear();
+    this.resetSpeechAnimation();
     this.turnStartAt = performance.now();
     this.firstAudioMarked = false;
+  }
+
+  private resetSpeechAnimation(): void {
+    this.speechStreamEnded = false;
+    this.gestures = [];
+    this.emotions.clear();
+    this.chunkStart.clear();
+    this.speechEmotion = undefined;
+    this.lastEmotionSeq = -1;
+    this.nextSpeechMotion = 0;
     this.captionSeq = -1;
+    this.avatar?.setExpression("neutral", 0);
+  }
+
+  private applyEmotion(emotion: AvatarEmotion): void {
+    this.speechEmotion = emotion.name;
+    this.avatar?.setExpression(emotion.name, emotion.intensity);
   }
 
   /** Stop speaking immediately (user started talking / panic). */
   bargeIn(source: "ui" | "core" = "ui"): void {
     const where = this.playback.stop();
     this.lipsync.clear();
-    this.gestures = [];
+    this.resetSpeechAnimation();
     this.avatar?.setVisemes({ aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 });
+    if (useStage.getState().state === "speaking") {
+      this.avatar?.setState("idle");
+      useStage.getState().setState("idle");
+    }
     if (source === "ui") this.core.send("barge_in", { source, ...where });
   }
 
@@ -369,11 +404,20 @@ export class StageRuntime {
     if (playing && playing.seq !== this.captionSeq) {
       this.captionSeq = playing.seq;
       useStage.getState().setCaption(playing.text);
+      a.setState("speaking");
+      useStage.getState().setState("speaking");
+    } else if (this.speechStreamEnded && this.captionSeq >= 0 && !this.playback.isPlaying && t >= (this.playback.scheduled.at(-1)?.ctxEnd ?? t)) {
+      this.resetSpeechAnimation();
+      if (useStage.getState().state === "speaking") {
+        a.setState("idle");
+        useStage.getState().setState("idle");
+      }
+      setTimeout(() => !this.playback.isPlaying && useStage.getState().setCaption(""), 2500);
     }
     // Loudness of what is heard at t (latency-aligned), for jaw scaling.
-    const rms = this.playback.isPlaying ? this.playback.energyAt(t) : 0;
+    const rms = playing ? this.playback.energyAt(t) : 0;
     let fallback;
-    if (this.playback.isPlaying && !this.lipsync.hasPending) {
+    if (playing && !this.lipsync.hasPending) {
       this.playback.analyser.getFloatFrequencyData(this.freq);
       fallback = visemesFromSpectrum(this.freq, this.playback.ctx.sampleRate, rms);
     }
@@ -384,20 +428,61 @@ export class StageRuntime {
       useStage.getState().setAudio({ ctx: this.playback.ctx.state, mouth: Math.round(visemesToLive2D(vis).open * 100) / 100 });
     }
 
-    // Fire gestures whose time has come (on the audio clock).
-    if (this.gestures.length) {
-      this.gestures = this.gestures.filter((g) => {
-        const start = this.chunkStart.get(g.seq);
-        if (start === undefined) return true;
-        if (t >= start + g.atMs / 1000) {
-          a.playMotion(g.tag);
-          return false;
-        }
-        return true;
-      });
+    this.animateSpeech(a, playing?.seq, playing?.ctxEnd, t, now);
+    const signatures = this.character?.signatureMotions;
+    if (signatures?.length && now >= this.nextSignatureMotion && !playing && !this.playback.isPlaying &&
+        useStage.getState().state === "idle" && !a.isBusy?.()) {
+      a.playMotion(signatures[this.signatureMotionIndex++ % signatures.length]);
+      this.nextSignatureMotion = now + 35000;
     }
     a.update(dt);
   };
+
+  private animateSpeech(avatar: AvatarController, seq: number | undefined, chunkEnd: number | undefined, time: number, now: number): void {
+    const speech = this.character?.speech;
+    if (seq !== undefined) {
+      // Chunks arrive ahead of playback. Apply only the most recent cue for audio we can hear.
+      let latest: AvatarEmotion | undefined;
+      for (const [key, emotion] of this.emotions) {
+        if (key > seq) continue;
+        if (key >= this.lastEmotionSeq) {
+          this.lastEmotionSeq = key;
+          latest = emotion;
+        }
+        this.emotions.delete(key);
+      }
+      if (latest) {
+        this.applyEmotion(latest);
+      } else if (!this.speechEmotion && speech) {
+        this.applyEmotion({ name: speech.defaultEmotion, intensity: 0.65 });
+      }
+    }
+
+    let explicitSoon = false;
+    this.gestures = this.gestures.filter((gesture) => {
+      const start = gesture.seq === undefined ? undefined : this.chunkStart.get(gesture.seq);
+      const remaining = gesture.seq === undefined ? (gesture.receivedAt + gesture.atMs - now) / 1000
+        : start === undefined ? Infinity : start + gesture.atMs / 1000 - time;
+      if (remaining <= 0) {
+        avatar.playMotion(gesture.tag, { interrupt: true });
+        this.nextSpeechMotion = time + (speech?.intervalMs ?? 0) / 1000;
+      }
+      if (remaining <= 0.4) explicitSoon = true;
+      return remaining > 0;
+    });
+
+    if (!speech || seq === undefined || !chunkEnd || chunkEnd - time < 0.2 ||
+        explicitSoon || time < this.nextSpeechMotion || avatar.isBusy?.()) return;
+    const motions = speech.emotionMotions[this.speechEmotion ?? speech.defaultEmotion] ?? speech.motions;
+    if (!motions.length) return;
+    avatar.playMotion(motions[this.speechMotionIndex++ % motions.length]);
+    this.nextSpeechMotion = time + speech.intervalMs / 1000;
+  }
+
+  tap(x: number, y: number): void {
+    const area = this.avatar?.hitTest(x, y);
+    if (area) this.avatar?.react({ kind: "click", area });
+  }
 
   async startDrag(): Promise<void> {
     if (inTauri) await getCurrentWindow().startDragging();

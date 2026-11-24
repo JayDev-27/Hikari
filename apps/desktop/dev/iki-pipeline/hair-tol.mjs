@@ -1,0 +1,23 @@
+// node hair-tol.mjs <render> <picture> x y w h — mismatches with a counterpart within 2 px, largest mismatch blob (eyes excluded).
+import { createRequire } from "node:module";
+const req = createRequire((await import("node:path")).resolve(process.env.IKI_REPO ?? "../iki") + "/packages/mcp/package.json");
+const sharp = (await import(req.resolve("sharp"))).default;
+const [render, pic, X, Y, w, h] = process.argv.slice(2); const W = +w, H = +h;
+const a = await sharp(render).resize(W, H).flatten({ background: "#c6d0dd" }).removeAlpha().raw().toBuffer();
+const b = await sharp(pic).extract({ left: +X, top: +Y, width: W, height: H }).removeAlpha().raw().toBuffer();
+const hair = (d, p) => { const i = p * 3, r = d[i], g = d[i + 1], bl = d[i + 2]; return r > 120 && r - g > 55 && r - bl > 50 && g < 150; };
+const eye = (x, y) => { const cx = x + +X, cy = y + +Y; return (cy > 405 && cy < 470 && ((cx > 400 && cx < 520) || (cx > 580 && cx < 700))) || (cx > 500 && cx < 610 && cy > 548 && cy < 595); };
+const A = new Uint8Array(W * H), B = new Uint8Array(W * H);
+for (let p = 0; p < W * H; p++) { A[p] = hair(a, p); B[p] = hair(b, p); }
+const near = (M, x, y, r = 2) => { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < W && yy < H && M[yy * W + xx]) return true; } return false; };
+let mism = 0, tol = 0; const bad = new Uint8Array(W * H);
+for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+  const p = y * W + x; if (A[p] === B[p] || eye(x, y)) continue; mism++;
+  if (A[p] ? near(B, x, y) : near(A, x, y)) tol++; else bad[p] = 1;
+}
+let big = 0, bigAt = null; const seen = new Uint8Array(W * H);
+for (let s = 0; s < W * H; s++) { if (!bad[s] || seen[s]) continue; const st = [s]; seen[s] = 1; let n = 0;
+  while (st.length) { const p = st.pop(); n++; const x = p % W; for (const q of [p - 1, p + 1, p - W, p + W]) { if (q < 0 || q >= W * H || seen[q] || !bad[q]) continue; if ((q === p - 1 && x === 0) || (q === p + 1 && x === W - 1)) continue; seen[q] = 1; st.push(q); } }
+  if (n > big) { big = n; bigAt = [s % W + +X, Math.floor(s / W) + +Y]; } }
+const refHair = B.reduce((s, v) => s + v, 0);
+console.log(JSON.stringify({ refHair, mismatched: mism, within2px: tol, beyond2px: mism - tol, beyondPct: +(100 * (mism - tol) / refHair).toFixed(3), largestBlobPx: big, at: bigAt }));

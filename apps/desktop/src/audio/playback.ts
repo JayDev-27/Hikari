@@ -89,6 +89,7 @@ export class PlaybackQueue {
     const now = this.ctx.currentTime;
     this.gain.gain.setTargetAtTime(0, now, 0.005); // ~5 ms fade, no click
     for (const s of this.sources) {
+      s.onended = null;
       try {
         s.stop(now + 0.03);
       } catch {

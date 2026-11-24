@@ -1,3 +1,4 @@
+import { loadIkiModel } from "@ikijs/format";
 import { describe, expect, it } from "vitest";
 import { builtinPacks, userUrl } from "./packs";
 import { personaSummary } from "../studio/Studio";
@@ -20,15 +21,48 @@ const GESTURES = ["wave", "shrug", "facepalm", "laugh", "shy_look_away", "think_
 describe("built-in character packs", () => {
   const packs = builtinPacks();
 
-  it("ships 4 original characters with models and 3 franchise import slots", () => {
-    const withModel = packs.filter((p) => p.modelUrl).map((p) => p.id).sort();
-    const slots = packs.filter((p) => p.importSlot).map((p) => p.id).sort();
-    expect(withModel).toEqual(["haru", "hiyori", "mao", "rice"]);
-    expect(slots).toEqual(["makima", "reze", "rize"]);
-    for (const s of packs.filter((p) => p.importSlot)) {
-      expect(s.modelPath).toBeNull();
-      expect(s.modelUrl).toBeNull();
+  it("resolves all nine native characters (Live2D or Iki) and their replaceable slots", () => {
+    expect(packs.map((p) => p.id).sort()).toEqual(["cheng-xiaoshi", "haru", "hiyori", "lu-guang", "makima", "mao", "reze", "rice", "rize"]);
+    expect(packs.filter((p) => p.importSlot).map((p) => p.id).sort()).toEqual(["cheng-xiaoshi", "lu-guang", "makima", "reze", "rize"]);
+    for (const p of packs) {
+      expect(["live2d", "iki"]).toContain(p.renderer);
+      expect(p.modelUrl).toMatch(p.renderer === "iki" ? /\.iki$/ : /\.model3\.json$/);
     }
+  });
+
+  interface Model {
+    FileReferences: {
+      Moc: string;
+      Textures: string[];
+      Physics: string;
+      Motions: Record<string, { File: string }[]>;
+      Expressions: { Name: string; File: string }[];
+    };
+  }
+  const models = import.meta.glob<Model>("../../../../characters/*/model/*.model3.json", { eager: true, import: "default" });
+  const files = import.meta.glob("../../../../characters/*/model/**/*", { query: "?url" });
+
+  it.each(packs.filter((p) => p.importSlot && p.renderer === "live2d"))("$displayName has matching motion, physics, texture and expression files", (p) => {
+    const root = `../../../../characters/${p.id}/`;
+    const refs = models[root + p.modelPath].FileReferences;
+    const asset = (name: string) => expect(files).toHaveProperty([root + "model/" + name]);
+    [refs.Moc, refs.Physics, ...refs.Textures, ...refs.Expressions.map((e) => e.File)].forEach(asset);
+    for (const motions of Object.values(refs.Motions)) motions.forEach((m) => asset(m.File));
+    for (const tag of ["idle", "tap_head", "tap_body", ...GESTURES, ...(p.signatureMotions ?? []), ...(p.speech?.motions ?? []), ...Object.values(p.speech?.emotionMotions ?? {}).flat()]) {
+      const motion = p.motionMap![tag];
+      expect(refs.Motions[motion.group][motion.index ?? 0], tag).toBeDefined();
+    }
+    for (const name of Object.values(p.expressionMap!)) expect(refs.Expressions.map((e) => e.Name)).toContain(name);
+  });
+
+  const ikiModels = import.meta.glob<string>("../../../../characters/*/model/*.iki", { eager: true, query: "?raw", import: "default" });
+  it.each(packs.filter((p) => p.renderer === "iki"))("$displayName's Iki model is valid and declares what the pack maps", (p) => {
+    const raw = ikiModels[`../../../../characters/${p.id}/${p.modelPath}`];
+    expect(raw, "model file").toBeDefined();
+    const model = loadIkiModel(raw);
+    const expressions = (model.expressions ?? []).map((e) => e.id);
+    for (const [emotion, id] of Object.entries(p.expressionMap ?? {})) expect(expressions, emotion).toContain(id);
+    for (const [tag, m] of Object.entries(p.motionMap ?? {})) expect(model.motions?.[m.group]?.[m.index ?? 0], tag).toBeDefined();
   });
 
   it("every pack has a matching id, licence and a persona with all sections in order", () => {
@@ -52,17 +86,10 @@ describe("built-in character packs", () => {
     }
   });
 
-  it("franchise slots ship persona text only (no model, art or voice-actor audio)", () => {
-    for (const p of packs.filter((x) => x.importSlot)) {
-      expect(p.personaText).toMatch(/persona text only/i);
-      expect(p.license.terms).toMatch(/Import a model you own/);
-    }
-  });
-
   it("built-in Live2D motion maps point at groups that exist in the samples", () => {
     // Groups present in the official sample models (checked against CubismWebSamples).
     const groups: Record<string, string[]> = { hiyori: ["Idle", "TapBody"], haru: ["Idle", "TapBody"], mao: ["Idle", "TapBody"], rice: ["Idle", "TapBody"] };
-    for (const p of packs.filter((x) => x.modelUrl)) {
+    for (const p of packs.filter((x) => x.id in groups)) {
       for (const [tag, m] of Object.entries(p.motionMap ?? {})) expect(groups[p.id], `${p.id}.${tag}`).toContain(m.group);
     }
   });

@@ -1,7 +1,7 @@
 // CSP-safe Pixi: the app's CSP forbids eval/new Function, which Pixi v8 otherwise uses
 // to generate shader/uniform sync code. Production builds enforce the CSP (dev didn't).
 import "pixi.js/unsafe-eval";
-import { Application, extensions, loadTextures } from "pixi.js";
+import { Application, Assets, extensions, loadTextures } from "pixi.js";
 import { Live2DModel, Live2DPlugin, MotionPriority } from "untitled-pixi-live2d-engine/cubism";
 import type { Emotion } from "@hikari/protocol";
 import type { AvatarController, AvatarEvent, AvatarState, Visemes } from "../types";
@@ -9,7 +9,11 @@ import { ZERO_VISEMES } from "../types";
 import { visemesToLive2D } from "../../lipsync/engine";
 import type { CharacterPack } from "../characters";
 
+import { installPoseRig, type DrawableModel } from "./poseRig";
+import { lipSyncIds } from "./lipSyncIds";
+
 let pluginAdded = false;
+
 
 /** Minimal shape of the Cubism core model we touch (string ids → indices once). */
 interface CoreModel {
@@ -37,9 +41,12 @@ export class Live2DAvatar implements AvatarController {
   private model!: Live2DModel;
   private core!: CoreModel;
   private p: Record<string, number> = {};
+  /** Parameters the model declares for lip sync (its `LipSync` group); the official Mao uses ParamA. */
+  private lipIds: string[] = [];
   private vis: Visemes = { ...ZERO_VISEMES };
   private emotion: Emotion = "neutral";
   private emotionIntensity = 0;
+  private expressionWeight = 1;
   private state: AvatarState = "idle";
   private t = 0;
   private look = { x: 0, y: 0, tx: 0, ty: 0 };
@@ -76,17 +83,37 @@ export class Live2DAvatar implements AvatarController {
       antialias: true,
       autoStart: false, // the StageRuntime drives frames (one clock for audio + visuals)
     });
-    host.prepend(a.app.canvas);
-
-    a.model = await Live2DModel.from(pack.modelUrl!, { autoHitTest: false, autoFocus: false, autoUpdate: false });
-    a.app.stage.addChild(a.model);
-    a.core = (a.model.internalModel as unknown as { coreModel: CoreModel }).coreModel;
-    const ids = a.core.getModel().parameters.ids;
-    ids.forEach((id, i) => (a.p[id] = i));
-    a.model.internalModel.on("beforeModelUpdate", () => a.applyParams());
-    a.layout();
-    a.idle();
-    return a;
+    try {
+      a.model = await Live2DModel.from(pack.modelUrl!, { autoHitTest: false, autoFocus: false, autoUpdate: false });
+      a.app.stage.addChild(a.model);
+      a.core = (a.model.internalModel as unknown as { coreModel: CoreModel }).coreModel;
+      const ids = a.core.getModel().parameters.ids;
+      ids.forEach((id, i) => (a.p[id] = i));
+      a.lipIds = lipSyncIds(a.model.internalModel, a.p);
+      a.model.internalModel.on("beforeModelUpdate", () => a.applyParams());
+      if (pack.poseRig) {
+        let textureIndex = -1;
+        if (pack.poseRig.grip) {
+          const modelUrl = new URL(pack.modelUrl!, window.location.href);
+          const texture = await Assets.load({
+            src: new URL(pack.poseRig.grip.file, modelUrl).href,
+            parser: "texture",
+            data: { autoGenerateMipmaps: true },
+          });
+          textureIndex = a.model.textures.push(texture) - 1;
+        }
+        const updatePose = installPoseRig(a.core as unknown as DrawableModel, pack.poseRig, textureIndex);
+        a.model.internalModel.on("beforeModelUpdate", updatePose);
+      }
+      a.layout();
+      a.idle();
+      a.app.canvas.setAttribute("aria-label", pack.displayName);
+      host.prepend(a.app.canvas);
+      return a;
+    } catch (error) {
+      a.app.destroy(true, { children: true });
+      throw error;
+    }
   }
 
   /** Visible artwork bounds in model-local units (cached; see contentBounds). */
@@ -153,6 +180,15 @@ export class Live2DAvatar implements AvatarController {
     const i = this.p[id];
     if (i !== undefined) this.core.setParameterValueByIndex(i, v, w);
   }
+  /** Set a parameter from a 0..1 amount, mapped through its own min…max range. */
+  private paramNorm(id: string, t: number) {
+    const i = this.p[id];
+    if (i === undefined) return;
+    const raw = this.core.getModel().parameters as unknown as { minimumValues: Float32Array; maximumValues: Float32Array };
+    const lo = raw.minimumValues[i], hi = raw.maximumValues[i];
+    this.core.setParameterValueByIndex(i, lo + t * (hi - lo));
+  }
+
   private addParam(id: string, v: number) {
     const i = this.p[id];
     if (i === undefined) return;
@@ -180,27 +216,33 @@ export class Live2DAvatar implements AvatarController {
     const { open, form } = visemesToLive2D(this.vis);
     const bias = (EMOTION_FORM[this.emotion] ?? 0) * this.emotionIntensity;
     const openK = this.emotion === "angry" ? 0.85 : 1;
-    this.param("ParamMouthOpenY", Math.min(1, open * openK));
-    this.param("ParamMouthForm", Math.max(-1, Math.min(1, form * 0.7 + bias)));
+    // Drive whatever the model declares for lip sync, mapped through that parameter's own range.
+    for (const id of this.lipIds) this.paramNorm(id, Math.min(1, open * openK));
+    // Preserve authored mouth shape on the speech rigs, including between words.
+    const authoredForm = this.pack.speech && this.p.ParamMouthForm !== undefined
+      ? this.core.getParameterValueByIndex(this.p.ParamMouthForm) * this.expressionWeight
+      : bias;
+    this.param("ParamMouthForm", Math.max(-1, Math.min(1, form * 0.62 + authoredForm)));
   }
 
   setExpression(emotion: Emotion, intensity: number): void {
     this.emotion = emotion;
     this.emotionIntensity = intensity;
+    this.expressionWeight = Math.max(0, Math.min(1, intensity));
     const name = this.pack.expressionMap?.[emotion];
     if (name !== undefined) void this.model.expression(name);
-    else if (emotion === "neutral") void this.model.expression();
+    else if (emotion === "neutral") this.model.internalModel.motionManager.expressionManager?.resetExpression();
   }
 
-  playMotion(name: string): void {
+  playMotion(name: string, { interrupt = false } = {}): void {
     const m = this.pack.motionMap?.[name];
     if (!m) return;
-    void this.model.motion(m.group, m.index, MotionPriority.NORMAL);
+    void this.model.motion(m.group, m.index, interrupt ? MotionPriority.FORCE : MotionPriority.NORMAL);
   }
 
   lookAt(x: number, y: number): void {
-    this.look.tx = x;
-    this.look.ty = y;
+    this.look.tx = Math.max(-1, Math.min(1, x));
+    this.look.ty = Math.max(-1, Math.min(1, y));
   }
 
   setVisemes(w: Visemes): void {
@@ -247,8 +289,10 @@ export class Live2DAvatar implements AvatarController {
     const k = 1 - Math.exp(-dt / (this.state === "sleeping" ? 0.8 : 0.18));
     this.look.x += (this.look.tx - this.look.x) * k;
     this.look.y += (this.look.ty - this.look.y) * k;
-    const { width, height } = this.app.screen;
-    this.model.focus(width / 2 + this.look.x * width, height * 0.3 - this.look.y * height, true);
+    // Live2DModel.focus converts positions to a unit direction, which throws away distance
+    // and drives full-strength turns even for tiny cursor changes close to the centre.
+    const gaze = this.pack.gazeScale ?? 1;
+    this.model.internalModel.focusController.focus(this.look.x * gaze, this.look.y * gaze, true);
     this.model.update(dt * 1000);
     this.app.render();
     if (this.pendingHit) this.readHit();

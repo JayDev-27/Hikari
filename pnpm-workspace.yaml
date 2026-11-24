@@ -1,3 +1,5 @@
 packages:
   - apps/*
   - packages/*
+minimumReleaseAgeExclude:
+  - '@ikijs/engine@0.13.0'

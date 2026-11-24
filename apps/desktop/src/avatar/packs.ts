@@ -78,7 +78,7 @@ function sortPacks(a: CharacterPack, b: CharacterPack): number {
 
 export interface ImportResult {
   id: string;
-  renderer: "live2d" | "vrm";
+  renderer: "live2d" | "vrm" | "iki";
   model_path: string;
   license: CharacterJson["license"];
   warnings: string[];
@@ -87,7 +87,18 @@ export interface ImportResult {
 /** Import a model file/folder; `slot` keeps that pack's persona (e.g. "reze"). */
 export async function importModel(src: string, slot?: CharacterPack): Promise<ImportResult> {
   const base = slot
-    ? { ...stripRuntime(slot), modelPath: null, importSlot: false }
+    ? {
+        ...stripRuntime(slot),
+        motionMap: undefined,
+        expressionMap: undefined,
+        hitAreas: undefined,
+        gazeScale: undefined,
+        poseRig: undefined,
+        speech: undefined,
+        signatureMotions: undefined,
+        modelPath: null,
+        importSlot: false,
+      }
     : { persona: null, defaultLanguage: "hinglish" };
   return invoke<ImportResult>("import_model", { src, base, targetId: slot?.id ?? null });
 }

@@ -1,20 +1,46 @@
 import type { Emotion, Language } from "@hikari/protocol";
 
+export interface SpeechAnimation {
+  defaultEmotion: Emotion;
+  motions: string[];
+  emotionMotions: Partial<Record<Emotion, string[]>>;
+  intervalMs: number;
+}
+
 /** `characters/<id>/character.json` as stored (see characters/README.md). */
+export interface PoseRig {
+  hands: { drawable: string; wrist: [number, number]; breadth?: number }[];
+  joinedBreadth?: number;
+  arms?: { drawable: string; handDrawable?: string; centers: [number, number, number] }[];
+  grip?: {
+    drawable: string;
+    arms: string[];
+    file: string;
+    origin: [number, number];
+    size: [number, number];
+    bodyIndices: [number, number];
+    bodyPoints: [number, number, number, number];
+  };
+}
+
 export interface CharacterJson {
+  poseRig?: PoseRig;
   id: string;
   displayName: string;
-  renderer: "live2d" | "vrm";
+  renderer: "live2d" | "vrm" | "iki";
   /** Relative to the pack folder; null = empty import slot (franchise presets). */
   modelPath: string | null;
   scale?: number;
+  gazeScale?: number;
+  speech?: SpeechAnimation;
+  signatureMotions?: string[];
   expressionMap?: Partial<Record<Emotion, string | number>>;
   motionMap?: Record<string, { group: string; index?: number }>;
   hitAreas?: Record<string, string>;
   persona?: string | null;
   voice?: { engine: string; voiceId?: string; clonePath?: string; rvcModel?: string };
   defaultLanguage?: Language;
-  /** Ships without a model: "Import your own model for this character". */
+  /** The user can import a replacement into this character slot. */
   importSlot?: boolean;
   /** Created by the user's import (lives in the app data folder). */
   imported?: boolean;

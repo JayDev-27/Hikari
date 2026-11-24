@@ -9,7 +9,7 @@ import { installDiagnostics } from "./diagnostics";
 installDiagnostics();
 
 // One bundle, several windows: route on the hash (stage / chat / settings / studio …).
-const route = location.hash.replace(/^#\/?/, "") || "stage";
+const route = (location.hash.replace(/^#\/?/, "").split("?")[0]) || "stage";
 // Panels are normal opaque windows; only the stage is transparent.
 if (route !== "stage") document.documentElement.classList.add("panel");
 
@@ -25,6 +25,10 @@ function App() {
   }
 }
 
+// Dev-only rig test (renders a model through bare Cubism, see src/dev/rigtest.ts).
+if (import.meta.env.DEV && route === "rigtest") {
+  void import("./dev/rigtest").then((m) => m.mount());
+} else
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <App />

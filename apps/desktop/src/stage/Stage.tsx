@@ -17,6 +17,7 @@ export function Stage() {
   const [error, setError] = useState<string | null>(null);
   const [emptySlot, setEmptySlot] = useState<CharacterPack | null>(null);
   const [characterId, setCharacterId] = useState(activeCharacterId);
+  const [packRevision, setPackRevision] = useState(0);
   const [switching, setSwitching] = useState(false);
   // True when the current load came from a chat "switch to …" (not app start).
   const fromSwitch = useRef(false);
@@ -43,6 +44,7 @@ export function Stage() {
         listen<string>("character://select", (e) => {
           setActiveCharacterId(e.payload);
           setCharacterId(e.payload);
+          setPackRevision((version) => version + 1);
         }),
       );
     }
@@ -94,14 +96,18 @@ export function Stage() {
     return () => {
       cancelled = true;
     };
-  }, [characterId]);
+  }, [characterId, packRevision]);
 
   return (
     <div
       className={`stage${switching ? " switching" : ""}`}
       ref={host}
       onMouseDown={(e) => {
-        if (e.button === 0 && rt.current && !emptySlot) void rt.current.startDrag();
+        const runtime = rt.current;
+        if (e.button !== 0 || !runtime || emptySlot) return;
+        // AppKit's native window drag consumes mouse-up, so react before starting it.
+        if (e.detail === 1 && e.target instanceof HTMLCanvasElement) runtime.tap(e.clientX, e.clientY);
+        void runtime.startDrag();
       }}
       onDoubleClick={() => rt.current?.playMock()}
     >

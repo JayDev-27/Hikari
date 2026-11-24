@@ -16,7 +16,6 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const app = join(dirname(fileURLToPath(import.meta.url)), "..");
-const repoRoot = join(app, "../..");
 const pub = join(app, "public");
 const SAMPLES_REPO = "https://github.com/Live2D/CubismWebSamples.git";
 // Pinned commit-ish for reproducibility; bump deliberately.
@@ -86,19 +85,6 @@ function fetchCore() {
   }
 }
 
-function copyPacks() {
-  const src = join(repoRoot, "characters");
-  for (const id of readdirSync(src)) {
-    const f = join(src, id, "character.json");
-    if (!existsSync(f)) continue;
-    mkdirSync(join(pub, "characters", id), { recursive: true });
-    cpSync(f, join(pub, "characters", id, "character.json"));
-    const persona = join(src, id, "persona.md");
-    if (existsSync(persona)) cpSync(persona, join(pub, "characters", id, "persona.md"));
-  }
-  console.log("✓ character packs copied");
-}
-
 function* walk(d) {
   for (const e of readdirSync(d, { withFileTypes: true })) {
     const p = join(d, e.name);
@@ -108,5 +94,5 @@ function* walk(d) {
 }
 
 fetchSamples();
-copyPacks();
+await import("./sync-packs.mjs");
 fetchCore();

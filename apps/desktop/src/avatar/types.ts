@@ -23,9 +23,9 @@ export type AvatarEvent =
  * higher layer (lip sync, gestures, emotion) drives either renderer unchanged.
  */
 export interface AvatarController {
-  readonly renderer: "live2d" | "vrm";
+  readonly renderer: "live2d" | "vrm" | "iki";
   setExpression(emotion: Emotion, intensity: number): void;
-  playMotion(name: GestureTag | string, opts?: { priority?: number }): void;
+  playMotion(name: GestureTag | string, opts?: { interrupt?: boolean }): void;
   /** Normalised -1..1 target in model space (0,0 = straight ahead). */
   lookAt(x: number, y: number): void;
   setVisemes(weights: Visemes): void;

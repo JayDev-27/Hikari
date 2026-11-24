@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "node scripts/sync-packs.mjs && vite",
+    "build": "tsc && node scripts/sync-packs.mjs && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "typecheck": "tsc --noEmit",
@@ -14,10 +14,14 @@
     "test": "vitest run",
     "console": "node dev/protocol-console/console.mjs",
     "avsync": "bash dev/avsync.sh",
+    "audit:models": "node dev/model-audit/audit.mjs",
+    "fix:models": "node dev/model-fix/fix-models.mjs",
     "fake-core": "node dev/fake-core.mjs"
   },
   "dependencies": {
     "@hikari/protocol": "workspace:*",
+    "@ikijs/engine": "0.13.0",
+    "@ikijs/format": "0.12.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-autostart": "^2.7.0",
     "@tauri-apps/plugin-dialog": "^2.8.4",

@@ -21,6 +21,9 @@ Rust via rustup (`source ~/.cargo/env`). Cubism Core must come from the official
 | Regenerate protocol types | `pnpm gen:protocol` (CI: `pnpm check:protocol`) |
 | Bundle `.app`/`.dmg` | `pnpm build` |
 | A/V sync regression (audible, ~6 s) | `pnpm -F desktop avsync` (exit 0 = within ±40 ms) |
+| Audit Live2D packs against Cubism standards (needs Cubism Core) | `pnpm -F desktop audit:models [-v] [id…]` (exit 1 on errors; also runs in `test`) |
+| Fix known rig defects, non-destructive (originals → `characters/<id>/source/original-model/`) | `pnpm -F desktop fix:models [--dry] [id…]`, then `node apps/desktop/scripts/sync-packs.mjs` |
+| Build an Iki character from a reference picture | see `docs/IKI.md` (scripts in `apps/desktop/dev/iki-pipeline/`, needs `IKI_REPO`) |
 | Fake core for the app (until B's core exists) | `pnpm -F desktop fake-core` (echoes your voice; `console --say` makes Hikari speak via macOS `say`) |
 | Talk to the core without the app (B) | `pnpm -F desktop console [--say "…" \| --wav f.wav]` — see `apps/desktop/dev/protocol-console/README.md` |
 

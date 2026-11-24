@@ -257,6 +257,13 @@ html.panel button.danger {
   overflow-y: auto;
   position: relative;
 }
+.character-preview {
+  width: min(100%, 290px);
+  height: clamp(210px, 38vh, 310px);
+  margin: 12px auto;
+  cursor: pointer;
+}
+.character-preview canvas { display: block; }
 .studio-detail header {
   display: flex;
   flex-wrap: wrap;

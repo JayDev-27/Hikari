@@ -1,8 +1,8 @@
 {
   "id": "makima",
   "displayName": "Makima",
-  "renderer": "live2d",
-  "modelPath": null,
+  "renderer": "iki",
+  "modelPath": "model/Makima.iki",
   "importSlot": true,
   "persona": "persona.md",
   "voice": {
@@ -11,8 +11,38 @@
   },
   "defaultLanguage": "hinglish",
   "license": {
-    "source": "Persona preset inspired by Chainsaw Man; original persona text only",
-    "terms": "No model, art or voice is included. Import a model you own, commissioned or made; its own licence is recorded on import. Never use ripped or fan-extracted assets.",
-    "url": ""
-  }
+    "source": "Hikari Live2D model and illustrations based on the official Chainsaw Man character sheet.",
+    "terms": "Hikari fan artwork and rig. The underlying character design belongs to its respective rights holders. No franchise voice recording is included.",
+    "url": "https://chainsawman.dog/movie_reze/character/"
+  },
+  "motionMap": {
+    "tap": {
+      "group": "Nod",
+      "index": 0
+    },
+    "tap_head": {
+      "group": "Tilt",
+      "index": 0
+    },
+    "nod": {
+      "group": "Nod",
+      "index": 0
+    },
+    "head_tilt": {
+      "group": "Tilt",
+      "index": 0
+    }
+  },
+  "expressionMap": {
+    "joy": "smile",
+    "fun": "laugh",
+    "teasing": "smile",
+    "surprised": "surprised"
+  },
+  "gazeScale": 0.8,
+  "signatureMotions": [
+    "signature-clasp",
+    "signature-smile",
+    "signature-bang"
+  ]
 }

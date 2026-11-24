@@ -12,6 +12,9 @@ Nothing in this table is committed to git unless marked "committed".
 | Hima TTS Nano (`Prahaladha/hima-tts-nano-hi`) | Hugging Face | **`other`, no licence text — all rights reserved** | Do not ship until the author grants a licence | B, prototype only |
 | Hima-ASR (`Prahaladha/hima-asr-mlx-*`) | Hugging Face | Apache-2.0 + Gemma terms | Pass on Gemma prohibited-use policy | B |
 | Character packs (`characters/*/character.json`, persona.md) | this repo | project licence | — | committed |
+| Authored Cubism rigs, textures and motions (`characters/{makima,reze,rize,lu-guang,cheng-xiaoshi}/model/`) | Hikari rigs and illustrations based on official character sheets | Underlying franchise designs belong to their respective rights holders | See each pack’s source | committed |
 | Hikari logo / app icon (`assets/brand/`) | artwork supplied for Hikari | — | — | committed |
 
-Franchise personas (Reze, Makima, Rize Kamishiro) ship as Take fan-ripped models, art, or voice-actor audio. Use blender for rigging and animation.
+Makima, Reze, Rize Kamishiro, Lu Guang and Cheng Xiaoshi use AI-generated fan illustrations with separately edited blink and speech frames. The franchise character designs belong to their respective rights holders. Each pack records its visual reference. [Link Click character sheets](https://link-click.jp/1st/character/) · [Chainsaw Man character sheets](https://chainsawman.dog/movie_reze/character/) · [Rize Kamishiro character sheet](https://www.marv.jp/special/tokyoghoul/first/chara_03.html)
+
+The authored runtime models were exported with the MIT-licensed Stretchy Studio MOC3 writer at revision `24a83a2`. [Stretchy Studio exporter](https://github.com/MangoLion/stretchystudio/tree/24a83a27ba43e43e9d2e3de5e33994594e6199c2/src/io/live2d)
