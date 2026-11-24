@@ -22,6 +22,7 @@ Needs an Iki checkout built once (`pnpm install && pnpm -r --filter './packages/
 | `restore-visible.mjs <final> <picture> <box>` | Body = picture wherever the picture shows body beside the locks; backdrop and hair (braid behind the body) made transparent, outline edges unmixed |
 | `repaint-under-hair.mjs <final> <box> [dilate] ["x1,y1,x2,y2;!…"]` | Repaints the body under the hair drawn in front of it (harmonic fill, clean silhouette, pinholes and islands removed) and inks the hidden collar/shoulder outlines given as segments (`!` = silhouette edge, air above) |
 | `trim-shoulders.mjs <body> "x1,y1,x2,y2;…"` | Clips the torso corner above each shoulder outline (it shows as a pale "ear" when an arm lifts) and inks the outline |
+| `armpit-patch.mjs <model.iki> <rest.png> <lifted.png> <x,y,w,h> <yArm> <yTorso> [side]` | Paints the armpit a lifted upper arm uncovers (from two render_poses crops), ending in a crease line; collapses to nothing at rest via ParamArm keyforms, so the rest pose stays exactly the picture |
 | `clear-box.mjs <layer> <box>`, `strip-backdrop.mjs <layer>…` | Clear fill that sticks out past a hidden outline; drop light bluish backdrop kept between hair strands |
 | `despeck-dark.mjs <layer> <box> [maxPx=12]` | Recolours small dark specks (≤ maxPx, ringed by light cloth) with the surrounding cloth; long outlines are untouched |
 | `extend-arms.mjs <model.iki> [max=150] [elbowMin=-170]` | Extends shoulder rotation to `max` and lets the elbow open to `elbowMin` (same slope), for a raised-hand wave |

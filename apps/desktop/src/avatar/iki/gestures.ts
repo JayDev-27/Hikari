@@ -50,7 +50,7 @@ export const GESTURES: Record<string, Gesture> = {
   "wave-raised": { dur: 3.0, expression: "smile", pose: (t) => {
     // Up: the forearm folds first and the shoulder follows. Down: the shoulder lowers first and the forearm unfolds
     // last. Either way the forearm passes horizontal with the elbow at her side, so the hand stays close to the body.
-    const fold = envelope(t, 0.06, 0.16), lift = envelope(t, 0.26, 0.36);
+    const fold = envelope(t, 0.05, 0.07), lift = envelope(t, 0.24, 0.3);
     const s = Math.sin((t - 0.2) * Math.PI * 7) * smoother((t - 0.18) / 0.12) * smoother((0.84 - t) / 0.1);
     // While the forearm swings through horizontal (fold half-way, shoulder still low) the upper arm tucks in, so the
     // hand passes close to the body instead of sweeping out to the window edge.
@@ -144,12 +144,14 @@ export function idlePose(t: number, legShift: number, speaking: boolean, speakEn
 /** Critically damped spring per parameter: offsets ease in, follow through and settle (no snapping). */
 export class SpringSet {
   private v = new Map<string, { x: number; vel: number }>();
-  constructor(private omega = 9) {}
+  /** omegaFor: stiffer springs for light parts (a forearm follows faster than a whole arm). */
+  constructor(private omega = 9, private omegaFor: Record<string, number> = {}) {}
   step(target: Pose, dt: number): Pose {
     const out: Pose = {};
     const ids = new Set([...Object.keys(target), ...this.v.keys()]);
-    const w = this.omega, h = Math.min(dt, 0.05);
+    const h = Math.min(dt, 0.05);
     for (const id of ids) {
+      const w = this.omegaFor[id] ?? this.omega;
       const s = this.v.get(id) ?? { x: 0, vel: 0 };
       const goal = target[id] ?? 0;
       // semi-implicit critically damped step

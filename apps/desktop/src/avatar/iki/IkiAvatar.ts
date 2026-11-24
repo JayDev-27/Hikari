@@ -56,7 +56,8 @@ export class IkiAvatar implements AvatarController {
   private gesture: { name: string; pose: (t: number) => Pose; start: number; dur: number; scale: number } | null = null;
   /** Values our offsets were added to last frame, restored before IkiMotion runs (see gestures.ts). */
   private bases = new Map<string, number>();
-  private springs = new SpringSet(8.5);
+  // Elbows follow faster: the wave's forearm flicks past horizontal instead of hanging out at her side.
+  private springs = new SpringSet(8.5, { ParamElbowL: 20, ParamElbowR: 20 });
   /** Idle weight shift between the legs (ParamLegShift, a Hikari addition to the model): current and target. */
   private leg = { v: 0, target: 0.6, next: 0 };
   private pendingHit: { x: number; y: number } | null = null;
@@ -197,6 +198,8 @@ export class IkiAvatar implements AvatarController {
 
   react(event: AvatarEvent): void {
     if (event.kind !== "click" && event.kind !== "poke") return;
+    // A tap never cuts a running gesture short (a flower offer snapping into a wave looks broken).
+    if (this.gesture && performance.now() - this.gesture.start < this.gesture.dur) return;
     const tag = event.area === "head" ? (this.pack.motionMap?.tap_head ? "tap_head" : "nod") : this.pack.motionMap?.tap_body ? "tap_body" : "wave";
     this.playMotion(tag, { interrupt: true });
   }

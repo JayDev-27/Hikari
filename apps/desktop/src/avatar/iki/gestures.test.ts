@@ -123,6 +123,21 @@ describe("Iki gestures", () => {
     expect(point.ParamArmR - point.ParamElbowR).toBeCloseTo(24, 5);
   });
 
+  it("lets the wave's forearm flick past horizontal with the stiffer elbow spring", () => {
+    const g = GESTURES["wave-raised"], dur = g.dur;
+    const sideways = (springs: SpringSet) => {
+      let n = 0;
+      for (let f = 0; f < dur * 60; f++) {
+        const e = springs.step(g.pose(f / 60 / dur), 1 / 60).ParamElbowR;
+        if (e < -45 && e > -135) n++;
+      }
+      return n / 60;
+    };
+    const slow = sideways(new SpringSet(8.5)), fast = sideways(new SpringSet(8.5, { ParamElbowR: 20 }));
+    expect(fast).toBeLessThan(slow);
+    expect(fast).toBeLessThan(0.25); // up and down together, ~0.12 s each way (was 0.48 s)
+  });
+
   it("adds poses", () => {
     expect(addPoses({ a: 1, b: 2 }, { b: 3 })).toEqual({ a: 1, b: 5 });
   });
