@@ -1,4 +1,4 @@
-import { isCompatible, msg, type AnyMessage, type MessageType, type PayloadMap } from "@hikari/protocol";
+import { PROTOCOL_VERSION, isCompatible, msg, type AnyMessage, type MessageType, type PayloadMap } from "@hikari/protocol";
 
 type Handler<T extends MessageType> = (payload: PayloadMap[T], env: Extract<AnyMessage, { type: T }>) => void;
 type AnyHandler = (payload: never, env: never) => void;
@@ -24,7 +24,7 @@ export class CoreClient {
     this.ws = ws;
     ws.onopen = () => {
       this.backoff = 250;
-      this.send("hello", { role: "ui", protocolVersion: "0.1.0", capabilities: ["tts.chunk.phonemes", "barge_in"] });
+      this.send("hello", { role: "ui", protocolVersion: PROTOCOL_VERSION, capabilities: ["tts.chunk.phonemes", "barge_in"] });
     };
     ws.onmessage = (ev) => {
       let m: AnyMessage;

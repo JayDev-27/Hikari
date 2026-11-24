@@ -78,7 +78,7 @@ export class Live2DAvatar implements AvatarController {
     });
     host.prepend(a.app.canvas);
 
-    a.model = await Live2DModel.from(pack.modelUrl, { autoHitTest: false, autoFocus: false, autoUpdate: false });
+    a.model = await Live2DModel.from(pack.modelUrl!, { autoHitTest: false, autoFocus: false, autoUpdate: false });
     a.app.stage.addChild(a.model);
     a.core = (a.model.internalModel as unknown as { coreModel: CoreModel }).coreModel;
     const ids = a.core.getModel().parameters.ids;
@@ -89,14 +89,64 @@ export class Live2DAvatar implements AvatarController {
     return a;
   }
 
+  /** Visible artwork bounds in model-local units (cached; see contentBounds). */
+  private bounds?: { x: number; y: number; w: number; h: number };
+
+  /**
+   * Bounds of what's actually drawn, in model-local units: the union of every
+   * drawable mesh with any opacity, mapped through the model's layout transform.
+   * Model canvases aren't centred on the character (Rice is drawn right of
+   * centre in a wide canvas), so fitting the canvas clipped her off the window.
+   */
+  private contentBounds(): { x: number; y: number; w: number; h: number } | null {
+    const im = this.model.internalModel as unknown as {
+      getDrawableIDs(): string[];
+      getDrawableVertices(i: number): Float32Array;
+      localTransform: { apply(p: { x: number; y: number }, out?: { x: number; y: number }): { x: number; y: number } };
+    };
+    const opacity = (this.core as unknown as { getDrawableOpacity?(i: number): number }).getDrawableOpacity;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    const pt = { x: 0, y: 0 };
+    const n = im.getDrawableIDs().length;
+    for (let i = 0; i < n; i++) {
+      if (opacity && opacity.call(this.core, i) <= 0.01) continue;
+      const v = im.getDrawableVertices(i);
+      for (let k = 0; k < v.length; k += 2) {
+        im.localTransform.apply({ x: v[k], y: v[k + 1] }, pt);
+        if (pt.x < minX) minX = pt.x;
+        if (pt.x > maxX) maxX = pt.x;
+        if (pt.y < minY) minY = pt.y;
+        if (pt.y > maxY) maxY = pt.y;
+      }
+    }
+    if (!isFinite(minX) || maxX - minX < 1 || maxY - minY < 1) return null;
+    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+  }
+
+  /**
+   * Fit the visible artwork into the window in both dimensions (margins leave
+   * room for idle sway/gestures), centre it horizontally and stand her feet on
+   * the bottom edge. Falls back to the canvas size if bounds can't be measured.
+   */
   private layout(): void {
     const { width, height } = this.app.screen;
     const m = this.model;
-    // Fit by height (characters are tall), with the anchor at her feet.
-    const s = (height * 0.92 * (this.pack.scale ?? 1)) / m.internalModel.originalHeight;
+    this.bounds ??= this.contentBounds() ?? {
+      x: 0,
+      y: 0,
+      w: m.internalModel.originalWidth,
+      h: m.internalModel.originalHeight,
+    };
+    const b = this.bounds;
+    const marginX = 0.06; // each side
+    const marginTop = 0.04;
+    const marginBottom = 0.01;
+    const s =
+      Math.min((width * (1 - 2 * marginX)) / b.w, (height * (1 - marginTop - marginBottom)) / b.h) *
+      Math.min(1, this.pack.scale ?? 1);
+    m.anchor.set(0, 0);
     m.scale.set(s);
-    m.anchor.set(0.5, 1);
-    m.position.set(width / 2, height);
+    m.position.set(width / 2 - (b.x + b.w / 2) * s, height * (1 - marginBottom) - (b.y + b.h) * s);
   }
 
   private param(id: string, v: number, w = 1) {

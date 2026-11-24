@@ -56,3 +56,6 @@ jobs:
 
       - name: Check Rust with Clippy
         run: cargo +1.100.0 clippy --locked --all-targets --manifest-path apps/desktop/src-tauri/Cargo.toml -- -D warnings
+
+      - name: Run Rust tests
+        run: cargo +1.100.0 test --locked --manifest-path apps/desktop/src-tauri/Cargo.toml

@@ -24,5 +24,9 @@ model/           # NOT committed — fetched (samples) or imported by the user
 | `voice` | `{ engine, voiceId?, clonePath?, rvcModel? }` | |
 | `defaultLanguage` | `"en"` \| `"hi"` \| `"hinglish"` | |
 | `license` | `{ source, terms, url, credit? }` | shown on import and in About |
+| `importSlot` | boolean? | ships without a model (franchise presets) |
+| `imported` | boolean? | written by an import (user pack in the app data folder) |
+
+Persona files follow [`PERSONA_FORMAT.md`](PERSONA_FORMAT.md). Imported packs live in `~/Library/Application Support/com.hikari.companion/characters/<id>/` and override a built-in pack with the same id.
 
 Franchise personas (Reze, Makima, Rize) ship with `"modelPath": null`. Never add ripped or fan-extracted models.

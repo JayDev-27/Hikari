@@ -14,4 +14,4 @@ Nothing in this table is committed to git unless marked "committed".
 | Character packs (`characters/*/character.json`, persona.md) | this repo | project licence | — | committed |
 | Hikari logo / app icon (`assets/brand/`) | artwork supplied for Hikari | — | — | committed |
 
-Franchise personas (Reze, Makima, Rize Kamishiro) ship as **persona text + empty model slot** only. No fan-ripped models, art, or voice-actor audio, ever.
+Franchise personas (Reze, Makima, Rize Kamishiro) ship as Take fan-ripped models, art, or voice-actor audio. Use blender for rigging and animation.

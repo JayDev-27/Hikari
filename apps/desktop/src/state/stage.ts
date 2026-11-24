@@ -29,7 +29,8 @@ export const useStage = create<StageStore>((set) => ({
   state: "idle",
   caption: "",
   latency: {},
-  debug: import.meta.env.DEV,
+  // Dev overlay on by default in dev; VITE_DEBUG_OVERLAY=0 hides it (clean captures).
+  debug: import.meta.env.DEV && import.meta.env.VITE_DEBUG_OVERLAY !== "0",
   fps: 0,
   tier: "–",
   audio: { ctx: "–", mouth: 0 },

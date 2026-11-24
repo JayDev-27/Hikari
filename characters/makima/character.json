@@ -1,0 +1,18 @@
+{
+  "id": "makima",
+  "displayName": "Makima",
+  "renderer": "live2d",
+  "modelPath": null,
+  "importSlot": true,
+  "persona": "persona.md",
+  "voice": {
+    "engine": "hima",
+    "voiceId": "Meera"
+  },
+  "defaultLanguage": "hinglish",
+  "license": {
+    "source": "Persona preset inspired by Chainsaw Man; original persona text only",
+    "terms": "No model, art or voice is included. Import a model you own, commissioned or made; its own licence is recorded on import. Never use ripped or fan-extracted assets.",
+    "url": ""
+  }
+}

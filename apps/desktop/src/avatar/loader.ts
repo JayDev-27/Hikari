@@ -1,9 +1,16 @@
 import type { AvatarController } from "./types";
-import { loadPack } from "./characters";
+import type { CharacterPack } from "./characters";
 
-/** Load a character pack and construct the matching renderer (code-split per renderer). */
-export async function loadAvatar(host: HTMLElement, characterId: string): Promise<AvatarController> {
-  const pack = await loadPack(characterId);
+/** The pack is an empty slot (franchise preset): the stage shows an import prompt. */
+export class EmptySlotError extends Error {
+  constructor(readonly pack: CharacterPack) {
+    super(`${pack.displayName} has no model yet — import your own model for this character`);
+  }
+}
+
+/** Construct the renderer for a resolved pack (code-split per renderer). */
+export async function loadAvatar(host: HTMLElement, pack: CharacterPack): Promise<AvatarController> {
+  if (!pack.modelUrl) throw new EmptySlotError(pack);
   if (pack.renderer === "live2d") {
     // The engine checks for Core at import time, so check first for a useful message.
     if (!("Live2DCubismCore" in window)) {

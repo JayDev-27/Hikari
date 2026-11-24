@@ -27,10 +27,33 @@
         "resizable": false,
         "focus": false,
         "acceptFirstMouse": true
+      },
+      {
+        "label": "studio",
+        "title": "Hikari \u2014 Character Studio",
+        "url": "index.html#/studio",
+        "width": 920,
+        "height": 640,
+        "minWidth": 720,
+        "minHeight": 480,
+        "visible": false,
+        "center": true,
+        "dragDropEnabled": true
+      },
+      {
+        "label": "chat",
+        "title": "Chat with Hikari",
+        "url": "index.html#/chat",
+        "width": 420,
+        "height": 620,
+        "minWidth": 320,
+        "minHeight": 360,
+        "visible": false,
+        "center": true
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost blob: data:; connect-src 'self' ipc: http://ipc.localhost ws://127.0.0.1:* http://127.0.0.1:* asset: http://asset.localhost blob:; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src 'self' blob: asset: http://asset.localhost",
+      "csp": "default-src 'self'; img-src 'self' hikari-pack: http://hikari-pack.localhost asset: http://asset.localhost blob: data:; connect-src 'self' hikari-pack: http://hikari-pack.localhost ipc: http://ipc.localhost ws://127.0.0.1:* http://127.0.0.1:* asset: http://asset.localhost blob:; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src 'self' blob: asset: http://asset.localhost",
       "assetProtocol": {
         "enable": true,
         "scope": [

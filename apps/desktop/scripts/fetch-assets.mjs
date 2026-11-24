@@ -21,7 +21,7 @@ const pub = join(app, "public");
 const SAMPLES_REPO = "https://github.com/Live2D/CubismWebSamples.git";
 // Pinned commit-ish for reproducibility; bump deliberately.
 const SAMPLES_REF = "develop";
-const LIVE2D_SAMPLES = { hiyori: "Hiyori", haru: "Haru" };
+const LIVE2D_SAMPLES = { hiyori: "Hiyori", haru: "Haru", mao: "Mao", rice: "Rice" };
 
 const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { stdio: "inherit", ...opts });
 

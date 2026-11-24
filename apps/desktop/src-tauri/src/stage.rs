@@ -109,20 +109,29 @@ fn macos_float(window: &WebviewWindow) -> tauri::Result<()> {
     Ok(())
 }
 
+/// Park the stage bottom-right of the primary display, above the Dock.
+///
+/// Works in **logical points**: with mixed-DPI displays (e.g. a 2x Retina plus
+/// a 1x external monitor) physical coordinates are converted with whichever
+/// screen's scale the window is on, which put her completely off-screen.
+pub fn park<R: Runtime>(window: &WebviewWindow<R>) -> tauri::Result<()> {
+    let Some(mon) = window.primary_monitor()? else { return Ok(()) };
+    let mscale = mon.scale_factor();
+    let area = mon.work_area();
+    let (ax, ay) = (area.position.x as f64 / mscale, area.position.y as f64 / mscale);
+    let (aw, ah) = (area.size.width as f64 / mscale, area.size.height as f64 / mscale);
+    let size = window.outer_size()?.to_logical::<f64>(window.scale_factor()?);
+    let x = ax + aw - size.width - 24.0;
+    let y = ay + ah - size.height;
+    window.set_position(tauri::LogicalPosition::new(x.max(ax), y.max(ay)))
+}
+
 pub fn setup(app: &AppHandle) -> tauri::Result<()> {
     let window = app
         .get_webview_window(STAGE)
         .expect("stage window declared in tauri.conf.json");
 
-    // Park her bottom-right of the primary monitor, above the Dock.
-    if let Ok(Some(mon)) = window.primary_monitor() {
-        let scale = mon.scale_factor();
-        let area = mon.work_area();
-        let size = window.outer_size()?;
-        let x = area.position.x + area.size.width as i32 - size.width as i32 - (24.0 * scale) as i32;
-        let y = area.position.y + area.size.height as i32 - size.height as i32;
-        window.set_position(tauri::PhysicalPosition::new(x, y))?;
-    }
+    park(&window)?;
 
     #[cfg(target_os = "macos")]
     macos_float(&window)?;
