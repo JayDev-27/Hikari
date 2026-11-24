@@ -1,7 +1,7 @@
 {
   "id": "cheng-xiaoshi",
   "displayName": "Cheng Xiaoshi",
-  "renderer": "live2d",
+  "renderer": "iki",
   "importSlot": true,
   "persona": "persona.md",
   "voice": {
@@ -14,202 +14,44 @@
     "terms": "AI-assisted fan artwork and Hikari animation. Link Click and its character designs belong to their respective rights holders.",
     "url": "https://link-click.jp/1st/character/"
   },
-  "modelPath": "model/Cheng.model3.json",
+  "modelPath": "model/Cheng.iki",
   "motionMap": {
-    "idle": {
-      "group": "Idle"
-    },
     "tap": {
-      "group": "TapBody",
-      "index": 0
+      "group": "Nod"
     },
     "tap_head": {
-      "group": "TapBody",
-      "index": 10
+      "group": "Tilt"
     },
     "tap_body": {
-      "group": "TapBody",
-      "index": 0
-    },
-    "wave": {
-      "group": "TapBody",
-      "index": 0
-    },
-    "shrug": {
-      "group": "TapBody",
-      "index": 1
-    },
-    "facepalm": {
-      "group": "TapBody",
-      "index": 2
-    },
-    "laugh": {
-      "group": "TapBody",
-      "index": 3
-    },
-    "shy_look_away": {
-      "group": "TapBody",
-      "index": 4
-    },
-    "think_chin": {
-      "group": "TapBody",
-      "index": 5
-    },
-    "clap": {
-      "group": "Signature",
-      "index": 0
-    },
-    "point": {
-      "group": "TapBody",
-      "index": 7
-    },
-    "pout": {
-      "group": "TapBody",
-      "index": 8
-    },
-    "cross_arms": {
-      "group": "TapBody",
-      "index": 9
-    },
-    "head_pat_react": {
-      "group": "TapBody",
-      "index": 10
+      "group": "signature-photo-dive"
     },
     "nod": {
-      "group": "TapBody",
-      "index": 11
+      "group": "Nod"
     },
     "head_tilt": {
-      "group": "TapBody",
-      "index": 12
-    },
-    "bow": {
-      "group": "TapBody",
-      "index": 13
-    },
-    "signature-photo-dive": {
-      "group": "Signature",
-      "index": 0
-    },
-    "speech-calm": {
-      "group": "Speech",
-      "index": 0
-    },
-    "speech-thoughtful": {
-      "group": "Speech",
-      "index": 1
-    },
-    "speech-playful": {
-      "group": "Speech",
-      "index": 2
-    },
-    "speech-surprised": {
-      "group": "Speech",
-      "index": 3
+      "group": "Tilt"
     }
   },
   "expressionMap": {
-    "neutral": "neutral",
-    "joy": "joy",
-    "fun": "fun",
-    "teasing": "teasing",
+    "joy": "smile",
+    "fun": "laugh",
+    "teasing": "smile",
     "angry": "angry",
-    "sorrow": "sorrow",
-    "shy": "shy",
-    "surprised": "surprised",
-    "thinking": "thinking",
-    "sleepy": "sleepy"
+    "sorrow": "sad",
+    "shy": "smile",
+    "surprised": "surprised"
   },
   "hitAreas": {
     "Head": "head",
     "Body": "body"
   },
-  "speech": {
-    "defaultEmotion": "joy",
-    "motions": [
-      "speech-calm",
-      "speech-thoughtful"
-    ],
-    "emotionMotions": {
-      "joy": [
-        "speech-playful",
-        "speech-calm"
-      ],
-      "fun": [
-        "speech-playful",
-        "speech-calm"
-      ],
-      "teasing": [
-        "speech-playful",
-        "speech-thoughtful"
-      ],
-      "shy": [
-        "speech-thoughtful",
-        "speech-calm"
-      ],
-      "angry": [
-        "speech-calm",
-        "speech-thoughtful"
-      ],
-      "sorrow": [
-        "speech-thoughtful"
-      ],
-      "thinking": [
-        "speech-thoughtful",
-        "speech-calm"
-      ],
-      "surprised": [
-        "speech-surprised"
-      ],
-      "sleepy": [
-        "speech-calm"
-      ]
-    },
-    "intervalMs": 1950
-  },
   "gazeScale": 0.56,
   "signatureMotions": [
-    "signature-photo-dive"
+    "signature-photo-dive",
+    "signature-sheepish",
+    "signature-wink"
   ],
-  "poseRig": {
-    "hands": [
-      {
-        "drawable": "HandL",
-        "wrist": [
-          -217.5,
-          14.0
-        ],
-        "breadth": 1.19
-      },
-      {
-        "drawable": "HandR",
-        "wrist": [
-          215.5,
-          14.0
-        ],
-        "breadth": 1.18
-      }
-    ],
-    "joinedBreadth": 1.13,
-    "arms": [
-      {
-        "drawable": "leftArm1",
-        "handDrawable": "HandL",
-        "centers": [
-          0.752,
-          0.521,
-          0.36
-        ]
-      },
-      {
-        "drawable": "rightArm1",
-        "handDrawable": "HandR",
-        "centers": [
-          0.236,
-          0.479,
-          0.632
-        ]
-      }
-    ]
-  }
+  "armLiftMax": 18,
+  "idleTempo": 1.48,
+  "springDamping": 0.78
 }

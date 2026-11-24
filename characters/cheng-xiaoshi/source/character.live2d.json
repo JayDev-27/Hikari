@@ -1,0 +1,215 @@
+{
+  "id": "cheng-xiaoshi",
+  "displayName": "Cheng Xiaoshi",
+  "renderer": "live2d",
+  "importSlot": true,
+  "persona": "persona.md",
+  "voice": {
+    "engine": "hima",
+    "voiceId": "Ishaan"
+  },
+  "defaultLanguage": "hinglish",
+  "license": {
+    "source": "Hikari fan illustration and Cubism rig based on the official Link Click character sheet.",
+    "terms": "AI-assisted fan artwork and Hikari animation. Link Click and its character designs belong to their respective rights holders.",
+    "url": "https://link-click.jp/1st/character/"
+  },
+  "modelPath": "model/Cheng.model3.json",
+  "motionMap": {
+    "idle": {
+      "group": "Idle"
+    },
+    "tap": {
+      "group": "TapBody",
+      "index": 0
+    },
+    "tap_head": {
+      "group": "TapBody",
+      "index": 10
+    },
+    "tap_body": {
+      "group": "TapBody",
+      "index": 0
+    },
+    "wave": {
+      "group": "TapBody",
+      "index": 0
+    },
+    "shrug": {
+      "group": "TapBody",
+      "index": 1
+    },
+    "facepalm": {
+      "group": "TapBody",
+      "index": 2
+    },
+    "laugh": {
+      "group": "TapBody",
+      "index": 3
+    },
+    "shy_look_away": {
+      "group": "TapBody",
+      "index": 4
+    },
+    "think_chin": {
+      "group": "TapBody",
+      "index": 5
+    },
+    "clap": {
+      "group": "Signature",
+      "index": 0
+    },
+    "point": {
+      "group": "TapBody",
+      "index": 7
+    },
+    "pout": {
+      "group": "TapBody",
+      "index": 8
+    },
+    "cross_arms": {
+      "group": "TapBody",
+      "index": 9
+    },
+    "head_pat_react": {
+      "group": "TapBody",
+      "index": 10
+    },
+    "nod": {
+      "group": "TapBody",
+      "index": 11
+    },
+    "head_tilt": {
+      "group": "TapBody",
+      "index": 12
+    },
+    "bow": {
+      "group": "TapBody",
+      "index": 13
+    },
+    "signature-photo-dive": {
+      "group": "Signature",
+      "index": 0
+    },
+    "speech-calm": {
+      "group": "Speech",
+      "index": 0
+    },
+    "speech-thoughtful": {
+      "group": "Speech",
+      "index": 1
+    },
+    "speech-playful": {
+      "group": "Speech",
+      "index": 2
+    },
+    "speech-surprised": {
+      "group": "Speech",
+      "index": 3
+    }
+  },
+  "expressionMap": {
+    "neutral": "neutral",
+    "joy": "joy",
+    "fun": "fun",
+    "teasing": "teasing",
+    "angry": "angry",
+    "sorrow": "sorrow",
+    "shy": "shy",
+    "surprised": "surprised",
+    "thinking": "thinking",
+    "sleepy": "sleepy"
+  },
+  "hitAreas": {
+    "Head": "head",
+    "Body": "body"
+  },
+  "speech": {
+    "defaultEmotion": "joy",
+    "motions": [
+      "speech-calm",
+      "speech-thoughtful"
+    ],
+    "emotionMotions": {
+      "joy": [
+        "speech-playful",
+        "speech-calm"
+      ],
+      "fun": [
+        "speech-playful",
+        "speech-calm"
+      ],
+      "teasing": [
+        "speech-playful",
+        "speech-thoughtful"
+      ],
+      "shy": [
+        "speech-thoughtful",
+        "speech-calm"
+      ],
+      "angry": [
+        "speech-calm",
+        "speech-thoughtful"
+      ],
+      "sorrow": [
+        "speech-thoughtful"
+      ],
+      "thinking": [
+        "speech-thoughtful",
+        "speech-calm"
+      ],
+      "surprised": [
+        "speech-surprised"
+      ],
+      "sleepy": [
+        "speech-calm"
+      ]
+    },
+    "intervalMs": 1950
+  },
+  "gazeScale": 0.56,
+  "signatureMotions": [
+    "signature-photo-dive"
+  ],
+  "poseRig": {
+    "hands": [
+      {
+        "drawable": "HandL",
+        "wrist": [
+          -217.5,
+          14.0
+        ],
+        "breadth": 1.19
+      },
+      {
+        "drawable": "HandR",
+        "wrist": [
+          215.5,
+          14.0
+        ],
+        "breadth": 1.18
+      }
+    ],
+    "joinedBreadth": 1.13,
+    "arms": [
+      {
+        "drawable": "leftArm1",
+        "handDrawable": "HandL",
+        "centers": [
+          0.752,
+          0.521,
+          0.36
+        ]
+      },
+      {
+        "drawable": "rightArm1",
+        "handDrawable": "HandR",
+        "centers": [
+          0.236,
+          0.479,
+          0.632
+        ]
+      }
+    ]
+  }
+}
