@@ -35,7 +35,9 @@ export const GESTURES: Record<string, Gesture> = {
   wave: { dur: 2.8, expression: "smile", pose: (t) => { const e = envelope(t, 0.2, 0.3); const s = Math.sin((t - 0.2) * Math.PI * 5) * smoother((t - 0.15) / 0.15); return { ParamArmR: (20 + 7 * s) * e, ParamElbowR: (-4 + 6 * s) * e, ParamAngleZ: -4 * e, ParamAngleX: -5 * e, ParamBodyAngleZ: -1.5 * e }; } },
   point: { dur: 2.2, pose: (t) => { const e = envelope(t, 0.18, 0.3); return { ParamArmR: 24 * e, ParamElbowR: 6 * e, ParamAngleX: -9 * e, ParamAngleY: 2 * e }; } },
   shrug: { dur: 1.9, pose: (t) => { const e = envelope(t, 0.3, 0.35); return { ParamArmL: 9 * e, ParamArmR: 9 * e, ParamElbowL: 38 * e, ParamElbowR: 42 * e, ParamAngleZ: 7 * e, ParamAngleY: 3 * e }; } },
-  clap: { dur: 2.4, expression: "laugh", pose: (t) => { const e = envelope(t, 0.2, 0.25); const c = 0.5 + 0.5 * Math.sin(t * Math.PI * 9); return { ParamArmL: (2 + 3 * c) * e, ParamArmR: (2 + 3 * c) * e, ParamElbowL: 74 * e, ParamElbowR: 78 * e }; } },
+  /** Hands beat between slightly apart (elbows ~37°) and touching at the centre (~53°); past ~60° the forearms
+   *  cross into an X instead of meeting. */
+  clap: { dur: 2.4, expression: "laugh", pose: (t) => { const e = envelope(t, 0.2, 0.25); const c = 0.5 + 0.5 * Math.sin(t * Math.PI * 9); return { ParamArmL: 3 * e, ParamArmR: 3 * e, ParamElbowL: (36 + 16 * c) * e, ParamElbowR: (38 + 16 * c) * e }; } },
   cross_arms: { dur: 3.4, pose: (t) => { const e = envelope(t, 0.2, 0.25); return { ParamElbowL: 84 * e, ParamElbowR: 88 * e, ParamArmL: -4 * e, ParamArmR: -3 * e, ParamAngleY: -3 * e, ParamAngleZ: 3 * e }; } },
   think_chin: { dur: 3.2, pose: (t) => { const e = envelope(t, 0.25, 0.25); return { ParamArmR: 5 * e, ParamElbowR: 86 * e, ParamArmL: -2 * e, ParamElbowL: 30 * e, ParamAngleZ: 6 * e, ParamAngleY: 5 * e, ParamAngleX: 6 * e }; } },
   facepalm: { dur: 2.6, pose: (t) => { const e = envelope(t, 0.25, 0.3); return { ParamArmR: 8 * e, ParamElbowR: 88 * e, ParamAngleY: -12 * e, ParamAngleZ: 4 * e }; } },
