@@ -20,6 +20,14 @@ Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 - The 1:1 hair check measured 42 of 97,725 pixels outside the 2 px tolerance (0.043%).
   Iki reported zero unexpected folds over 2,209 poses. The flower offer, shy wave, lean, and
   point stayed inside the native stage, and three repeated flower cues produced one offer.
+- Reze's art has no torso under the upper arm: past ~12° out, the armpit opens and the cut
+  armhole shows. `armLiftMax: 9` in character.json soft-limits `ParamArmL/R` for every gesture
+  (`limitArmLift`); a near-straight arm bends out at the elbow by the angle taken off, so point
+  still points. Her wave is now elbow-led with the hand beside her face. Repainting the side
+  under the arm would lift the limit.
+- The flower offer no longer uses `ParamOfferLift` (it squashed the upper arm into a stub). She
+  bends her own arm in across the waist (elbow 110°), the painted offer arm cuts in over ~70 ms
+  (a slow dissolve showed two half-transparent arms), and the hand then comes forward.
 
 ## 2026-11-24 — Makima as an Iki model, cut from her reference (A)
 

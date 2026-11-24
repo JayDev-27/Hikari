@@ -4,7 +4,7 @@ import type { Emotion, GestureTag } from "@hikari/protocol";
 import type { CharacterPack } from "../characters";
 import type { AvatarController, AvatarEvent, AvatarState, Visemes } from "../types";
 import { visemesToLive2D } from "../../lipsync/engine";
-import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, resolveGesture, restoreBases, type Pose } from "./gestures";
+import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, limitArmLift, resolveGesture, restoreBases, type Pose } from "./gestures";
 
 /**
  * Renderer for Iki models (`.iki`, https://github.com/zeikar/iki): rigs made by Iki's
@@ -234,6 +234,7 @@ export class IkiAvatar implements AvatarController {
         const varies = id !== "ParamOfferFlower" && id !== "ParamOfferLift" && id !== "ParamOfferReach";
         target[id] = varies ? v * this.gesture.scale : v;
       }
+      limitArmLift(target, this.pack.armLiftMax);
     }
     // The gesture already eases the short exchange of the two painted arms.
     const offer = target.ParamOfferFlower;

@@ -34,6 +34,8 @@ export interface CharacterJson {
   gazeScale?: number;
   speech?: SpeechAnimation;
   signatureMotions?: string[];
+  /** Iki: degrees a gesture may swing an upper arm out before the art opens at the armpit. */
+  armLiftMax?: number;
   expressionMap?: Partial<Record<Emotion, string | number>>;
   motionMap?: Record<string, { group: string; index?: number }>;
   hitAreas?: Record<string, string>;

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, resolveGesture, restoreBases } from "./gestures";
+import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, limitArmLift, resolveGesture, restoreBases, softLimit } from "./gestures";
 
 /** Iki's standard full-body ranges (as auto-rigged), plus eye openness 0..1. */
 const RANGE: Record<string, [number, number]> = {
-  ParamArmL: [-8, 32], ParamArmR: [-8, 32], ParamElbowL: [-10, 90], ParamElbowR: [-10, 90],
+  ParamArmL: [-8, 32], ParamArmR: [-8, 32], ParamElbowL: [-10, 90], ParamElbowR: [-10, 120], // Reze bends in to 110 before the flower
   ParamAngleX: [-30, 30], ParamAngleY: [-30, 30], ParamAngleZ: [-30, 30],
   ParamBodyAngleX: [-10, 10], ParamBodyAngleY: [-10, 10], ParamBodyAngleZ: [-10, 10],
   ParamEyeLOpen: [-1, 0], ParamEyeROpen: [-1, 0], ParamLegShift: [-1, 1],
@@ -41,10 +41,11 @@ describe("Iki gestures", () => {
     }
   });
 
-  it("lifts Reze's hand before the flower appears, then extends it while she smiles", () => {
+  it("bends Reze's own arm in before the flower appears, then extends it while she smiles", () => {
     const flower = GESTURES["signature-flower"];
     expect(flower.expression).toBe("smile");
-    expect(flower.pose(0.2).ParamOfferLift).toBeGreaterThan(0.7);
+    expect(flower.pose(0.2).ParamElbowR).toBeGreaterThan(80);
+    expect(flower.pose(0.5).ParamOfferLift ?? 0).toBe(0); // the upper arm is never squashed
     expect(flower.pose(0.2).ParamOfferFlower).toBe(0);
     expect(flower.pose(0.34).ParamOfferFlower).toBe(1);
     expect(flower.pose(0.34).ParamOfferReach).toBeLessThan(0.3);
@@ -106,6 +107,20 @@ describe("Iki gestures", () => {
     expect(resolveGesture("signature-bang", 150, -170)).toBe("signature-bang");
     expect(resolveGesture("wave", 32, -10)).toBe("wave");
     expect(resolveGesture("clap", 150, -170)).toBe("clap");
+  });
+
+  it("soft-limits the arm lift without a hard stop", () => {
+    expect(softLimit(3, 9)).toBe(3); // below the knee: untouched
+    expect(softLimit(24, 9)).toBeLessThan(9);
+    expect(softLimit(24, 9)).toBeGreaterThan(softLimit(12, 9)); // still monotonic
+    expect(softLimit(-8, 9)).toBe(-8); // tucking in is never limited
+    const pose = limitArmLift({ ParamArmR: 24, ParamElbowR: -158 }, 9);
+    expect(pose.ParamArmR).toBeLessThan(9);
+    expect(pose.ParamElbowR).toBe(-158);
+    expect(limitArmLift({ ParamArmR: 24 }, undefined).ParamArmR).toBe(24);
+    // A straight arm keeps pointing the same way: the elbow bends out by what the shoulder lost.
+    const point = limitArmLift({ ParamArmR: 24, ParamElbowR: 0 }, 9);
+    expect(point.ParamArmR - point.ParamElbowR).toBeCloseTo(24, 5);
   });
 
   it("adds poses", () => {

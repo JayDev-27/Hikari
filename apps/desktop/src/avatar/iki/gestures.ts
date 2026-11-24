@@ -67,16 +67,18 @@ export const GESTURES: Record<string, Gesture> = {
   "signature-bang": { dur: 3.4, expression: "smile", pose: (t) => { const up = smoother(t / 0.14) * smoother((1 - t) / 0.3); const kick = Math.max(0, Math.sin(Math.PI * clamp01((t - 0.32) / 0.1))) * smoother((1 - t) / 0.3); return { ParamArmR: (25 + 5 * kick) * up, ParamElbowR: (-6 + 4 * kick) * up, ParamAngleZ: (-6 - 2 * kick) * up, ParamAngleX: -7 * up, ParamAngleY: (2 + 2 * kick) * up, ParamBodyAngleZ: -1.5 * up }; } },
 
   "signature-flower": { dur: 4.8, expression: "smile", pose: (t) => {
-    const lift = smoother((t - 0.04) / 0.23) * smoother((0.98 - t) / 0.2);
-    // One opacity parameter swaps the hanging arm for the painted offer; halfway through a slow
-    // dissolve both are half transparent (a ghost arm), so the swap is a ~70 ms cut.
+    // She bends her own arm in across the waist (as if taking the flower), the painted offer arm
+    // cuts in, and the hand then comes forward. Back out in reverse. The arm is never squashed
+    // (ParamOfferLift shrinks the upper arm into a stub, so it stays at 0).
+    const bend = smoother((t - 0.04) / 0.2) * smoother((0.98 - t) / 0.13);
+    // One opacity parameter swaps the two arms; halfway through a slow dissolve both are half
+    // transparent (a ghost arm), so the swap is a ~70 ms cut.
     const offer = smoother((t - 0.255) / 0.015) * smoother((0.85 - t) / 0.015);
     const reach = smoother((t - 0.27) / 0.22) * smoother((0.82 - t) / 0.17);
     const tilt = envelope(t, 0.22, 0.27);
     return {
-      ParamArmR: -5 * lift,
-      ParamElbowR: 20 * lift,
-      ParamOfferLift: lift,
+      ParamArmR: -3 * bend,
+      ParamElbowR: 110 * bend,
       ParamOfferFlower: offer,
       ParamOfferReach: reach,
       ParamAngleZ: 9 * tilt,
@@ -163,6 +165,31 @@ export class SpringSet {
 }
 
 /** Use the raised variant of a gesture when the model's arm ranges allow it (see dev/iki-pipeline/extend-arms.mjs). */
+/** Soft upper limit: unchanged below 60 % of max, then eased so it approaches max without a hard stop. */
+export function softLimit(v: number, max: number): number {
+  const knee = 0.6 * max, room = max - knee;
+  return v <= knee ? v : knee + room * Math.tanh((v - knee) / room);
+}
+
+/**
+ * Limits how far a gesture swings the upper arms out (ParamArmL/R), for art that opens at the armpit.
+ * A near-straight arm keeps its hand direction by bending the elbow outward by the angle taken off
+ * the shoulder (a point becomes a point from the elbow); an already folded arm (a wave) is left as is.
+ */
+export function limitArmLift(pose: Pose, max: number | undefined): Pose {
+  if (max === undefined) return pose;
+  for (const side of ["L", "R"]) {
+    const arm = `ParamArm${side}`, elbow = `ParamElbow${side}`;
+    const v = pose[arm];
+    if (v === undefined) continue;
+    const limited = softLimit(v, max);
+    pose[arm] = limited;
+    const e = pose[elbow] ?? 0;
+    if (Math.abs(e) < 90) pose[elbow] = e - (v - limited) * (1 - Math.abs(e) / 90);
+  }
+  return pose;
+}
+
 export function resolveGesture(name: string, armMax: number, elbowMin: number): string {
   const raised = armMax >= 32 && elbowMin <= -168;
   if (raised && name === "wave") return "wave-raised";
