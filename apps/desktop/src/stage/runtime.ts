@@ -26,6 +26,9 @@ interface PendingGesture extends AvatarGesture {
  * Glue between protocol messages, audio, lip sync and the avatar.
  * One instance per stage window.
  */
+/** Stillness an idle signature move waits for, ms. */
+export const SIGNATURE_PAUSE_MS = 3000;
+
 export class StageRuntime {
   readonly playback = new PlaybackQueue();
   readonly lipsync = new LipSyncEngine();
@@ -40,6 +43,8 @@ export class StageRuntime {
   private nextSpeechMotion = 0;
   private speechMotionIndex = 0;
   private nextSignatureMotion = Infinity;
+  /** Last frame anything moved her (a gesture, a queued cue, speech): idle moves wait for a real pause. */
+  private lastActiveAt = 0;
   private signatureMotionIndex = 0;
   private chunkStart = new Map<number, number>();
   private freq: Float32Array<ArrayBuffer>;
@@ -430,8 +435,11 @@ export class StageRuntime {
 
     this.animateSpeech(a, playing?.seq, playing?.ctxEnd, t, now);
     const signatures = this.character?.signatureMotions;
-    if (signatures?.length && now >= this.nextSignatureMotion && !playing && !this.playback.isPlaying &&
-        useStage.getState().state === "idle" && !a.isBusy?.()) {
+    if (playing || this.playback.isPlaying || this.gestures.length > 0 || a.isBusy?.()) this.lastActiveAt = now;
+    // An idle signature waits for SIGNATURE_PAUSE_MS of stillness: starting in the instant between two cued
+    // gestures, it would block the next one (a signature finishes before anything else plays).
+    if (signatures?.length && now >= this.nextSignatureMotion && now - this.lastActiveAt >= SIGNATURE_PAUSE_MS &&
+        useStage.getState().state === "idle") {
       a.playMotion(signatures[this.signatureMotionIndex++ % signatures.length]);
       this.nextSignatureMotion = now + 35000;
     }
