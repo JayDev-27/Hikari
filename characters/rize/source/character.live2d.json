@@ -1,0 +1,243 @@
+{
+  "id": "rize",
+  "displayName": "Rize Kamishiro",
+  "renderer": "live2d",
+  "modelPath": "model/Rize.model3.json",
+  "importSlot": true,
+  "persona": "persona.md",
+  "voice": {
+    "engine": "hima",
+    "voiceId": "Meera"
+  },
+  "defaultLanguage": "hinglish",
+  "license": {
+    "source": "Hikari Live2D model and illustrations based on the official Tokyo Ghoul character sheet.",
+    "terms": "Hikari fan artwork and rig. The underlying character design belongs to its respective rights holders. No franchise voice recording is included.",
+    "url": "https://www.marv.jp/special/tokyoghoul/first/chara_03.html"
+  },
+  "motionMap": {
+    "idle": {
+      "group": "Idle"
+    },
+    "tap": {
+      "group": "TapBody",
+      "index": 0
+    },
+    "tap_head": {
+      "group": "TapBody",
+      "index": 10
+    },
+    "tap_body": {
+      "group": "TapBody",
+      "index": 0
+    },
+    "wave": {
+      "group": "TapBody",
+      "index": 0
+    },
+    "shrug": {
+      "group": "TapBody",
+      "index": 1
+    },
+    "facepalm": {
+      "group": "TapBody",
+      "index": 2
+    },
+    "laugh": {
+      "group": "TapBody",
+      "index": 3
+    },
+    "shy_look_away": {
+      "group": "TapBody",
+      "index": 4
+    },
+    "think_chin": {
+      "group": "TapBody",
+      "index": 5
+    },
+    "clap": {
+      "group": "TapBody",
+      "index": 6
+    },
+    "point": {
+      "group": "TapBody",
+      "index": 7
+    },
+    "pout": {
+      "group": "TapBody",
+      "index": 8
+    },
+    "cross_arms": {
+      "group": "TapBody",
+      "index": 9
+    },
+    "head_pat_react": {
+      "group": "TapBody",
+      "index": 10
+    },
+    "nod": {
+      "group": "TapBody",
+      "index": 11
+    },
+    "head_tilt": {
+      "group": "TapBody",
+      "index": 12
+    },
+    "bow": {
+      "group": "TapBody",
+      "index": 13
+    },
+    "speech-calm": {
+      "group": "Speech",
+      "index": 0
+    },
+    "speech-thoughtful": {
+      "group": "Speech",
+      "index": 1
+    },
+    "speech-playful": {
+      "group": "Speech",
+      "index": 2
+    },
+    "speech-surprised": {
+      "group": "Speech",
+      "index": 3
+    },
+    "signature-glasses": {
+      "group": "Signature",
+      "index": 0
+    },
+    "signature-book": {
+      "group": "Signature",
+      "index": 1
+    }
+  },
+  "expressionMap": {
+    "neutral": "neutral",
+    "joy": "joy",
+    "fun": "fun",
+    "teasing": "teasing",
+    "angry": "angry",
+    "sorrow": "sorrow",
+    "shy": "shy",
+    "surprised": "surprised",
+    "thinking": "thinking",
+    "sleepy": "sleepy"
+  },
+  "hitAreas": {
+    "Head": "head",
+    "Body": "body"
+  },
+  "gazeScale": 0.56,
+  "speech": {
+    "defaultEmotion": "teasing",
+    "motions": [
+      "speech-calm",
+      "speech-thoughtful"
+    ],
+    "emotionMotions": {
+      "joy": [
+        "speech-playful",
+        "speech-calm"
+      ],
+      "fun": [
+        "speech-playful",
+        "speech-calm"
+      ],
+      "teasing": [
+        "speech-playful",
+        "speech-thoughtful"
+      ],
+      "shy": [
+        "speech-thoughtful",
+        "speech-calm"
+      ],
+      "angry": [
+        "speech-calm",
+        "speech-thoughtful"
+      ],
+      "sorrow": [
+        "speech-thoughtful"
+      ],
+      "thinking": [
+        "speech-thoughtful",
+        "speech-calm"
+      ],
+      "surprised": [
+        "speech-surprised"
+      ],
+      "sleepy": [
+        "speech-calm"
+      ]
+    },
+    "intervalMs": 2250
+  },
+  "signatureMotions": [
+    "signature-glasses",
+    "signature-book"
+  ],
+  "poseRig": {
+    "hands": [
+      {
+        "drawable": "leftArm1",
+        "wrist": [
+          -228.5,
+          -1.0
+        ],
+        "breadth": 1.24
+      },
+      {
+        "drawable": "rightArm1",
+        "wrist": [
+          217.5,
+          21.0
+        ],
+        "breadth": 1.04
+      }
+    ],
+    "grip": {
+      "drawable": "Book",
+      "arms": [
+        "leftArm1",
+        "rightArm1"
+      ],
+      "file": "poses/book.png",
+      "origin": [
+        -242,
+        -534
+      ],
+      "size": [
+        486,
+        235
+      ],
+      "bodyIndices": [
+        84,
+        111
+      ],
+      "bodyPoints": [
+        -265.5515,
+        430.0388,
+        266.4342,
+        428.7515
+      ]
+    },
+    "arms": [
+      {
+        "drawable": "leftArm1",
+        "centers": [
+          0.733,
+          0.663,
+          0.261
+        ]
+      },
+      {
+        "drawable": "rightArm1",
+        "centers": [
+          0.272,
+          0.263,
+          0.573
+        ]
+      }
+    ]
+  }
+}
