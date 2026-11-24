@@ -2,6 +2,13 @@
 
 Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 
+## 2026-11-25 — Three.js landing page & Vercel deployment (A)
+
+- Website lives in `website/` as an isolated npm package (Vite + React 19 + Three.js 0.174 + Lenis). Root `pnpm install --frozen-lockfile` remains unaffected.
+- Full-screen WebGL hero starting at viewport top `y = 0` with liquid chromatic fluid shader pass, procedural 5-petal sakura crystal, dark obsidian torus knot, and DOM-synced scroll fade.
+- Uses latest Liquid Glass app icon (`hikari-app-icon.png`) for header, favicon, and modals.
+- Deployed to Vercel production at `https://hikari-companion.vercel.app`.
+
 ## 2026-11-25 — Lu Guang as an Iki model (A)
 
 - Cut the visible full-body PSD and keep the original silver fringe, sleeve seams,

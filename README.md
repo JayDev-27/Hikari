@@ -16,8 +16,9 @@ She floats over every app, talks with you in Hindi, English and Hinglish with ph
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Rust](https://img.shields.io/badge/Rust-1.100-000?logo=rust)
 [![License: MIT](https://img.shields.io/badge/License-MIT-7c5cff.svg)](LICENSE)
+[![Website](https://img.shields.io/badge/Website-hikari--companion.vercel.app-ff7eb6?style=flat&logo=vercel&logoColor=white)](https://hikari-companion.vercel.app)
 
-[Quick start](#-quick-start) · [Characters](#-the-cast) · [Architecture](#-how-it-works) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
+[🌐 Website](https://hikari-companion.vercel.app) · [Quick start](#-quick-start) · [Characters](#-the-cast) · [Architecture](#-how-it-works) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
 
 <br>
 
@@ -121,6 +122,8 @@ Use `VITE_MIC_MODE=open pnpm dev` for always-listening instead of push-to-talk.
 | `pnpm -F desktop audit:models` | Audit Live2D rigs against Cubism standards |
 | `pnpm -F desktop console` | Drive the core over the wire protocol, no app needed |
 | `pnpm gen:protocol` | Regenerate protocol types from the schema |
+| `cd website && npm run dev` | Run the Three.js landing page locally |
+| `cd website && npm run build` | Build the landing page for production |
 
 ## 🧠 How it works
 
