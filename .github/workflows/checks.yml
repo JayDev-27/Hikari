@@ -15,10 +15,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  macos:
-    name: Desktop and protocol
-    runs-on: macos-15
-    timeout-minutes: 20
+  frontend-and-protocol:
+    name: Frontend, protocol, and models
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -45,11 +45,23 @@ jobs:
       - name: Check TypeScript types
         run: pnpm typecheck
 
-      - name: Run desktop tests
+      - name: Audit Live2D and Iki model rigs
+        run: pnpm -F desktop audit:models
+
+      - name: Run unit & integration tests
         run: pnpm -F desktop test
 
       - name: Build desktop frontend
         run: pnpm -F desktop build
+
+  rust-native:
+    name: Rust Tauri and native stage (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install Rust and Clippy
         run: rustup toolchain install 1.100.0 --profile minimal --component clippy
