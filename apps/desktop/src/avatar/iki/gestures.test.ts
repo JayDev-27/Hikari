@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, limitArmLift, resolveGesture, restoreBases, softLimit } from "./gestures";
+import { CLAP_CONTACT, CLAP_OPEN, CLAP_OPEN_DEPTH, GESTURES, SpringSet, addPoses, applyOffsets, foldClap, idlePose, limitArmLift, resolveGesture, restoreBases, softLimit } from "./gestures";
 
 /** Iki's standard full-body ranges (as auto-rigged), plus eye openness 0..1. */
 const RANGE: Record<string, [number, number]> = {
@@ -18,6 +18,7 @@ const RANGE: Record<string, [number, number]> = {
   ParamRizeBook: [0, 1],
   ParamChengClap: [0, 1],
   ParamChengClapDepth: [0, 1],
+  ParamChengPalm: [0, 1],
   ParamMouthOpenY: [0, 1],
   ParamBrowLY: [-1, 1],
   ParamBrowRY: [-1, 1],
@@ -41,6 +42,8 @@ describe("Iki gestures", () => {
     if (name === "signature-wink") R.ParamElbowR = [-170, 90];
     if (name.endsWith("-fold") || name === "signature-sheepish") R.ParamElbowR = [-170, 170];
     if (name === "signature-wave-shy") R.ParamElbowR = [-170, 170];
+    // Cheng Xiaoshi's claps fold both elbows on his 170° rig.
+    if (name === "clap-fold" || name === "signature-photo-dive") R.ParamElbowL = R.ParamElbowR = [-170, 170];
     for (const [id, v] of Object.entries(g.pose(0))) expect(Math.abs(v), `${id} at t=0`).toBeLessThan(1e-6);
     for (const [id, v] of Object.entries(g.pose(1))) expect(Math.abs(v), `${id} at t=1`).toBeLessThan(1e-6);
     for (let t = 0; t <= 1; t += 0.01) {
@@ -106,14 +109,45 @@ describe("Iki gestures", () => {
     expect(book(0.85).ParamElbowL).toBeGreaterThan(5);
   });
 
-  it("holds Cheng Xiaoshi's clap once, shuts his eyes at contact, and opens them on the release", () => {
-    const dive = GESTURES["signature-photo-dive"].pose;
-    expect(dive(0.21).ParamChengClap).toBeLessThan(0.75);
-    expect(dive(0.41).ParamChengClap).toBe(1);
-    expect(dive(0.41).ParamEyeLOpen).toBe(-1);
-    expect(dive(0.41).ParamEyeROpen).toBe(-1);
-    expect(dive(0.68).ParamChengClap).toBeLessThan(0.7);
-    expect(dive(0.68).ParamEyeROpen).toBeCloseTo(-0.10);
+  it("claps Cheng Xiaoshi's palms together with his elbows only, never lifting the shoulders", () => {
+    const dive = GESTURES["signature-photo-dive"];
+    expect(dive.timed).toBe(true); // exact reach: springs or random amplitude would make the palms miss
+    // Wind-up a hand apart, then palms pressed and held while his eyes are shut.
+    expect(dive.pose(0.2).ParamElbowL).toBeCloseTo(CLAP_OPEN);
+    expect(dive.pose(0.2).ParamChengClapDepth).toBeCloseTo(CLAP_OPEN_DEPTH);
+    for (const t of [0.27, 0.4, 0.55]) {
+      const p = dive.pose(t);
+      expect(p.ParamElbowL).toBeCloseTo(CLAP_CONTACT, 0);
+      expect(p.ParamElbowR).toBeCloseTo(CLAP_CONTACT, 0);
+      expect(p.ParamChengClapDepth).toBeCloseTo(0, 1);
+    }
+    expect(dive.pose(0.4).ParamChengPalm).toBe(1); // palms, not the backs of the hands, meet
+    expect(dive.pose(0.05).ParamChengPalm).toBe(0); // the hanging hands keep their painted side
+    expect(dive.pose(0.4).ParamEyeLOpen).toBe(-1);
+    expect(dive.pose(0.68).ParamEyeROpen).toBeCloseTo(-0.10);
+    // The shoulders stay within the raglan's safe swing all the way, and the old shoulder-rotating clap is gone.
+    for (let t = 0; t <= 1; t += 0.01) {
+      const p = dive.pose(t);
+      expect(Math.abs(p.ParamArmL)).toBeLessThanOrEqual(12.01);
+      expect(p.ParamChengClap).toBeUndefined();
+    }
+    expect(dive.pose(1).ParamElbowL).toBeCloseTo(0);
+  });
+
+  it("rises with the forearms foreshortened, so the hands never sweep across each other", () => {
+    for (let up = 0.3; up < 0.75; up += 0.05) {
+      const p = foldClap(up, 1);
+      expect(p.ParamChengClapDepth).toBeGreaterThan(0.9);
+      expect(p.ParamArmL).toBeGreaterThan(5);
+    }
+  });
+
+  it("claps three times on Cheng Xiaoshi's elbow-fold rig", () => {
+    expect(resolveGesture("clap", 150, -170, 170, true)).toBe("clap-fold");
+    expect(resolveGesture("clap", 150, -170, 170)).toBe("clap");
+    const clap = GESTURES["clap-fold"].pose;
+    for (const t of [0.35, 0.5, 0.65]) expect(clap(t).ParamElbowL).toBeCloseTo(CLAP_CONTACT, 0);
+    for (const t of [0.275, 0.425, 0.575]) expect(clap(t).ParamElbowL).toBeGreaterThan(CLAP_CONTACT + 1.5);
   });
 
   it("gives Cheng Xiaoshi a tilted, open grin in his sheepish pose", () => {

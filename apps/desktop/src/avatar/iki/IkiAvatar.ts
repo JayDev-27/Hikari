@@ -4,7 +4,7 @@ import type { Emotion, GestureTag } from "@hikari/protocol";
 import type { CharacterPack } from "../characters";
 import type { AvatarController, AvatarEvent, AvatarState, Visemes } from "../types";
 import { visemesToLive2D } from "../../lipsync/engine";
-import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, limitArmLift, resolveGesture, restoreBases, type Pose } from "./gestures";
+import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, limitArmLift, resolveGesture, restoreBases, smoother, type Pose } from "./gestures";
 
 /**
  * Renderer for Iki models (`.iki`, https://github.com/zeikar/iki): rigs made by Iki's
@@ -60,7 +60,7 @@ export class IkiAvatar implements AvatarController {
   private mouth = { open: 0, form: 0 };
   private look = { x: 0, y: 0, active: false };
   private busyUntil = 0;
-  private gesture: { name: string; pose: (t: number) => Pose; start: number; dur: number; scale: number } | null = null;
+  private gesture: { name: string; pose: (t: number) => Pose; start: number; dur: number; scale: number; timed: boolean } | null = null;
   /** Values our offsets were added to last frame, restored before IkiMotion runs (see gestures.ts). */
   private bases = new Map<string, number>();
   // Elbows follow faster: the wave's forearm flicks past horizontal instead of hanging out at her side.
@@ -165,14 +165,14 @@ export class IkiAvatar implements AvatarController {
     }
     const range = (id: string) => this.model.parameters.find((p) => p.id === id);
     const tag = mapped && this.pack.signatureMotions?.includes(mapped.group) ? mapped.group : name;
-    const gname = resolveGesture(tag, range("ParamArmR")?.max ?? 0, range("ParamElbowR")?.min ?? 0, range("ParamElbowR")?.max ?? 0);
+    const gname = resolveGesture(tag, range("ParamArmR")?.max ?? 0, range("ParamElbowR")?.min ?? 0, range("ParamElbowR")?.max ?? 0, this.params.has("ParamChengClapDepth"));
     const g = GESTURES[gname];
     if (g) {
       // A gesture already in progress is not restarted by a repeat request (a burst of identical cues).
       if (this.gesture?.name === gname && now - this.gesture.start < this.gesture.dur) return;
       // A little variation each time, so repeats never look canned.
       const dur = g.dur * 1000 * (0.92 + Math.random() * 0.16);
-      this.gesture = { name: gname, pose: g.pose, start: now, dur, scale: 0.9 + Math.random() * 0.15 };
+      this.gesture = { name: gname, pose: g.pose, start: now, dur, scale: 0.9 + Math.random() * 0.15, timed: g.timed ?? false };
       this.busyUntil = now + dur;
       const exprId = g.expression ?? GESTURE_TO_EXPRESSION[name as GestureTag];
       if (exprId && this.motion.playExpression(exprId)) window.setTimeout(() => !this.destroyed && this.motion.stopExpression(), g.dur * 1000);
@@ -247,8 +247,7 @@ export class IkiAvatar implements AvatarController {
       const t = (now - this.gesture.start) / this.gesture.dur;
       if (t >= 1) this.gesture = null;
       else for (const [id, v] of Object.entries(this.gesture.pose(t))) {
-        const clapBlink = this.gesture.name === "signature-photo-dive" && (id === "ParamEyeLOpen" || id === "ParamEyeROpen");
-        if (clapBlink || TIMED_PARAMETERS.has(id)) timed[id] = v;
+        if (this.gesture.timed || TIMED_PARAMETERS.has(id)) timed[id] = v;
         else target[id] = v * this.gesture.scale;
       }
       limitArmLift(target, this.pack.armLiftMax);
@@ -259,7 +258,8 @@ export class IkiAvatar implements AvatarController {
     const gestureLeg = target.ParamLegShift ?? 0;
     const idleLeg = this.leg.v * (1 - Math.abs(gestureLeg));
     const life = idlePose(now / 1000 * idleTempo, idleLeg + gestureLeg, this.state === "speaking", Math.min(1, this.mouth.open * 1.4));
-    const clapArms = 1 - (timed.ParamChengClap ?? 0);
+    // A timed gesture places the arms exactly (palms that must meet), so idle arm sway fades out under it.
+    const clapArms = 1 - smoother(Math.abs(timed.ParamElbowL ?? 0) / 40);
     const rightArmIdle = clapArms * (1 - (timed.ParamGlassesReach ?? 0));
     life.ParamArmR *= rightArmIdle;
     life.ParamElbowR *= rightArmIdle;

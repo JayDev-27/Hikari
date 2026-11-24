@@ -25,6 +25,33 @@ export interface Gesture {
   pose: (t: number) => Pose;
   /** Expression to hold for the gesture's length, if the model declares it. */
   expression?: string;
+  /** Exact timing and reach: no spring lag or random amplitude (a clap whose palms must meet, not miss). */
+  timed?: boolean;
+}
+
+/** Cheng Xiaoshi's clap, measured on render_poses with his palm-side hands in (ParamChengPalm 1, wrists bent so
+ *  the hands stand straight up): at elbow 128° (forearm full length) his palms join flat and straight in front of
+ *  his chest, fingers up; at 135°, slightly foreshortened, they are a hand's width apart, palms facing. */
+export const CLAP_CONTACT = 128, CLAP_OPEN = 135, CLAP_OPEN_DEPTH = 0.3;
+
+/**
+ * Hands for a clap on a rig whose elbow folds inward to 170° and whose forearm foreshortens
+ * (ParamChengClapDepth, dev/iki-pipeline/pose-cheng.mjs). The upper arms stay near the sides (at most ~12° out,
+ * where the raglan shoulder holds), so the shoulders never open. Rising and lowering, the forearms point at the
+ * viewer (foreshortened) and the elbows ease out, so the hands come up in front of the chest a hand apart instead
+ * of sweeping across each other; at the top the palms meet. A forearm folded up in the picture plane turns its
+ * hand palm-out, so on the way up (hands moving fast, near the centre) the hands swap to palm-side twins
+ * (ParamChengPalm, dev/iki-pipeline/palm-swap.mjs): palms meet palms, not the backs of the hands.
+ * `up` 0 rest → 1 hands up; `gap` 0 palms pressed → 1 open.
+ */
+export function foldClap(up: number, gap: number): Pose {
+  const top = smoother((up - 0.75) / 0.25);
+  const elbow = (CLAP_CONTACT + (CLAP_OPEN - CLAP_CONTACT) * gap) * up;
+  const depth = smoother(up / 0.3) * (1 - top) + CLAP_OPEN_DEPTH * gap * top;
+  const arm = 12 * Math.sin(Math.PI * clamp01(up / 0.9)) * (1 - top) + 2 * top;
+  // A one-frame swap (both half-transparent would show through), at the speed peak of the rise.
+  const palm = smoother((up - 0.8) / 0.03);
+  return { ParamElbowL: elbow, ParamElbowR: elbow, ParamChengClapDepth: depth, ParamChengPalm: palm, ParamArmL: arm, ParamArmR: arm };
 }
 
 /**
@@ -186,24 +213,36 @@ export const GESTURES: Record<string, Gesture> = {
     };
   } },
 
-  "signature-photo-dive": { dur: 3.3, pose: (t) => {
-    const clap = smoother((t - 0.035) / 0.325) * smoother((0.91 - t) / 0.39);
-    const blink = smoother((t - 0.22) / 0.09) * smoother((0.57 - t) / 0.08);
-    const focus = smoother((t - 0.48) / 0.12) * smoother((1 - t) / 0.18);
+  /** His clap before he dives into a photo: hands up, one sharp clap, palms held pressed while he focuses with
+   *  eyes shut, then he opens his eyes on the photo and the hands come down. */
+  "signature-photo-dive": { dur: 3.3, timed: true, pose: (t) => {
+    const up = smoother(t / 0.2) * smoother((0.9 - t) / 0.24);
+    // Open just before contact (a wind-up), then the palms snap together in ~70 ms and stay pressed.
+    const gap = t < 0.2 ? 1 : 1 - smoother((t - 0.235) / 0.022);
+    const impact = Math.exp(-(((t - 0.262) / 0.025) ** 2));
+    const blink = smoother((t - 0.25) / 0.03) * smoother((0.6 - t) / 0.06);
+    const focus = smoother((t - 0.5) / 0.1) * smoother((1 - t) / 0.18);
     const dip = envelope(t, 0.29, 0.52);
     return {
-      ParamChengClap: clap,
-      ParamChengClapDepth: smoother(clap / 0.42) * smoother((1 - clap) / 0.10),
+      ...foldClap(up, Math.max(gap, 1 - up)),
       ParamEyeLOpen: -blink - 0.10 * focus * (1 - blink),
       ParamEyeROpen: -blink - 0.10 * focus * (1 - blink),
-      ParamAngleY: -7 * dip + 4 * focus,
+      ParamAngleY: -7 * dip + 4 * focus - 2.5 * impact,
       ParamAngleX: -3 * focus,
-      ParamBodyAngleY: -2.5 * dip,
+      ParamBodyAngleY: -2.5 * dip - 1.2 * impact,
       ParamBrowLY: -0.18 * focus,
       ParamBrowRY: -0.18 * focus,
       ParamMouthForm: -0.24 * focus,
       ParamLegShift: 0.45 * dip,
     };
+  } },
+  /** clap on Cheng Xiaoshi's elbow-fold rig: hands up, three quick claps that bounce off at contact, hands down. */
+  "clap-fold": { dur: 2.4, timed: true, expression: "laugh", pose: (t) => {
+    const up = smoother(t / 0.2) * smoother((1 - t) / 0.2);
+    const beat = smoother((t - 0.2) / 0.04) * smoother((0.8 - t) / 0.04);
+    // Contact at t = 0.35, 0.5, 0.65: the hands bounce straight off each other, as a clap does.
+    const gap = 1 - beat * (1 - Math.abs(Math.sin(Math.PI * (t - 0.2) / 0.15)));
+    return { ...foldClap(up, gap), ParamAngleY: 1.5 * beat * (1 - gap), ParamAngleZ: 3 * up };
   } },
   /** The sheepish neck rub: the hand comes up across the chest to the back of the neck (needs the elbow to fold
    *  inward to 170°, dev/iki-pipeline/elbow-in.mjs) and rubs it, head tilted, a sheepish grin. */
@@ -314,9 +353,11 @@ export function limitArmLift(pose: Pose, max: number | undefined): Pose {
   return pose;
 }
 
-export function resolveGesture(name: string, armMax: number, elbowMin: number, elbowMax = 0): string {
+export function resolveGesture(name: string, armMax: number, elbowMin: number, elbowMax = 0, foreshortens = false): string {
   const raised = armMax >= 32 && elbowMin <= -168;
   if (raised && name === "wave") return "wave-raised";
+  // Palms meet only with the elbow fold plus a forearm that foreshortens on the way up (Cheng Xiaoshi).
+  if (elbowMax >= 168 && foreshortens && name === "clap") return "clap-fold";
   // A forearm that folds inward past 150° brings the hand to the face across the chest.
   if (elbowMax >= 168 && (name === "think_chin" || name === "facepalm")) return `${name}-fold`;
   return name;
