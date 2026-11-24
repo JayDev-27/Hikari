@@ -148,13 +148,18 @@ export const GESTURES: Record<string, Gesture> = {
       ParamEyeROpen: -0.13 * smile,
     };
   } },
+  /** She holds an open book low in front, cradled in both hands, and reads it: head bowed, eyes lowered, weight on
+   *  one leg. The book (ParamRizeBook) shows once the hands are nearly there and goes before they drop. */
   "signature-book": { dur: 7.2, pose: (t) => {
     const hold = envelope(t, 0.27, 0.29);
+    // A ~0.1 s swap while the hands are still moving: a slow fade would show a see-through book over the hands.
+    const book = smoother((t - 0.215) / 0.015) * smoother((0.775 - t) / 0.015);
     return {
-      ParamElbowL: 35 * hold,
-      ParamElbowR: 38 * hold,
-      ParamArmL: -1.5 * hold,
-      ParamArmR: -1.5 * hold,
+      ParamRizeBook: book,
+      ParamElbowL: 44 * hold,
+      ParamElbowR: 46 * hold,
+      ParamArmL: 2 * hold,
+      ParamArmR: 2 * hold,
       ParamAngleY: -9 * hold,
       ParamAngleZ: 5 * hold,
       ParamEyeLOpen: -0.47 * hold,

@@ -15,6 +15,7 @@ const RANGE: Record<string, [number, number]> = {
   ParamGlassesReach: [0, 1],
   ParamGlassesPush: [0, 1],
   ParamRizeGhoul: [0, 1],
+  ParamRizeBook: [0, 1],
   ParamChengClap: [0, 1],
   ParamChengClapDepth: [0, 1],
   ParamMouthOpenY: [0, 1],
@@ -93,6 +94,16 @@ describe("Iki gestures", () => {
     expect(ghoul(0.5).ParamEyeLOpen).toBeCloseTo(0);
     expect(ghoul(0.86).ParamEyeROpen).toBeCloseTo(-1);
     expect(ghoul(0.91).ParamRizeGhoul).toBeCloseTo(0);
+  });
+
+  it("shows Rize's book only while both hands hold it", () => {
+    const book = GESTURES["signature-book"].pose;
+    expect(book(0.1).ParamRizeBook).toBe(0); // hands still coming up
+    expect(book(0.3).ParamRizeBook).toBe(1);
+    expect(book(0.3).ParamElbowL).toBeGreaterThan(40); // cradled, not clasped low
+    expect(book(0.7).ParamRizeBook).toBe(1);
+    expect(book(0.85).ParamRizeBook).toBe(0); // gone before the hands drop
+    expect(book(0.85).ParamElbowL).toBeGreaterThan(5);
   });
 
   it("holds Cheng Xiaoshi's clap once, shuts his eyes at contact, and opens them on the release", () => {

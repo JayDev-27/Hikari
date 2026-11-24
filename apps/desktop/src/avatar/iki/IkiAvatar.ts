@@ -41,7 +41,7 @@ const GESTURE_TO_EXPRESSION: Partial<Record<GestureTag, string>> = {
 // These channels already have authored timing. Spring lag or random
 // amplitude can put a prop and the hand at different points in the gesture.
 const TIMED_PARAMETERS = new Set([
-  "ParamOfferFlower", "ParamOfferReach", "ParamGlassesReach", "ParamGlassesPush", "ParamRizeGhoul",
+  "ParamOfferFlower", "ParamOfferReach", "ParamGlassesReach", "ParamGlassesPush", "ParamRizeGhoul", "ParamRizeBook",
   "ParamChengClap", "ParamChengClapDepth",
 ]);
 

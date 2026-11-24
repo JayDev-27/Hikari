@@ -79,4 +79,7 @@ node "$P/despeck-edges.mjs" iki-char/rize-rigged.iki
 node "$P/elbow-in.mjs" iki-char/rize-rigged.iki 170
 node "$P/fill-under.mjs" iki-char/rize-rigged.iki face '^(eye|iris|lash|lash_lower)_[LR]$|^glasses$' 6
 node "$P/fill-under.mjs" iki-char/rize-rigged.iki body '^face$' 0
+# The open book she holds in signature-book (from her Live2D atlas: characters/rize/source/book.png), placed
+# under her hands at the pose's peak and shown by ParamRizeBook.
+node "$P/add-prop.mjs" iki-char/rize-rigged.iki source/book.png book ParamRizeBook 533,1660,355 7.6
 mv iki-char/rize-rigged.iki iki-char/Rize.iki
