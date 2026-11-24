@@ -68,7 +68,9 @@ export const GESTURES: Record<string, Gesture> = {
 
   "signature-flower": { dur: 4.8, expression: "smile", pose: (t) => {
     const lift = smoother((t - 0.04) / 0.23) * smoother((0.98 - t) / 0.2);
-    const offer = smoother((t - 0.25) / 0.055) * smoother((0.85 - t) / 0.055);
+    // One opacity parameter swaps the hanging arm for the painted offer; halfway through a slow
+    // dissolve both are half transparent (a ghost arm), so the swap is a ~70 ms cut.
+    const offer = smoother((t - 0.255) / 0.015) * smoother((0.85 - t) / 0.015);
     const reach = smoother((t - 0.27) / 0.22) * smoother((0.82 - t) / 0.17);
     const tilt = envelope(t, 0.22, 0.27);
     return {
