@@ -57,6 +57,19 @@ export const GESTURES: Record<string, Gesture> = {
     const tuck = -8 * Math.sin(Math.PI * fold) * (1 - lift);
     return { ParamArmR: (22 + 2 * s) * lift + tuck, ParamElbowR: (-158 + 10 * s) * fold, ParamAngleZ: -5 * lift, ParamAngleX: -6 * lift, ParamBodyAngleZ: -1.5 * lift };
   } },
+  /** think_chin on a rig whose elbow folds inward past 150° (dev/iki-pipeline/elbow-in.mjs): the hand rises across the
+   *  chest to the chin, the other forearm resting under it, head tilted up in thought. */
+  "think_chin-fold": { dur: 3.4, pose: (t) => {
+    const e = envelope(t, 0.24, 0.24), look = envelope(t, 0.3, 0.26);
+    return { ParamArmR: 2 * e, ParamElbowR: 154 * e, ParamArmL: -2 * e, ParamElbowL: 32 * e, ParamAngleZ: 6 * look, ParamAngleY: 5 * look, ParamAngleX: 4 * look, ParamEyeLOpen: -0.15 * look, ParamEyeROpen: -0.15 * look };
+  } },
+  /** facepalm on the same rig: the hand comes up across the chest, then the head bows into it, eyes shut, a slow
+   *  small shake while it is held. */
+  "facepalm-fold": { dur: 3.0, pose: (t) => {
+    const e = envelope(t, 0.2, 0.24), bow = envelope(t, 0.32, 0.22);
+    const shake = Math.sin((t - 0.32) * Math.PI * 6) * smoother((t - 0.34) / 0.1) * smoother((0.74 - t) / 0.1);
+    return { ParamArmR: -6 * e, ParamElbowR: 166 * e, ParamAngleX: -14 * bow, ParamAngleZ: 9 * bow, ParamAngleY: -7 * bow + 3 * shake, ParamEyeLOpen: -0.85 * bow, ParamEyeROpen: -0.85 * bow };
+  } },
 
   // Makima's signature moves.
   /** Her composed stance: hands folded low in front, head inclined, a calm closed-lip smile. */
@@ -192,9 +205,11 @@ export function limitArmLift(pose: Pose, max: number | undefined): Pose {
   return pose;
 }
 
-export function resolveGesture(name: string, armMax: number, elbowMin: number): string {
+export function resolveGesture(name: string, armMax: number, elbowMin: number, elbowMax = 0): string {
   const raised = armMax >= 32 && elbowMin <= -168;
   if (raised && name === "wave") return "wave-raised";
+  // A forearm that folds inward past 150° brings the hand to the face across the chest.
+  if (elbowMax >= 168 && (name === "think_chin" || name === "facepalm")) return `${name}-fold`;
   return name;
 }
 

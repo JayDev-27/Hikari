@@ -152,7 +152,7 @@ export class IkiAvatar implements AvatarController {
       return;
     }
     const range = (id: string) => this.model.parameters.find((p) => p.id === id);
-    const gname = resolveGesture(name, range("ParamArmR")?.max ?? 0, range("ParamElbowR")?.min ?? 0);
+    const gname = resolveGesture(name, range("ParamArmR")?.max ?? 0, range("ParamElbowR")?.min ?? 0, range("ParamElbowR")?.max ?? 0);
     const g = GESTURES[gname];
     if (g) {
       // A gesture already in progress is not restarted by a repeat request (a burst of identical cues).

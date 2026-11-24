@@ -28,6 +28,7 @@ describe("Iki gestures", () => {
     // "-raised" variants run on models with extended ranges (arm to 150, elbow open to −170).
     const R = { ...RANGE };
     if (name === "wave-raised") R.ParamElbowR = [-170, 90];
+    if (name.endsWith("-fold")) R.ParamElbowR = [-170, 170];
     if (name === "signature-wave-shy") R.ParamElbowR = [-170, 170];
     for (const [id, v] of Object.entries(g.pose(0))) expect(Math.abs(v), `${id} at t=0`).toBeLessThan(1e-6);
     for (const [id, v] of Object.entries(g.pose(1))) expect(Math.abs(v), `${id} at t=1`).toBeLessThan(1e-6);
@@ -107,6 +108,11 @@ describe("Iki gestures", () => {
     expect(resolveGesture("signature-bang", 150, -170)).toBe("signature-bang");
     expect(resolveGesture("wave", 32, -10)).toBe("wave");
     expect(resolveGesture("clap", 150, -170)).toBe("clap");
+    // A forearm that folds inward far enough brings the hand to the face.
+    expect(resolveGesture("think_chin", 150, -170, 170)).toBe("think_chin-fold");
+    expect(resolveGesture("facepalm", 150, -170, 170)).toBe("facepalm-fold");
+    expect(resolveGesture("facepalm", 150, -170, 90)).toBe("facepalm");
+    expect(resolveGesture("wave", 150, -170, 170)).toBe("wave-raised");
   });
 
   it("soft-limits the arm lift without a hard stop", () => {

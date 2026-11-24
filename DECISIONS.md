@@ -36,6 +36,11 @@ Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 
 ## 2026-11-24 — Light edges taken out of Makima's dark paint (A)
 
+- Makima's forearms fold inward to 170° (`elbow-in.mjs`; rest, wave and clasp pixel-identical), so
+  think_chin and facepalm take their hand-to-face variants (`think_chin-fold`, `facepalm-fold`,
+  chosen by resolveGesture when ParamElbowR opens to 168° or more): the hand rises across the chest
+  to the chin; for the facepalm the head bows into it, eyes shut. The old poses left the hand palm-up
+  at the waist. Reze's right elbow already opens to 170°, so she gets them too.
 - The last of the "white border" on her trousers was the light backdrop of the source picture in
   three places: the RGB of transparent texels (mixed into the outline by texture filtering), edge
   texels pre-mixed with it, and strips/specks of it one to three texels wide along the outline.
