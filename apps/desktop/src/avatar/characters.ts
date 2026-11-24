@@ -36,7 +36,12 @@ export interface CharacterJson {
   signatureMotions?: string[];
   /** Iki: degrees a gesture may swing an upper arm out before the art opens at the armpit. */
   armLiftMax?: number;
+  /** Iki idle motion and weight-shift frequency multiplier. */
+  idleTempo?: number;
+  /** Iki gesture spring damping ratio. The default is critically damped. */
+  springDamping?: number;
   expressionMap?: Partial<Record<Emotion, string | number>>;
+  /** Iki groups can also name a procedural gesture listed in signatureMotions. */
   motionMap?: Record<string, { group: string; index?: number }>;
   hitAreas?: Record<string, string>;
   persona?: string | null;

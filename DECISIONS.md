@@ -2,6 +2,36 @@
 
 Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 
+## 2026-11-24 — Cheng Xiaoshi as an Iki model (A)
+
+- Use the visible full-body PSD for the head, clothes and limbs. Keep the blond edges and
+  dark spikes with the hair, and assign the jacket lining and trousers to the body.
+- The photo dive uses the two painted hands from the standing figure. Foreshorten the sleeves
+  on approach so the palms meet once at chest height. Close his eyes at contact and reopen
+  as the hands drop. The body click plays this signature.
+- Keep the reattached chin outline on the face and let its narrow edge follow the neighboring
+  chin vertices on deep nods. Continue the source shadow on the neck behind the jaw. Keep the
+  raglan sleeve roots at the jacket seam and fill under them from the sleeve palette. The pack
+  caps ordinary arm lifts at 18°, and both patches collapse at rest.
+- The other signatures use a sheepish head bob and grin and a raised-hand wink. Cheng's pack
+  uses a 1.48× idle tempo for quicker motion and weight shifts, with 0.78 spring damping for
+  a little overshoot.
+
+## 2026-11-24 — Rize as an Iki model (A)
+
+- Use the visible `Rize.psd` composite on the 1100×4096 canvas and carry the source mouth
+  interior into the folding lips. Keep the long curl tips and the original sleeve, hand,
+  and shoe paint. Continue the bodice under the hair where the turn exposes it. Preserve
+  the thin loop on each lock and ease the bottom of the curls into the turn.
+- The burgundy frame is a separate layer keyed to the eye deformation. The glass push
+  uses Rize's own two-joint arm and a 7 px lift of the frame. The book pose uses relaxed
+  empty hands from the visible reference.
+- The ghoul signature tints the original sclera and irises and changes color during two
+  blinks. It plays first in the idle signature cycle and on a body click.
+- Fill the exposed sleeve folds to 18° on both sides. Both armpit patches collapse at rest,
+  and the rendered before and after images are pixel-identical. The 1:1 hair comparison
+  found 0.022% of source hair pixels beyond the 2 px tolerance.
+
 ## 2026-11-24 — Reze as an Iki model (A)
 
 - Reze uses `model/Reze.iki`. The previous pack configuration is preserved in
@@ -28,6 +58,10 @@ Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 - The flower offer no longer uses `ParamOfferLift` (it squashed the upper arm into a stub). She
   bends her own arm in across the waist (elbow 110°), the painted offer arm cuts in over ~70 ms
   (a slow dissolve showed two half-transparent arms), and the hand then comes forward.
+- Reze's body click plays `signature-flower`. `ParamOfferReach` follows the gesture timing so the
+  flower withdraws before the arm exchange. The grip and bloom grow as they move forward, and
+  `ParamMouthForm` eases through the smile during the reach. Verified the click and repeated
+  scripted cues with separate native stage captures.
 - The lifted arm's armpit is painted (`armpit-patch.mjs`): a skin patch behind the arm, collapsed
   to nothing at rest by ParamArmR keyforms, so the rest pose stays pixel-identical. Its crease runs
   up to the torso (742 → 726 canvas px), so the open gap ends in a clean V, not a hanging tab.

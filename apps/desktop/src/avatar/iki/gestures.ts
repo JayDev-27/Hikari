@@ -60,17 +60,19 @@ export const GESTURES: Record<string, Gesture> = {
     return { ParamArmR: (22 + 2 * s) * lift + tuck, ParamElbowR: (-158 + 10 * s) * fold, ParamAngleZ: -5 * lift, ParamAngleX: -6 * lift, ParamBodyAngleZ: -1.5 * lift };
   } },
   /** think_chin on a rig whose elbow folds inward past 150° (dev/iki-pipeline/elbow-in.mjs): the hand rises across the
-   *  chest to the chin, the other forearm resting under it, head tilted up in thought. */
+   *  chest to the chin, the other forearm resting under it, head tilted up in thought. The fold gestures stay at or
+   *  under ~156° so the ±5 % variation never reaches the 170° stop, where the forearm lies along the upper arm and
+   *  the hand ends up back at the shoulder. */
   "think_chin-fold": { dur: 3.4, pose: (t) => {
     const e = envelope(t, 0.24, 0.24), look = envelope(t, 0.3, 0.26);
-    return { ParamArmR: 2 * e, ParamElbowR: 154 * e, ParamArmL: -2 * e, ParamElbowL: 32 * e, ParamAngleZ: 6 * look, ParamAngleY: 5 * look, ParamAngleX: 4 * look, ParamEyeLOpen: -0.15 * look, ParamEyeROpen: -0.15 * look };
+    return { ParamArmR: 2 * e, ParamElbowR: 150 * e, ParamArmL: -2 * e, ParamElbowL: 32 * e, ParamAngleZ: 6 * look, ParamAngleY: 5 * look, ParamAngleX: 4 * look, ParamEyeLOpen: -0.15 * look, ParamEyeROpen: -0.15 * look };
   } },
   /** facepalm on the same rig: the hand comes up across the chest, then the head bows into it, eyes shut, a slow
    *  small shake while it is held. */
   "facepalm-fold": { dur: 3.0, pose: (t) => {
     const e = envelope(t, 0.2, 0.24), bow = envelope(t, 0.32, 0.22);
     const shake = Math.sin((t - 0.32) * Math.PI * 6) * smoother((t - 0.34) / 0.1) * smoother((0.74 - t) / 0.1);
-    return { ParamArmR: -6 * e, ParamElbowR: 166 * e, ParamAngleX: -14 * bow, ParamAngleZ: 9 * bow, ParamAngleY: -7 * bow + 3 * shake, ParamEyeLOpen: -0.85 * bow, ParamEyeROpen: -0.85 * bow };
+    return { ParamArmR: -6 * e, ParamElbowR: 156 * e, ParamAngleX: -14 * bow, ParamAngleZ: 9 * bow, ParamAngleY: -7 * bow + 3 * shake, ParamEyeLOpen: -0.85 * bow, ParamEyeROpen: -0.85 * bow };
   } },
 
   // Makima's signature moves.
@@ -81,7 +83,7 @@ export const GESTURES: Record<string, Gesture> = {
   /** "Bang": the arm comes up and out, a small recoil, held a beat, smile. */
   "signature-bang": { dur: 3.4, expression: "smile", pose: (t) => { const up = smoother(t / 0.14) * smoother((1 - t) / 0.3); const kick = Math.max(0, Math.sin(Math.PI * clamp01((t - 0.32) / 0.1))) * smoother((1 - t) / 0.3); return { ParamArmR: (25 + 5 * kick) * up, ParamElbowR: (-6 + 4 * kick) * up, ParamAngleZ: (-6 - 2 * kick) * up, ParamAngleX: -7 * up, ParamAngleY: (2 + 2 * kick) * up, ParamBodyAngleZ: -1.5 * up }; } },
 
-  "signature-flower": { dur: 4.8, expression: "smile", pose: (t) => {
+  "signature-flower": { dur: 4.8, pose: (t) => {
     // She bends her own arm in across the waist (as if taking the flower), the painted offer arm
     // cuts in, and the hand then comes forward. Back out in reverse. The arm is never squashed
     // (ParamOfferLift shrinks the upper arm into a stub, so it stays at 0).
@@ -90,12 +92,14 @@ export const GESTURES: Record<string, Gesture> = {
     // transparent (a ghost arm), so the swap is a ~70 ms cut.
     const offer = smoother((t - 0.255) / 0.015) * smoother((0.85 - t) / 0.015);
     const reach = smoother((t - 0.27) / 0.22) * smoother((0.82 - t) / 0.17);
+    const smile = smoother((t - 0.19) / 0.23) * smoother((0.94 - t) / 0.19);
     const tilt = envelope(t, 0.22, 0.27);
     return {
       ParamArmR: -3 * bend,
       ParamElbowR: 110 * bend,
       ParamOfferFlower: offer,
       ParamOfferReach: reach,
+      ParamMouthForm: smile,
       ParamAngleZ: 9 * tilt,
       ParamAngleY: -3 * tilt,
       ParamBodyAngleY: 3 * reach,
@@ -130,6 +134,104 @@ export const GESTURES: Record<string, Gesture> = {
       ParamAngleX: 5 * shift,
     };
   } },
+
+  "signature-glasses": { dur: 6.4, pose: (t) => {
+    const reach = smoother((t - 0.035) / 0.33) * smoother((0.92 - t) / 0.31);
+    const push = smoother((t - 0.37) / 0.09) * smoother((0.66 - t) / 0.10);
+    const smile = smoother((t - 0.47) / 0.20) * smoother((1 - t) / 0.16);
+    return {
+      ParamGlassesReach: reach,
+      ParamGlassesPush: push,
+      ParamMouthForm: 0.8 * smile,
+      ParamAngleZ: 5 * smile * (1 - reach),
+      ParamEyeLOpen: -0.13 * smile,
+      ParamEyeROpen: -0.13 * smile,
+    };
+  } },
+  "signature-book": { dur: 7.2, pose: (t) => {
+    const hold = envelope(t, 0.27, 0.29);
+    return {
+      ParamElbowL: 35 * hold,
+      ParamElbowR: 38 * hold,
+      ParamArmL: -1.5 * hold,
+      ParamArmR: -1.5 * hold,
+      ParamAngleY: -9 * hold,
+      ParamAngleZ: 5 * hold,
+      ParamEyeLOpen: -0.47 * hold,
+      ParamEyeROpen: -0.47 * hold,
+      ParamLegShift: 0.47 * hold,
+    };
+  } },
+  "signature-ghoul": { dur: 6.4, pose: (t) => {
+    const reveal = smoother((t - 0.23) / 0.06) * smoother((0.89 - t) / 0.06);
+    const shut = Math.max(
+      smoother((t - 0.10) / 0.10) * smoother((0.42 - t) / 0.13),
+      smoother((t - 0.71) / 0.10) * smoother((0.99 - t) / 0.10),
+    );
+    const lean = envelope(t, 0.25, 0.22);
+    return {
+      ParamRizeGhoul: reveal,
+      ParamEyeLOpen: -shut,
+      ParamEyeROpen: -shut,
+      ParamAngleY: -7 * lean + 7 * reveal * (1 - shut),
+      ParamAngleZ: 6 * lean,
+      ParamBodyAngleZ: 1.2 * lean,
+      ParamMouthForm: 0.67 * reveal,
+      ParamLegShift: 0.55 * lean,
+    };
+  } },
+
+  "signature-photo-dive": { dur: 3.3, pose: (t) => {
+    const clap = smoother((t - 0.035) / 0.325) * smoother((0.91 - t) / 0.39);
+    const blink = smoother((t - 0.22) / 0.09) * smoother((0.57 - t) / 0.08);
+    const focus = smoother((t - 0.48) / 0.12) * smoother((1 - t) / 0.18);
+    const dip = envelope(t, 0.29, 0.52);
+    return {
+      ParamChengClap: clap,
+      ParamChengClapDepth: smoother(clap / 0.42) * smoother((1 - clap) / 0.10),
+      ParamEyeLOpen: -blink - 0.10 * focus * (1 - blink),
+      ParamEyeROpen: -blink - 0.10 * focus * (1 - blink),
+      ParamAngleY: -7 * dip + 4 * focus,
+      ParamAngleX: -3 * focus,
+      ParamBodyAngleY: -2.5 * dip,
+      ParamBrowLY: -0.18 * focus,
+      ParamBrowRY: -0.18 * focus,
+      ParamMouthForm: -0.24 * focus,
+      ParamLegShift: 0.45 * dip,
+    };
+  } },
+  /** The sheepish neck rub: the hand comes up across the chest to the back of the neck (needs the elbow to fold
+   *  inward to 170°, dev/iki-pipeline/elbow-in.mjs) and rubs it, head tilted, a sheepish grin. */
+  "signature-sheepish": { dur: 3.4, pose: (t) => {
+    const e = envelope(t, 0.20, 0.30);
+    const bob = Math.sin((t - 0.19) * Math.PI * 7) * envelope(t, 0.32, 0.43);
+    return {
+      ParamElbowR: (152 + 4 * bob) * e,
+      ParamArmL: 5 * e,
+      ParamArmR: -6 * e,
+      ParamAngleZ: 10 * e,
+      ParamAngleX: 8 * e,
+      ParamAngleY: -5 * e + 2.5 * bob,
+      ParamEyeLOpen: -0.32 * e,
+      ParamEyeROpen: -0.32 * e,
+      ParamMouthForm: 0.9 * e,
+      ParamMouthOpenY: 0.31 * e,
+      ParamLegShift: -0.65 * e,
+    };
+  } },
+  "signature-wink": { dur: 2.9, pose: (t) => {
+    const fold = envelope(t, 0.060, 0.080), lift = envelope(t, 0.28, 0.32);
+    const wink = smoother((t - 0.29) / 0.09) * smoother((0.64 - t) / 0.13);
+    return {
+      ParamArmR: 11 * lift - 7 * Math.sin(Math.PI * fold) * (1 - lift),
+      ParamElbowR: -155 * fold,
+      ParamAngleZ: -7 * lift,
+      ParamAngleY: 4 * lift,
+      ParamEyeROpen: -wink,
+      ParamMouthForm: 0.84 * lift,
+      ParamLegShift: 0.58 * lift,
+    };
+  } },
 };
 
 /** Life when nothing else plays: relaxed arms that sway a little with breath and weight, talking emphasis. */
@@ -156,11 +258,11 @@ export function idlePose(t: number, legShift: number, speaking: boolean, speakEn
   return pose;
 }
 
-/** Critically damped spring per parameter: offsets ease in, follow through and settle (no snapping). */
+/** Springs ease offsets in and settle. Lower damping allows a little overshoot. */
 export class SpringSet {
   private v = new Map<string, { x: number; vel: number }>();
   /** omegaFor: stiffer springs for light parts (a forearm follows faster than a whole arm). */
-  constructor(private omega = 9, private omegaFor: Record<string, number> = {}) {}
+  constructor(private omega = 9, private omegaFor: Record<string, number> = {}, private damping = 1) {}
   step(target: Pose, dt: number): Pose {
     const out: Pose = {};
     const ids = new Set([...Object.keys(target), ...this.v.keys()]);
@@ -170,7 +272,7 @@ export class SpringSet {
       const s = this.v.get(id) ?? { x: 0, vel: 0 };
       const goal = target[id] ?? 0;
       // semi-implicit critically damped step
-      const acc = w * w * (goal - s.x) - 2 * w * s.vel;
+      const acc = w * w * (goal - s.x) - 2 * this.damping * w * s.vel;
       s.vel += acc * h;
       s.x += s.vel * h;
       if (!(id in target) && Math.abs(s.x) < 1e-3 && Math.abs(s.vel) < 1e-3) { this.v.delete(id); continue; }

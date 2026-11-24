@@ -11,6 +11,15 @@ const RANGE: Record<string, [number, number]> = {
   ParamOfferFlower: [0, 1],
   ParamOfferLift: [0, 1],
   ParamOfferReach: [0, 1],
+  ParamMouthForm: [-1, 1],
+  ParamGlassesReach: [0, 1],
+  ParamGlassesPush: [0, 1],
+  ParamRizeGhoul: [0, 1],
+  ParamChengClap: [0, 1],
+  ParamChengClapDepth: [0, 1],
+  ParamMouthOpenY: [0, 1],
+  ParamBrowLY: [-1, 1],
+  ParamBrowRY: [-1, 1],
 };
 
 function store(init: Record<string, number> = {}) {
@@ -28,7 +37,8 @@ describe("Iki gestures", () => {
     // "-raised" variants run on models with extended ranges (arm to 150, elbow open to −170).
     const R = { ...RANGE };
     if (name === "wave-raised") R.ParamElbowR = [-170, 90];
-    if (name.endsWith("-fold")) R.ParamElbowR = [-170, 170];
+    if (name === "signature-wink") R.ParamElbowR = [-170, 90];
+    if (name.endsWith("-fold") || name === "signature-sheepish") R.ParamElbowR = [-170, 170];
     if (name === "signature-wave-shy") R.ParamElbowR = [-170, 170];
     for (const [id, v] of Object.entries(g.pose(0))) expect(Math.abs(v), `${id} at t=0`).toBeLessThan(1e-6);
     for (const [id, v] of Object.entries(g.pose(1))) expect(Math.abs(v), `${id} at t=1`).toBeLessThan(1e-6);
@@ -44,15 +54,69 @@ describe("Iki gestures", () => {
 
   it("bends Reze's own arm in before the flower appears, then extends it while she smiles", () => {
     const flower = GESTURES["signature-flower"];
-    expect(flower.expression).toBe("smile");
     expect(flower.pose(0.2).ParamElbowR).toBeGreaterThan(80);
+    expect(flower.pose(0.2).ParamMouthForm).toBeLessThan(0.05);
     expect(flower.pose(0.5).ParamOfferLift ?? 0).toBe(0); // the upper arm is never squashed
     expect(flower.pose(0.2).ParamOfferFlower).toBe(0);
     expect(flower.pose(0.34).ParamOfferFlower).toBe(1);
     expect(flower.pose(0.34).ParamOfferReach).toBeLessThan(0.3);
+    expect(flower.pose(0.34).ParamMouthForm).toBeGreaterThan(0.5);
     expect(flower.pose(0.55).ParamOfferReach).toBe(1);
+    expect(flower.pose(0.55).ParamMouthForm).toBe(1);
     expect(flower.pose(0.79).ParamOfferReach).toBeLessThan(0.1);
     expect(flower.pose(0.79).ParamOfferFlower).toBeGreaterThan(0.99);
+  });
+
+  it("brings Rize's hand to the bridge before the push and smiles after contact", () => {
+    const glasses = GESTURES["signature-glasses"].pose;
+    expect(glasses(0.37).ParamGlassesReach).toBe(1);
+    expect(glasses(0.37).ParamGlassesPush).toBe(0);
+    expect(glasses(0.48).ParamGlassesPush).toBe(1);
+    expect(glasses(0.50).ParamGlassesReach).toBe(1);
+    expect(glasses(0.70).ParamMouthForm).toBeCloseTo(0.8);
+  });
+
+  it("poses both hands as Rize lowers her gaze for the book gesture", () => {
+    const book = GESTURES["signature-book"].pose(0.5);
+    expect(book.ParamElbowL).toBeGreaterThan(30);
+    expect(book.ParamElbowR).toBeGreaterThan(30);
+    expect(book.ParamAngleY).toBeLessThan(0);
+    expect(book.ParamEyeLOpen).toBeCloseTo(-0.47);
+    expect(book.ParamEyeROpen).toBeCloseTo(-0.47);
+  });
+
+  it("changes Rize's eyes under the blink, holds the ghoul reveal, and restores her eyes under a second blink", () => {
+    const ghoul = GESTURES["signature-ghoul"].pose;
+    expect(ghoul(0.25).ParamEyeLOpen).toBeCloseTo(-1);
+    expect(ghoul(0.25).ParamEyeROpen).toBeCloseTo(-1);
+    expect(ghoul(0.5).ParamRizeGhoul).toBeCloseTo(1);
+    expect(ghoul(0.5).ParamEyeLOpen).toBeCloseTo(0);
+    expect(ghoul(0.86).ParamEyeROpen).toBeCloseTo(-1);
+    expect(ghoul(0.91).ParamRizeGhoul).toBeCloseTo(0);
+  });
+
+  it("holds Cheng Xiaoshi's clap once, shuts his eyes at contact, and opens them on the release", () => {
+    const dive = GESTURES["signature-photo-dive"].pose;
+    expect(dive(0.21).ParamChengClap).toBeLessThan(0.75);
+    expect(dive(0.41).ParamChengClap).toBe(1);
+    expect(dive(0.41).ParamEyeLOpen).toBe(-1);
+    expect(dive(0.41).ParamEyeROpen).toBe(-1);
+    expect(dive(0.68).ParamChengClap).toBeLessThan(0.7);
+    expect(dive(0.68).ParamEyeROpen).toBeCloseTo(-0.10);
+  });
+
+  it("gives Cheng Xiaoshi a tilted, open grin in his sheepish pose", () => {
+    const sheepish = GESTURES["signature-sheepish"].pose(0.5);
+    expect(sheepish.ParamMouthForm).toBeGreaterThan(0.7);
+    expect(sheepish.ParamMouthOpenY).toBeGreaterThan(0.2);
+    expect(sheepish.ParamAngleZ).toBeGreaterThan(5);
+  });
+
+  it("folds the forearm for Cheng Xiaoshi's raised-hand wink and closes one eye", () => {
+    const wink = GESTURES["signature-wink"].pose(0.45);
+    expect(wink.ParamElbowR).toBeLessThan(-150);
+    expect(wink.ParamEyeROpen).toBe(-1);
+    expect(wink.ParamEyeLOpen ?? 0).toBe(0);
   });
 
   it("offsets do not accumulate on parameters nothing else writes (the stuck-arm bug)", () => {
@@ -89,6 +153,14 @@ describe("Iki gestures", () => {
     expect(first).toBeLessThan(5); // no snap on the first frame
     for (let i = 0; i < 240; i++) out = s.step({}, 1 / 60);
     expect(Math.abs((out as Record<string, number>).ParamElbowR ?? 0)).toBeLessThan(0.05);
+  });
+
+  it("lets Cheng Xiaoshi's spring take a small overshoot and settle", () => {
+    const spring = new SpringSet(8.5, {}, 0.78);
+    const frames = Array.from({ length: 120 }, () => spring.step({ ParamAngleZ: 10 }, 1 / 60).ParamAngleZ);
+    expect(Math.max(...frames)).toBeGreaterThan(10.02);
+    expect(Math.max(...frames)).toBeLessThan(10.5);
+    expect(frames.at(-1)).toBeCloseTo(10);
   });
 
   it("idle arms hang relaxed (slightly bent, close to the body) and follow the weight shift", () => {

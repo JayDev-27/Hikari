@@ -1,6 +1,7 @@
 import { loadIkiModel } from "@ikijs/format";
 import { describe, expect, it } from "vitest";
 import { builtinPacks, userUrl } from "./packs";
+import { GESTURES as IKI_GESTURES } from "./iki/gestures";
 import { personaSummary } from "../studio/Studio";
 import { foldChat } from "../chat/Chat";
 
@@ -62,7 +63,16 @@ describe("built-in character packs", () => {
     const model = loadIkiModel(raw);
     const expressions = (model.expressions ?? []).map((e) => e.id);
     for (const [emotion, id] of Object.entries(p.expressionMap ?? {})) expect(expressions, emotion).toContain(id);
-    for (const [tag, m] of Object.entries(p.motionMap ?? {})) expect(model.motions?.[m.group]?.[m.index ?? 0], tag).toBeDefined();
+    for (const [tag, m] of Object.entries(p.motionMap ?? {})) {
+      const signature = p.signatureMotions?.includes(m.group) ? IKI_GESTURES[m.group] : undefined;
+      expect(model.motions?.[m.group]?.[m.index ?? 0] ?? signature, tag).toBeDefined();
+    }
+    const parameters = new Set(model.parameters.map(({ id }) => id));
+    for (const name of p.signatureMotions ?? []) {
+      const gesture = IKI_GESTURES[name];
+      expect(gesture, name).toBeDefined();
+      for (const id of Object.keys(gesture.pose(0.5))) expect(parameters, name).toContain(id);
+    }
   });
 
   it("every pack has a matching id, licence and a persona with all sections in order", () => {

@@ -26,6 +26,7 @@ Needs an Iki checkout built once (`pnpm install && pnpm -r --filter './packages/
 | `despeck-edges.mjs <model.iki> [--dry]` | Recolours lone light pixels on the alpha edge of dark paint (the last of a light-backdrop "white border" on trousers or hair) to their dark neighbours; areas of light paint and the face's features are never touched, alpha kept |
 | `tone-part.mjs <model.iki> <partId> <gR,gG,gB>` | Scales one painted part's skin pixels by per-channel gains (the ratio of two arms' median skin from render_poses), so a part painted from another picture swaps in without a colour jump; outlines and non-skin paint untouched |
 | `elbow-in.mjs <model.iki> [max=170]` | Lets each forearm fold inward to `max`° (the rig stops at 90°, level across the waist) at the same degrees-per-unit, so existing poses are unchanged; gestures.ts then uses think_chin-fold / facepalm-fold, the hand to the face |
+| `fill-under.mjs <model.iki> <target> <coverRegex> [grow=3]` | Refills the target layer's pixels that the matching parts cover at rest (grown by `grow`) with a harmonic fill of the target's own paint: clean lids under the eyes (`face`, eyes/lashes/glasses) and a clean neck under the jaw (`body`, `^face$`), shown on blinks and head turns |
 | `clear-box.mjs <layer> <box>`, `strip-backdrop.mjs <layer>…` | Clear fill that sticks out past a hidden outline; drop light bluish backdrop kept between hair strands |
 | `despeck-dark.mjs <layer> <box> [maxPx=12]` | Recolours small dark specks (≤ maxPx, ringed by light cloth) with the surrounding cloth; long outlines are untouched |
 | `extend-arms.mjs <model.iki> [max=150] [elbowMin=-170]` | Extends shoulder rotation to `max` and lets the elbow open to `elbowMin` (same slope), for a raised-hand wave |
@@ -41,3 +42,14 @@ It uses Python with `psd-tools` and Pillow to flatten the visible layers and ext
 mouth interior. It cuts the white flower and reaching hand from `source/Flower-offer.png`.
 Use `--reuse-cut` after reviewing an existing cut in `iki-char/cut/`.
 See [Reze's build and verification](../../../../docs/IKI.md#reze).
+
+`assemble-rize.sh` rebuilds Rize from her local full-body PSD. `prepare-rize.py` isolates the
+spectacle frame and keys her painted mouth. `pose-rize.mjs` binds the frame to the eye warps,
+sets the hand contact, and adds the ghoul eye tint over the original art. Use `--cut-only` to
+inspect a fresh cut or `--reuse-cut` to rebuild from one already reviewed.
+See [Rize's build and verification](../../../../docs/IKI.md#rize).
+
+`assemble-cheng.sh` rebuilds Cheng Xiaoshi from his full-body PSD. The Cheng landmarks and
+arm outlines record the hair spikes, eye contours, and raglan seams. `pose-cheng.mjs` ties the
+sleeve roots to the torso and brings the painted palms together for the photo dive.
+See [Cheng Xiaoshi's build and verification](../../../../docs/IKI.md#cheng-xiaoshi).

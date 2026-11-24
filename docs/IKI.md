@@ -105,10 +105,10 @@ node apps/desktop/scripts/sync-packs.mjs
   hidden cheek and hair fill after rigging, keeping the cheek and ear mesh intact. The fringe
   and locks follow the face where their edges touch, and the shoulder joints follow the shirt
   near the armholes. The ties fade away toward the free ends.
-- The right elbow reaches +170° as well as −170° for the shy wave. Reze lifts her hand, turns
-  the grip into view, and extends the white flower toward the viewer. The closed smile's
-  corners lift with the smile parameter. During the
-  lean, the leg shift reduces the idle weight shift and the forearms pass behind the shorts.
+- The right elbow reaches +170° as well as −170° for the shy wave. Click Reze's body to play
+  the flower offer. She lifts her hand, brings the grip into view and extends the white flower
+  toward the viewer as her smile deepens. During the lean, the leg shift reduces the idle
+  weight shift and the forearms pass behind the shorts.
 - At rest, run `hair-tol.mjs <rest-head-1x.png> <picture.png> 280 20 480 600 reze <diff.png>`.
   On the 1100×4096 render the measured box has 97,725 reference hair pixels and 42 beyond
   2 px (0.043%, limit 0.5%). The full-size blend, face, hands and feet comparisons, dark
@@ -117,6 +117,83 @@ node apps/desktop/scripts/sync-packs.mjs
   WebSocket core on port 8765 and capture the stage window with `screencapture`. The flower
   offer ran once with three repeated cues during playback. The desktop test suite, typecheck
   and lint passed.
+
+## Rize
+
+Rize uses her full-body `characters/rize/source/Rize.psd`. The visible composite is scaled 2×
+and placed at (−8, 46) on an 1100×4096 canvas. The source chin at about (279, 249) lands at
+(550, 544). The original Live2D pack settings are in `characters/rize/source/character.live2d.json`.
+
+With `IKI_REPO` set to a built Iki checkout, run these commands from the Hikari root.
+
+```sh
+uv run --no-project --with psd-tools bash apps/desktop/dev/iki-pipeline/assemble-rize.sh
+cp characters/rize/iki-char/Rize.iki characters/rize/model/Rize.iki
+node apps/desktop/scripts/sync-packs.mjs
+```
+
+- `rize.landmarks.json` records both lenses and the bridge, all five long lock tips, and
+  the boundaries between the curls and the apron. `rize.arms.json` splits the sleeves from
+  the bodice. The source's painted speaking mouth supplies the keyed mouth and interior.
+- `refine-rize-layers.py` moves the original thin loops onto their respective locks, fills
+  the cloth under the curls, and keeps the source linework at the sleeve cuts. The lower
+  curls lag the head turn so they stay close to her shoulders.
+- The spectacle frame follows both eye warps through head turns and the same head rotation
+  through tilts. The glasses gesture rotates Rize's original arm to the bridge and raises
+  the frame by 7 canvas pixels on contact. The book gesture brings her empty hands together.
+- Click Rize's body for the ghoul reveal. She blinks into dark sclera and red irises, then
+  blinks back. Both states use the PSD eye paint, with render-time tint and the same eye masks.
+- The shoulder patches use the sleeve palette and were drawn from 18° lifts. The runtime
+  uses `armLiftMax: 18`. The exact rest render before and after adding both patches had
+  zero differing pixels. The exact hair comparison measured 55 of 244,482 pixels beyond
+  2 px (0.022%, limit 0.5%). On the dark backdrop, the marked light-edge counts before and
+  after cleanup were 34 → 33 at the belt, 5 → 5 at the cuff, and 4 → 2 at the shoe trim.
+- The local `characters/rize/iki-char/qa/` folder contains the source overlays, dark-backdrop
+  crops and native stage strips. Restart `VITE_CHARACTER=rize pnpm dev` and use the scripted
+  WebSocket core at `ws://127.0.0.1:8765/ws` to capture signatures and generic gestures.
+  The final scripted windows had zero `takes clicks` transitions and stayed inside the
+  stage. Three extra ghoul cues and a competing head tilt produced one reveal.
+
+## Cheng Xiaoshi
+
+The visible `characters/cheng-xiaoshi/source/Cheng Xiaoshi.psd` composite is scaled by
+about 1.90× to 1094×2918 and placed at (4, 46) on the transparent 1100×4096 canvas.
+The source chin lands at about (550, 461). The previous pack is in
+`characters/cheng-xiaoshi/source/character.live2d.json`.
+
+With `IKI_REPO` set to a built Iki checkout, run these commands from the Hikari root.
+
+```sh
+uv run --no-project --with psd-tools bash apps/desktop/dev/iki-pipeline/assemble-cheng.sh
+cp characters/cheng-xiaoshi/iki-char/Cheng.iki characters/cheng-xiaoshi/model/Cheng.iki
+node apps/desktop/scripts/sync-packs.mjs
+```
+
+- `cheng.landmarks.json` records the spike tips, the bangs over the eyelids and the painted
+  neck boundary. Its `bodyOnly` polygons keep the jacket panels, lining, and trousers with the
+  body. The PSD supplies the keyed mouth and the interior.
+- `refine-cheng-layers.py` returns stationary strands and lid creases to the face or hair,
+  reattaches the original chin ink to the face, carries the neck shade behind the jaw, and
+  restores the source paint at both sleeve cuts. Sleeve roots follow the jacket seam. The
+  patches use the jacket fold palette and cover lifts to 18°. The shoulder seam opens by 23°
+  in the render, so the pack caps it at 18°.
+- Click Cheng's body for the photo dive. `pose-cheng.mjs` places the painted palms at chest
+  height using the actual arm pivots. A brief sleeve foreshortening keeps the hands apart
+  as they approach. The other signatures are an open grin with a sheepish head bob and a
+  close raised-hand wink. The 1.48× idle tempo and 0.78 spring damping give Cheng quicker
+  weight shifts and a small overshoot. The raised wave spends 0.083 s on the way up and
+  0.100 s on the way down in the forearm's horizontal range at 60 fps.
+- The 1:1 hair comparison found 11 of 61,881 pixels beyond 2 px (0.018%, limit 0.5%).
+  Adding both armpit patches changed zero pixels at rest. The light-edge counts on the
+  dark backdrop went from 18 to 4 on the sleeve, 46 to 41 on the jacket lining, and 5 to 5
+  on the trouser hem.
+- Local overlays, 3× pose crops, 4× edge crops, and native stage strips are in
+  `characters/cheng-xiaoshi/iki-char/qa/`, indexed in `verification.md`. Restart
+  `VITE_CHARACTER=cheng-xiaoshi pnpm dev` and drive the gesture captures from the local
+  WebSocket at `ws://127.0.0.1:8765/ws`. All 17 gestures stayed inside the 840×1280
+  capture window with zero click-taking transitions in the scripted gesture and idle
+  windows. Three repeat cues and a competing head tilt produced one clap. The idle clap
+  reached the chest 18.92 s after connecting, and a separate body click played one clap.
 
 ## Verification that caught real defects
 

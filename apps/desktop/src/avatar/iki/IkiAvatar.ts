@@ -38,6 +38,13 @@ const GESTURE_TO_EXPRESSION: Partial<Record<GestureTag, string>> = {
   clap: "laugh",
 };
 
+// These channels already have authored timing. Spring lag or random
+// amplitude can put a prop and the hand at different points in the gesture.
+const TIMED_PARAMETERS = new Set([
+  "ParamOfferFlower", "ParamOfferReach", "ParamGlassesReach", "ParamGlassesPush", "ParamRizeGhoul",
+  "ParamChengClap", "ParamChengClapDepth",
+]);
+
 export class IkiAvatar implements AvatarController {
   readonly renderer = "iki" as const;
   onHitChange?: (hit: string | null) => void;
@@ -57,7 +64,7 @@ export class IkiAvatar implements AvatarController {
   /** Values our offsets were added to last frame, restored before IkiMotion runs (see gestures.ts). */
   private bases = new Map<string, number>();
   // Elbows follow faster: the wave's forearm flicks past horizontal instead of hanging out at her side.
-  private springs = new SpringSet(8.5, { ParamElbowL: 20, ParamElbowR: 20 });
+  private springs: SpringSet;
   /** Idle weight shift between the legs (ParamLegShift, a Hikari addition to the model): current and target. */
   private leg = { v: 0, target: 0.6, next: 0 };
   private pendingHit: { x: number; y: number } | null = null;
@@ -65,7 +72,9 @@ export class IkiAvatar implements AvatarController {
   private pixel = new Uint8Array(4);
   private destroyed = false;
 
-  private constructor(private pack: CharacterPack) {}
+  private constructor(private pack: CharacterPack) {
+    this.springs = new SpringSet(8.5, { ParamElbowL: 20, ParamElbowR: 20 }, Math.max(0.65, Math.min(1, pack.springDamping ?? 1)));
+  }
 
   static async create(host: HTMLElement, pack: CharacterPack): Promise<IkiAvatar> {
     const a = new IkiAvatar(pack);
@@ -146,21 +155,21 @@ export class IkiAvatar implements AvatarController {
 
   playMotion(name: GestureTag | string, opts?: { interrupt?: boolean }): void {
     void opts;
+    const now = performance.now();
+    // Give the signature time to return its arm, props and expression to rest.
+    if (this.gesture?.name.startsWith("signature-") && now - this.gesture.start < this.gesture.dur * 0.9) return;
     const mapped = this.pack.motionMap?.[name];
     if (mapped && this.motion.playMotion(mapped.group, mapped.index ?? 0)) {
       this.busyUntil = performance.now() + 2500;
       return;
     }
     const range = (id: string) => this.model.parameters.find((p) => p.id === id);
-    const gname = resolveGesture(name, range("ParamArmR")?.max ?? 0, range("ParamElbowR")?.min ?? 0, range("ParamElbowR")?.max ?? 0);
+    const tag = mapped && this.pack.signatureMotions?.includes(mapped.group) ? mapped.group : name;
+    const gname = resolveGesture(tag, range("ParamArmR")?.max ?? 0, range("ParamElbowR")?.min ?? 0, range("ParamElbowR")?.max ?? 0);
     const g = GESTURES[gname];
     if (g) {
       // A gesture already in progress is not restarted by a repeat request (a burst of identical cues).
-      const now = performance.now();
       if (this.gesture?.name === gname && now - this.gesture.start < this.gesture.dur) return;
-      // A signature move finishes before another gesture starts: cutting one off mid-way snaps the painted
-      // flower arm away. Signatures only play while she is idle, so this drops at most one cue.
-      if (this.gesture?.name.startsWith("signature-") && now - this.gesture.start < this.gesture.dur * 0.9) return;
       // A little variation each time, so repeats never look canned.
       const dur = g.dur * 1000 * (0.92 + Math.random() * 0.16);
       this.gesture = { name: gname, pose: g.pose, start: now, dur, scale: 0.9 + Math.random() * 0.15 };
@@ -222,41 +231,45 @@ export class IkiAvatar implements AvatarController {
     const access = { get: (id: string) => this.player.getParameter(id), set: (id: string, v: number) => this.player.setParameter(id, v), has: (id: string) => this.params.has(id) };
     restoreBases(access, this.bases);
     this.motion.update(now);
+    const idleTempo = Math.max(0.25, this.pack.idleTempo ?? 1);
     // What the app drives goes after the motion update, so it wins.
     if (this.params.has("ParamLegShift")) {
       // Shift the weight from one leg to the other every 7–12 s, easing over ~2 s.
       if (now >= this.leg.next) {
         this.leg.target = -Math.sign(this.leg.target || 1) * (0.45 + Math.random() * 0.45);
-        this.leg.next = now + 7000 + Math.random() * 5000;
+        this.leg.next = now + (7000 + Math.random() * 5000) / idleTempo;
       }
       this.leg.v += (this.leg.target - this.leg.v) * (1 - Math.exp(-dt / 0.9));
     }
     let target: Pose = {};
+    const timed: Pose = {};
     if (this.gesture) {
       const t = (now - this.gesture.start) / this.gesture.dur;
       if (t >= 1) this.gesture = null;
       else for (const [id, v] of Object.entries(this.gesture.pose(t))) {
-        // The painted offer must fully cover the hanging arm at its peak.
-        const varies = id !== "ParamOfferFlower" && id !== "ParamOfferLift" && id !== "ParamOfferReach";
-        target[id] = varies ? v * this.gesture.scale : v;
+        const clapBlink = this.gesture.name === "signature-photo-dive" && (id === "ParamEyeLOpen" || id === "ParamEyeROpen");
+        if (clapBlink || TIMED_PARAMETERS.has(id)) timed[id] = v;
+        else target[id] = v * this.gesture.scale;
       }
       limitArmLift(target, this.pack.armLiftMax);
     }
-    // The gesture already eases the short exchange of the two painted arms.
-    const offer = target.ParamOfferFlower;
-    delete target.ParamOfferFlower;
     target = this.springs.step(target, dt);
-    if (offer !== undefined) target.ParamOfferFlower = offer;
     // Fade out the idle weight shift as a signature takes weight onto one leg.
     // The sum then stays within the leg warp's range, even on the same side.
     const gestureLeg = target.ParamLegShift ?? 0;
     const idleLeg = this.leg.v * (1 - Math.abs(gestureLeg));
-    const life = idlePose(now / 1000, idleLeg + gestureLeg, this.state === "speaking", Math.min(1, this.mouth.open * 1.4));
-    applyOffsets(access, addPoses(life, target, { ParamLegShift: idleLeg }), this.bases);
+    const life = idlePose(now / 1000 * idleTempo, idleLeg + gestureLeg, this.state === "speaking", Math.min(1, this.mouth.open * 1.4));
+    const clapArms = 1 - (timed.ParamChengClap ?? 0);
+    const rightArmIdle = clapArms * (1 - (timed.ParamGlassesReach ?? 0));
+    life.ParamArmR *= rightArmIdle;
+    life.ParamElbowR *= rightArmIdle;
+    life.ParamArmL *= clapArms;
+    life.ParamElbowL *= clapArms;
     if (this.mouth.open > 0.01 || this.state === "speaking") {
       this.player.setParameter(StandardParameter.MouthOpen, Math.min(1, this.mouth.open * 1.1));
       if (this.params.has(StandardParameter.MouthForm)) this.player.setParameter(StandardParameter.MouthForm, this.mouth.form);
     }
+    applyOffsets(access, addPoses(life, target, timed, { ParamLegShift: idleLeg }), this.bases);
     if (this.state === "sleeping") {
       this.player.setParameter(StandardParameter.EyeOpenLeft, 0.15);
       this.player.setParameter(StandardParameter.EyeOpenRight, 0.15);
