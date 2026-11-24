@@ -145,6 +145,7 @@ export class IkiAvatar implements AvatarController {
 
   playMotion(name: GestureTag | string, opts?: { interrupt?: boolean }): void {
     void opts;
+    console.warn(`[iki-debug] playMotion ${name} t=${Math.round(performance.now())}`);
     const mapped = this.pack.motionMap?.[name];
     if (mapped && this.motion.playMotion(mapped.group, mapped.index ?? 0)) {
       this.busyUntil = performance.now() + 2500;
@@ -210,6 +211,7 @@ export class IkiAvatar implements AvatarController {
     const access = { get: (id: string) => this.player.getParameter(id), set: (id: string, v: number) => this.player.setParameter(id, v), has: (id: string) => this.params.has(id) };
     restoreBases(access, this.bases);
     this.motion.update(now);
+    if (Math.floor(now / 2000) !== Math.floor((now - dt * 1000) / 2000)) console.warn(`[iki-debug] t=${Math.round(now)} afterMotion ArmR=${this.player.getParameter("ParamArmR").toFixed(1)} ArmL=${this.player.getParameter("ParamArmL").toFixed(1)} ElbR=${this.player.getParameter("ParamElbowR").toFixed(1)} BodyZ=${this.player.getParameter("ParamBodyAngleZ").toFixed(1)} active=${JSON.stringify(this.motion.activeMotion())}`);
     // What the app drives goes after the motion update, so it wins.
     if (this.params.has("ParamLegShift")) {
       // Shift the weight from one leg to the other every 7–12 s, easing over ~2 s.
