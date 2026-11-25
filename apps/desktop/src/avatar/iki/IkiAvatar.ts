@@ -165,7 +165,10 @@ export class IkiAvatar implements AvatarController {
     }
     const range = (id: string) => this.model.parameters.find((p) => p.id === id);
     const tag = mapped && this.pack.signatureMotions?.includes(mapped.group) ? mapped.group : name;
-    const gname = resolveGesture(tag, range("ParamArmR")?.max ?? 0, range("ParamElbowR")?.min ?? 0, range("ParamElbowR")?.max ?? 0, (id) => this.params.has(id));
+    const resolved = resolveGesture(tag, range("ParamArmR")?.max ?? 0, range("ParamElbowR")?.min ?? 0, range("ParamElbowR")?.max ?? 0, (id) => this.params.has(id));
+    // The generic clap leaves the forearms low, so on a rig without its own clap the hands only cross at the hips;
+    // a delighted laugh says the same thing without the broken-looking clap.
+    const gname = resolved === "clap" ? "laugh" : resolved;
     const g = GESTURES[gname];
     if (g) {
       // A gesture already in progress is not restarted by a repeat request (a burst of identical cues).
