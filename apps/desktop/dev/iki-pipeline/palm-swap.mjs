@@ -1,4 +1,4 @@
-// node palm-swap.mjs <model.iki> [param=ParamChengPalm] [wristDeg=30] — palm-side hands for a clap on an elbow-fold rig.
+// node palm-swap.mjs <model.iki> [param=ParamChengPalm] [wristDeg=30] [hand.png] — palm-side hands for a clap on an elbow-fold rig.
 //
 // The hands are painted hanging at the sides, palm toward the thigh. Folding the forearm ~150° in the picture
 // plane to bring the hands up to the chest also turns them over, so the palms face OUT and the backs of the hands
@@ -9,13 +9,19 @@
 // The twin's hand is also bent back at the wrist by `wristDeg` (fingertips toward the crop's middle, which is
 // outward once the forearm is folded up), so the hands stand upright and the palms press flat, as in a real clap.
 // A gesture swaps them while the hands are moving up fast, where the change can't be seen.
+// `hand.png` (optional) replaces the painted hanging hand with another drawing of it, e.g. a flat, open hand with
+// the fingers together (characters/cheng-xiaoshi/source/clap-hand.png, painted with Codex from his own hand so the
+// palms seal flat). It is the LEFT arm's hand in that forearm's crop pixels (transparent elsewhere); the right arm
+// uses its mirror image, lined up on its own wrist. The twin's texture is padded on both sides so the bent hand
+// never runs off the crop.
 // Rerunnable: earlier twins / the parameter are replaced.
 import { readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 const req = createRequire((await import("node:path")).resolve(process.env.IKI_REPO ?? "../iki") + "/packages/mcp/package.json");
 const sharp = (await import(req.resolve("sharp"))).default;
 
-const [file, param = "ParamChengPalm", wristS = "30"] = process.argv.slice(2);
+const [file, param = "ParamChengPalm", wristS = "30", handPng] = process.argv.slice(2);
+const PAD = 120;
 const wrist = (+wristS * Math.PI) / 180;
 const model = JSON.parse(readFileSync(file, "utf8"));
 model.parameters = model.parameters.filter((p) => p.id !== param);
@@ -49,6 +55,24 @@ for (const side of ["L", "R"]) {
   for (let y = start; y < start + 12; y++) for (let x = 0; x < W; x++) if (data[at(x, y) + 3] > 128) { lo = Math.min(lo, x); hi = Math.max(hi, x); }
   const axis = (lo + hi) / 2;
 
+  // The hand to flip: the painted one, or the replacement drawing (the right arm's is the left's mirror image).
+  let hand = data;
+  if (handPng) {
+    const h = await sharp(handPng).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const flip = side === "R";
+    // Line the drawing's wrist up with this crop's wrist (the drawing's wrist axis, measured the same way).
+    let hlo = h.info.width, hhi = -1;
+    for (let y = start; y < start + 12; y++) for (let x = 0; x < h.info.width; x++) if (h.data[(y * h.info.width + x) * 4 + 3] > 128) { hlo = Math.min(hlo, x); hhi = Math.max(hhi, x); }
+    const haxis = flip ? h.info.width - 1 - (hlo + hhi) / 2 : (hlo + hhi) / 2;
+    hand = Buffer.from(data);
+    for (let y = start; y < H; y++) for (let x = 0; x < W; x++) {
+      let sx = Math.round(x - axis + haxis);
+      if (flip) sx = h.info.width - 1 - sx;
+      const o = at(x, y), ok = sx >= 0 && sx < h.info.width && y < h.info.height;
+      for (let c = 0; c < 4; c++) hand[o + c] = ok ? h.data[(y * h.info.width + sx) * 4 + c] : 0;
+    }
+  }
+
   // Mirror the hand about the wrist axis (palm to the other side), then bend it at the wrist: each output pixel
   // below the cuff samples the mirrored hand rotated about the wrist point (bilinear).
   const dir = axis > W / 2 ? 1 : -1; // fingertips swing toward the crop's middle
@@ -63,22 +87,25 @@ for (const side of ["L", "R"]) {
       if (w === 0 || y < start || y >= H) continue;
       const mx = Math.round(2 * axis - x); // the mirrored hand
       if (mx < 0 || mx >= W) continue;
-      const i = at(mx, y), wa = w * data[i + 3];
-      r += wa * data[i]; g += wa * data[i + 1]; b += wa * data[i + 2]; a += wa;
+      const i = at(mx, y), wa = w * hand[i + 3];
+      r += wa * hand[i]; g += wa * hand[i + 1]; b += wa * hand[i + 2]; a += wa;
     }
     return a > 0 ? [r / a, g / a, b / a, a] : [0, 0, 0, 0];
   };
-  const out = Buffer.from(data);
+  // The twin's picture: the crop padded by PAD on each side; the sleeve and cuff as painted, the hand flipped/bent.
+  const OW = W + 2 * PAD, oat = (x, y) => (y * OW + x) * 4;
+  const out = Buffer.alloc(OW * H * 4);
+  for (let y = 0; y < start; y++) data.copy(out, oat(PAD, y), at(0, y), at(0, y) + W * 4);
   for (let y = start; y < H; y++) {
-    for (let x = 0; x < W; x++) {
+    for (let ox = 0; ox < OW; ox++) {
       // Inverse-rotate about the wrist (axis, start) to find where this pixel comes from in the mirrored hand.
-      const rx = x - axis, ry = y - start;
+      const rx = ox - PAD - axis, ry = y - start;
       const [r, g, b, a] = sample(axis + cos * rx + sin * ry, start - sin * rx + cos * ry);
-      const i = at(x, y);
+      const i = oat(ox, y);
       out[i] = Math.round(r); out[i + 1] = Math.round(g); out[i + 2] = Math.round(b); out[i + 3] = Math.round(a);
     }
   }
-  const png = await sharp(out, { raw: { width: W, height: H, channels: 4 } }).png().toBuffer();
+  const png = await sharp(out, { raw: { width: OW, height: H, channels: 4 } }).png().toBuffer();
   const index = model.textures.length;
   model.textures.push({ source: `data:image/png;base64,${png.toString("base64")}` });
 
@@ -86,10 +113,15 @@ for (const side of ["L", "R"]) {
   twin.id = `${fore.id}_palm`;
   twin.order = fore.order + 0.01;
   twin.texture = { index, uv: { x: 0, y: 0, width: 1, height: 1 } };
-  twin.mesh.uvs = fore.mesh.uvs.map((u, i) => (i % 2 === 0 ? (u - uv.x) / uv.width : (u - uv.y) / uv.height));
+  // Widen the part by the padding: same centre, vertices and u's rescaled to the wider picture.
+  const k = W / OW;
+  twin.width = fore.width / k;
+  twin.mesh.vertices = fore.mesh.vertices.map((v, i) => (i % 2 === 0 ? (v < 0 ? -0.5 : v > 0 ? 0.5 : v) : v));
+  twin.mesh.uvs = fore.mesh.uvs.map((u, i) => (i % 2 === 0 ? (u <= uv.x + 1e-6 ? 0 : u >= uv.x + uv.width - 1e-6 ? 1 : (PAD + (u - uv.x) / uv.width * W) / OW) : (u - uv.y) / uv.height));
+  for (const w of twin.warps ?? []) for (const kf of w.keyforms) kf.offsets = kf.offsets.map((o, i) => (i % 2 === 0 ? o * k : o));
   twin.bindings = [...(fore.bindings ?? []).filter((b) => b.parameter !== param), { parameter: param, channel: "opacity", from: 0, to: 1 }];
   fore.bindings = [...(fore.bindings ?? []).filter((b) => b.parameter !== param), { parameter: param, channel: "opacity", from: 1, to: 0 }];
   model.parts.push(twin);
-  console.log(`${twin.id}: hand below crop row ${start} flipped about x=${axis.toFixed(1)}, wrist bent ${wristS}°, shown by ${param}`);
+  console.log(`${twin.id}: hand below crop row ${start} flipped about x=${axis.toFixed(1)}, wrist bent ${wristS}°${handPng ? `, hand from ${handPng}` : ""}, shown by ${param}`);
 }
 writeFileSync(file, JSON.stringify(model));

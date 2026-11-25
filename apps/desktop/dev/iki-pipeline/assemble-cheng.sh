@@ -77,6 +77,7 @@ node "$P/despeck-edges.mjs" iki-char/cheng-rigged.iki
 # neck under the jaw for head turns. (No eye-socket fill: his lid crease shows through the lashes.)
 node "$P/elbow-in.mjs" iki-char/cheng-rigged.iki 170
 node "$P/fill-under.mjs" iki-char/cheng-rigged.iki body '^face$' 0
-# The clap: palm-side hands (mirrored, wrist bent 50° so they stand straight up) that swap in while the forearms fold up, so palms meet palms.
-node "$P/palm-swap.mjs" iki-char/cheng-rigged.iki ParamChengPalm 50
+# The clap: palm-side hands that swap in while the forearms fold up, so palms meet palms. The hand is a flat,
+# fingers-together repaint of his own (Codex, source/clap-hand.png), mirrored and bent 50° so it stands straight up.
+node "$P/palm-swap.mjs" iki-char/cheng-rigged.iki ParamChengPalm 50 source/clap-hand.png
 mv iki-char/cheng-rigged.iki iki-char/Cheng.iki

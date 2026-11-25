@@ -29,10 +29,11 @@ export interface Gesture {
   timed?: boolean;
 }
 
-/** Cheng Xiaoshi's clap, measured on render_poses with his palm-side hands in (ParamChengPalm 1, wrists bent so
- *  the hands stand straight up): at elbow 128° (forearm full length) his palms join flat and straight in front of
- *  his chest, fingers up; at 135°, slightly foreshortened, they are a hand's width apart, palms facing. */
-export const CLAP_CONTACT = 128, CLAP_OPEN = 135, CLAP_OPEN_DEPTH = 0.3;
+/** Cheng Xiaoshi's clap, measured on render_poses with his palm-side hands in (ParamChengPalm 1: flat, fingers
+ *  together, wrists bent so the hands stand straight up): at elbow 124° (forearm full length) his palms press flat
+ *  and straight together in front of his chest, fingers up; at 132°, slightly foreshortened, they are a hand's
+ *  width apart, palms facing. */
+export const CLAP_CONTACT = 124, CLAP_OPEN = 132, CLAP_OPEN_DEPTH = 0.3;
 
 /**
  * Hands for a clap on a rig whose elbow folds inward to 170° and whose forearm foreshortens
