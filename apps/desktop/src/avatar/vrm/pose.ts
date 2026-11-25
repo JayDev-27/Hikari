@@ -99,6 +99,13 @@ export const flexQuat = (side: Side, deg: number, out = new Quaternion()) => out
 export const shoulderQuat = (side: Side, raise: number, out = new Quaternion()) => out.setFromAxisAngle(Z, -sign(side) * raise * D2R);
 const eulerQuat = (x: number, y: number, z: number, out = new Quaternion()) => out.setFromEuler(euler.set(x * D2R, y * D2R, z * D2R, "YXZ"));
 
+/**
+ * VRM 0.x models face −Z. `VRMUtils.rotateVRM0` turns the scene 180° about Y, but the normalized bones still use
+ * the model's own frame, where her left is −X and forward is −Z. Conjugating by that half turn
+ * (q' = R_y(π)·q·R_y(π)⁻¹) maps a rotation written for the +Z-facing frame into it: x and z flip sign.
+ */
+export const toVrm0Frame = (q: Quaternion): Quaternion => q.set(-q.x, q.y, -q.z, q.w);
+
 const FINGERS = ["Index", "Middle", "Ring", "Little"] as const;
 const JOINTS = ["Proximal", "Intermediate", "Distal"] as const;
 
@@ -135,18 +142,19 @@ export function poseToBones(pose: Pose, has: (bone: string) => boolean = () => t
 export const VISEME_KEYS = ["aa", "ih", "ou", "ee", "oh"] as const;
 
 /**
- * Visemes → VRM mouth expression weights (aa/ih/ou/ee/oh are VRM 1.0 preset names; three-vrm maps VRM 0.x's
- * a/i/u/e/o onto them). The mouth morphs add up on most models, so a sum over `cap` is scaled down instead of
- * opening the jaw past its sculpted range.
+ * Lip-sync visemes → VRM mouth expression weights (aa/ih/ou/ee/oh are VRM 1.0 preset names; three-vrm maps VRM
+ * 0.x's a/i/u/e/o onto them). `laughAa` and `surprisedOh` hold a minimum opening for a laugh or a surprised face.
+ * Under a smile (whose morph already pulls the mouth) the shapes are scaled down, and since the mouth morphs add up
+ * on most models, a total over 1 is normalised instead of opening the jaw past its sculpted range.
  */
-export function visemesToVrm(v: Visemes, gain = 1, cap = 1): Visemes {
-  const out = { aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 };
-  let sum = 0;
-  for (const k of VISEME_KEYS) {
-    out[k] = Math.max(0, Math.min(1, (v[k] ?? 0) * gain));
-    sum += out[k];
-  }
-  if (sum > cap) for (const k of VISEME_KEYS) out[k] *= cap / sum;
+export function visemeWeights(v: Visemes, laughAa = 0, smile = 0, surprisedOh = 0): Visemes {
+  const k = 1 - 0.35 * Math.max(0, Math.min(1, smile));
+  const out: Visemes = { aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 };
+  for (const key of VISEME_KEYS) out[key] = Math.max(0, Math.min(1, (v[key] ?? 0) * k));
+  out.aa = Math.max(out.aa, laughAa);
+  out.oh = Math.max(out.oh, surprisedOh);
+  const sum = out.aa + out.ih + out.ou + out.ee + out.oh;
+  if (sum > 1) for (const key of VISEME_KEYS) out[key] /= sum;
   return out;
 }
 

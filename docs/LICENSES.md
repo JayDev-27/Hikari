@@ -9,6 +9,8 @@ Nothing in this table is committed to git unless marked "committed".
 | Haru (Live2D sample) | same | Free Material License | Credit; < ¥10M; no sample sounds | fetched |
 | VRM1_Constraint_Twist_Sample | github.com/vrm-c/vrm-specification | VRM Public License 1.0 (redistribution + corporate OK) | Credit "(c) 2022 pixiv Inc." | M3 |
 | Seed-san | github.com/vrm-c/vrm-specification | VRM Public License 1.0 | Credit required: "Seed-san model by VirtualCast, Inc." | M3 |
+| three-vrm-girl (VRM 0.0 sample) | github.com/pixiv/three-vrm (tag v0.6.11, `packages/three-vrm/examples/models/`) | VRoid Hub conditions in the file: everyone may use, redistribute and modify; commercial use allowed; credit not required | None. Used only for local testing of the VRM renderer, never committed | local test only |
+| three.js 0.187.0, @pixiv/three-vrm 3.5.5 | npm | MIT | Keep the licence notices (bundled in the app) | dependency |
 | Hima TTS Nano (`Prahaladha/hima-tts-nano-hi`) | Hugging Face | **`other`, no licence text — all rights reserved** | Do not ship until the author grants a licence | B, prototype only |
 | Hima-ASR (`Prahaladha/hima-asr-mlx-*`) | Hugging Face | Apache-2.0 + Gemma terms | Pass on Gemma prohibited-use policy | B |
 | Character packs (`characters/*/character.json`, persona.md) | this repo | project licence | — | committed |

@@ -58,27 +58,27 @@ export interface Gesture {
 
 // Arm targets, tuned with forward kinematics on a standard VRoid-proportioned skeleton (gestures.test.ts).
 /** Hand up beside the head, palm to the viewer, forearm upright. */
-const WAVE_UP: ArmTarget = { down: 18, fwd: 18, twist: -80, elbow: 100, hand: -8, curl: 4 };
+const WAVE_UP: ArmTarget = { down: 76, fwd: 72, twist: -8, elbow: 120, hand: -8, curl: 4 };
 /** Hand at the chin, knuckles under it. */
-const CHIN: ArmTarget = { down: 80, fwd: 42, twist: 62, elbow: 138, hand: 30, curl: 45 };
+const CHIN: ArmTarget = { down: 86, fwd: 45, twist: 25, elbow: 135, hand: 14, curl: 45 };
 /** The supporting forearm across the waist, under the chin hand's elbow. */
-const CHIN_SUPPORT: ArmTarget = { down: 82, fwd: 22, twist: 66, elbow: 95, hand: 10, curl: 30 };
+const CHIN_SUPPORT: ArmTarget = { down: 86, fwd: 20, twist: 65, elbow: 85, hand: 10, curl: 30 };
 /** Palm over the brow. */
-const FACEPALM: ArmTarget = { down: 70, fwd: 58, twist: 58, elbow: 140, hand: 20, curl: 12 };
+const FACEPALM: ArmTarget = { down: 86, fwd: 72, twist: 20, elbow: 122, hand: 14, curl: 12 };
 /** Forearms folded across the chest, one just above the other. */
-const FOLD_L: ArmTarget = { down: 80, fwd: 26, twist: 78, elbow: 110, hand: 0, curl: 40 };
-const FOLD_R: ArmTarget = { down: 82, fwd: 20, twist: 82, elbow: 104, hand: 0, curl: 40 };
+const FOLD_L: ArmTarget = { down: 86, fwd: 52, twist: 92, elbow: 95, hand: 0, curl: 40 };
+const FOLD_R: ArmTarget = { down: 86, fwd: 60, twist: 90, elbow: 95, hand: 0, curl: 40 };
 /** Hands in front of the chest, a hand's width apart (clap open); CLAP_SHUT brings the palms together. */
-const CLAP_OPEN: ArmTarget = { down: 78, fwd: 38, twist: 50, elbow: 98, hand: -10, curl: 8 };
-const CLAP_SHUT: ArmTarget = { down: 78, fwd: 40, twist: 58, elbow: 104, hand: -10, curl: 8 };
+const CLAP_OPEN: ArmTarget = { down: 72, fwd: 12, twist: 10, elbow: 105, hand: -10, curl: 8 };
+const CLAP_SHUT: ArmTarget = { down: 78, fwd: 12, twist: 25, elbow: 110, hand: -10, curl: 8 };
 /** Arm forward and slightly out, index finger toward the viewer. */
-const POINT: ArmTarget = { down: 80, fwd: 72, twist: 10, elbow: 14, hand: 0, curl: 60, index: 1 };
+const POINT: ArmTarget = { down: 86, fwd: 78, twist: 10, elbow: 12, hand: 0, curl: 60, index: 1 };
 /** Shrug: elbows at the sides, forearms out, palms up. */
 const SHRUG: ArmTarget = { down: 80, fwd: 10, twist: -55, elbow: 80, hand: -18, curl: 10 };
 /** Bow: hands folded in front of the thighs. */
 const BOW_HANDS: ArmTarget = { down: 84, fwd: 14, twist: 40, elbow: 34, curl: 20 };
 /** Shy: a hand drawn up to the chest. */
-const SHY_HAND: ArmTarget = { down: 82, fwd: 18, twist: 60, elbow: 118, hand: 20, curl: 40 };
+const SHY_HAND: ArmTarget = { down: 70, fwd: 4, twist: 30, elbow: 130, hand: 20, curl: 40 };
 
 function clapAt(gap: number, e: number): Pose {
   const a: ArmTarget = {}, b = CLAP_OPEN, c = CLAP_SHUT;
@@ -89,11 +89,11 @@ function clapAt(gap: number, e: number): Pose {
 export const GESTURES: Record<string, Gesture> = {
   wave: { dur: 2.8, expression: { happy: 0.6 }, pose: (t) => {
     // The forearm folds up first, then the shoulder lifts; on the way down the shoulder lowers first.
-    const lift = envelope(t, 0.2, 0.26), fold = envelope(t, 0.14, 0.2);
+    const lift = envelope(t, 0.24, 0.26), fold = envelope(t, 0.2, 0.22);
     const sway = Math.sin((t - 0.2) * Math.PI * 7) * window01(t, 0.18, 0.78, 0.1);
     const a = arm("R", { ...WAVE_UP, elbow: undefined, twist: undefined }, lift);
     const f = arm("R", { twist: WAVE_UP.twist, elbow: WAVE_UP.elbow! + 18 * sway }, fold);
-    return merge(a, f, { handR: (WAVE_UP.hand! - REST.handR + 8 * sway) * fold, headZ: 4 * lift, headY: 5 * lift, chestZ: 1.5 * lift, spineZ: 1 * lift });
+    return merge(a, f, { handR: (WAVE_UP.hand! - REST.handR + 8 * sway) * fold, headZ: -4 * lift, headY: 5 * lift, chestZ: -1.5 * lift });
   } },
   point: { dur: 2.2, pose: (t) => {
     const e = envelope(t, 0.2, 0.3);

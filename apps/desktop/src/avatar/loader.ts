@@ -33,5 +33,14 @@ export async function loadAvatar(host: HTMLElement, pack: CharacterPack): Promis
     avatar.onDestroy = () => ro.disconnect();
     return avatar;
   }
-  throw new Error("VRM renderer lands in M3");
+  if (pack.renderer === "vrm") {
+    // three + three-vrm live in their own chunk, loaded only when a VRM pack is shown.
+    const { VrmAvatar } = await import("./vrm/VrmAvatar");
+    const avatar = await VrmAvatar.create(host, pack);
+    const ro = new ResizeObserver(() => avatar.resize());
+    ro.observe(host);
+    avatar.onDestroy = () => ro.disconnect();
+    return avatar;
+  }
+  throw new Error(`Unknown renderer "${String(pack.renderer)}"`);
 }
