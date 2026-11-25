@@ -9,14 +9,16 @@
     "idle": { "group": "Idle" },
     "tap": { "group": "TapBody", "index": 0 },
     "tap_body": { "group": "TapBody", "index": 0 },
-    "wave": { "group": "TapBody", "index": 0 },
-    "laugh": { "group": "Idle", "index": 2 },
-    "nod": { "group": "Idle", "index": 4 },
-    "clap": { "group": "TapBody", "index": 0 }
+    "laugh": { "group": "Idle", "index": 7 }
   },
-  "hitAreas": { "Body": "body" },
+  "hitAreas": {
+    "Body": "body"
+  },
   "persona": "persona.md",
-  "voice": { "engine": "hima", "voiceId": "Sneha" },
+  "voice": {
+    "engine": "hima",
+    "voiceId": "Sneha"
+  },
   "defaultLanguage": "hinglish",
   "license": {
     "source": "Live2D Inc. sample model (CubismWebSamples)",

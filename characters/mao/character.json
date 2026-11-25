@@ -15,37 +15,13 @@
     "teasing": "exp_08"
   },
   "motionMap": {
-    "idle": {
-      "group": "Idle"
-    },
-    "tap": {
-      "group": "TapBody",
-      "index": 0
-    },
-    "tap_head": {
-      "group": "TapBody",
-      "index": 1
-    },
-    "tap_body": {
-      "group": "TapBody",
-      "index": 0
-    },
-    "wave": {
-      "group": "TapBody",
-      "index": 2
-    },
-    "laugh": {
-      "group": "TapBody",
-      "index": 3
-    },
-    "pout": {
-      "group": "TapBody",
-      "index": 4
-    },
-    "head_pat_react": {
-      "group": "TapBody",
-      "index": 5
-    }
+    "idle": { "group": "Idle" },
+    "tap": { "group": "TapBody", "index": 0 },
+    "tap_body": { "group": "TapBody", "index": 0 },
+    "tap_head": { "group": "TapBody", "index": 1 },
+    "shrug": { "group": "TapBody", "index": 0 },
+    "wave": { "group": "TapBody", "index": 2 },
+    "head_pat_react": { "group": "TapBody", "index": 5 }
   },
   "hitAreas": {
     "Head": "head",

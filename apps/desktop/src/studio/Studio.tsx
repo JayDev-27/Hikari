@@ -6,7 +6,7 @@ import { ACTIVE_KEY, activeCharacterId, setActiveCharacterId, type CharacterPack
 import { deleteUserPack, importModel, listPacks, type ImportResult } from "../avatar/packs";
 import { CharacterPreview, type PreviewHandle } from "./CharacterPreview";
 import { Subscriptions } from "../util/subscriptions";
-import { characterHue, groupPacks, initials, languageName, moveLabel, personaSection, previewMoves, rendererLabel } from "./format";
+import { characterHue, groupPacks, initials, languageName, moveLabel, parseModelInfo, personaSection, previewMoves, rendererLabel, type ModelInfo } from "./format";
 import { IconCheck, IconDoc, IconFolder, IconLink, IconPlay, IconPlus, IconSearch, IconTrash, IconTray, IconWarn } from "./icons";
 import "../ui/tokens.css";
 import "./studio.css";
@@ -324,18 +324,40 @@ function Detail({ pack, isActive, busy, onUse, onImportFile, onImportFolder, onD
   const preview = useRef<PreviewHandle>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [playing, setPlaying] = useState<string | null>(null);
-  const [tab, setTab] = useState<"about" | "details" | "licence">("about");
+  const [tab, setTab] = useState<Tab>("about");
   const canPreview = (pack.renderer === "live2d" || pack.renderer === "iki") && pack.modelUrl;
+  // The moves come from the model itself (its parameters, motions and the gestures its rig resolves), not a fixed list.
+  const [model, setModel] = useState<ModelInfo | null>(null);
+  useEffect(() => {
+    if (!canPreview || !pack.modelUrl) return;
+    let live = true;
+    void fetch(pack.modelUrl).then((r) => r.text()).then((text) => live && setModel(parseModelInfo(pack.renderer, text)))
+      .catch(() => live && setModel({}));
+    return () => { live = false; };
+  }, [canPreview, pack.modelUrl, pack.renderer]);
+  const moves = useMemo(() => previewMoves(pack, model), [pack, model]);
+  const pollTimer = useRef(0);
+  useEffect(() => () => window.clearTimeout(pollTimer.current), []);
   const identity = personaSummary(pack.personaText ?? "");
   const speech = personaSection(pack.personaText ?? "", "Speech style");
   const meta = [pack.modelUrl ? rendererLabel[pack.renderer] : null, languageName(pack.defaultLanguage), pack.source === "user" ? "Imported" : "Built-in"].filter(Boolean);
   const canImport = pack.importSlot || pack.imported;
 
+  // The chip stays lit for as long as the move really plays.
   const play = (m: string) => {
     preview.current?.play(m);
     setPlaying(m);
-    window.setTimeout(() => setPlaying((cur) => (cur === m ? null : cur)), 1600);
+    window.clearTimeout(pollTimer.current);
+    // Lit for at least ~0.5 s (a short move still registers), then until the avatar is idle again.
+    let polls = 0;
+    const poll = () => {
+      if (++polls < 4 || preview.current?.busy()) pollTimer.current = window.setTimeout(poll, 150);
+      else setPlaying(null);
+    };
+    pollTimer.current = window.setTimeout(poll, 150);
   };
+  // An Iki signature runs to its end (the rig ignores other moves meanwhile), so the other chips wait for it.
+  const locked = pack.renderer === "iki" && !!playing && moves.some((m) => m.id === playing && m.signature);
 
   return (
     <div className="st-detail" style={hueStyle(pack)}>
@@ -387,10 +409,11 @@ function Detail({ pack, isActive, busy, onUse, onImportFile, onImportFolder, onD
           <section className="st-moves-block">
             <h2 className="st-group-title">Moves</h2>
             <div className="st-moves" role="group" aria-label="Preview moves">
-              {previewMoves(pack).map((m, i) => (
-                <button key={m} className={`st-chip${i < (pack.signatureMotions?.length ?? 0) ? " sig" : ""}${playing === m ? " on" : ""}`}
-                  disabled={state !== "ready"} onClick={() => play(m)}>
-                  <IconPlay /> {moveLabel(m)}
+              {moves.map((m) => (
+                <button key={m.id} className={`st-chip${m.signature ? " sig" : ""}${playing === m.id ? " on" : ""}`}
+                  disabled={state !== "ready" || (locked && playing !== m.id)} onClick={() => play(m.id)}
+                  title={m.signature ? "Signature move" : undefined}>
+                  <IconPlay /> {m.label}
                 </button>
               ))}
             </div>
@@ -408,24 +431,14 @@ function Detail({ pack, isActive, busy, onUse, onImportFile, onImportFolder, onD
           </div>
         )}
 
-        <div className="st-tabs" role="tablist" aria-label="Character information">
-          {(["about", "details", "licence"] as const).map((t) => (
-            <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
-              {t === "about" ? "About" : t === "details" ? "Details" : "Licence"}
-            </button>
-          ))}
-        </div>
-
-        <div className="st-card st-panel" role="tabpanel">
-          {tab === "about" && (
-            identity || speech ? (
-              <>
-                {identity && <p className="st-prose">{identity}</p>}
-                {speech && <p className="st-prose st-prose-sub">{speech}</p>}
-              </>
-            ) : <p className="st-prose st-prose-sub">No persona yet.</p>
-          )}
-          {tab === "details" && (
+        <Segmented id={`st-${pack.id}`} value={tab} onChange={setTab} render={(t) => {
+          if (t === "about") return identity || speech ? (
+            <>
+              {identity && <p className="st-prose">{identity}</p>}
+              {speech && <p className="st-prose st-prose-sub">{speech}</p>}
+            </>
+          ) : <p className="st-prose st-prose-sub">No persona yet.</p>;
+          if (t === "details") return (
             <>
               <Row label="Renderer" value={pack.modelUrl ? rendererLabel[pack.renderer] : "—"} />
               <Row label="Language" value={languageName(pack.defaultLanguage)} />
@@ -433,18 +446,80 @@ function Detail({ pack, isActive, busy, onUse, onImportFile, onImportFolder, onD
               <Row label="Signature moves" value={pack.signatureMotions?.length ? pack.signatureMotions.map(moveLabel).join(", ") : "—"} />
               <Row label="Source" value={pack.source === "user" ? "Imported to Hikari's data folder" : "Built into Hikari"} />
             </>
-          )}
-          {tab === "licence" && (
+          );
+          return (
             <div className="st-licence">
               <p className="st-licence-source">{pack.license.source}</p>
               <p>{pack.license.terms}</p>
               {pack.license.credit && <p className="st-fine">{pack.license.credit}</p>}
               {pack.license.url && <p className="st-url"><IconLink /> <span>{pack.license.url}</span></p>}
             </div>
-          )}
-        </div>
+          );
+        }} />
       </div>
     </div>
+  );
+}
+
+type Tab = "about" | "details" | "licence";
+const TABS: { id: Tab; label: string }[] = [{ id: "about", label: "About" }, { id: "details", label: "Details" }, { id: "licence", label: "Licence" }];
+
+/**
+ * macOS-style segmented control and its panel: the selection pill slides to the chosen segment, and the new content
+ * slides in from the side it travelled toward while the old content fades out the other way.
+ */
+function Segmented({ id, value, onChange, render }: {
+  id: string;
+  value: Tab;
+  onChange: (t: Tab) => void;
+  render: (t: Tab) => ReactNode;
+}) {
+  const index = TABS.findIndex((t) => t.id === value);
+  // The panel leaving (kept until its fade ends) and which way the selection moved.
+  const [leaving, setLeaving] = useState<{ tab: Tab; dir: "left" | "right"; key: number } | null>(null);
+  const [dir, setDir] = useState<"left" | "right" | null>(null);
+  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  const switches = useRef(0);
+  const select = (next: Tab, focus = false) => {
+    const to = TABS.findIndex((t) => t.id === next);
+    if (focus) buttons.current[to]?.focus();
+    if (next === value) return;
+    const d = to > index ? "right" : "left";
+    setDir(d);
+    setLeaving({ tab: value, dir: d, key: ++switches.current });
+    onChange(next);
+  };
+  const onKey = (e: React.KeyboardEvent) => {
+    const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    const to = step ? (index + step + TABS.length) % TABS.length : e.key === "Home" ? 0 : e.key === "End" ? TABS.length - 1 : -1;
+    if (to < 0) return;
+    e.preventDefault();
+    select(TABS[to].id, true);
+  };
+  return (
+    <>
+      <div className="st-tabs" role="tablist" aria-label="Character information" onKeyDown={onKey} style={{ "--i": index } as CSSProperties}>
+        <span className="st-tabs-pill" aria-hidden="true" />
+        {TABS.map((t, i) => (
+          <button key={t.id} ref={(el) => { buttons.current[i] = el; }} role="tab" id={`${id}-tab-${t.id}`}
+            aria-selected={value === t.id} aria-controls={`${id}-panel`} tabIndex={value === t.id ? 0 : -1}
+            className={value === t.id ? "on" : ""} onClick={() => select(t.id)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="st-card st-panel" role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-tab-${value}`}>
+        <div className="st-panel-stack">
+          {leaving && (
+            <div key={`out-${leaving.key}`} className={`st-panel-page out to-${leaving.dir === "right" ? "left" : "right"}`} aria-hidden="true"
+              onAnimationEnd={(e) => e.target === e.currentTarget && setLeaving((l) => (l?.key === leaving.key ? null : l))}>
+              {render(leaving.tab)}
+            </div>
+          )}
+          <div key={value} className={`st-panel-page${dir ? ` in from-${dir}` : ""}`}>{render(value)}</div>
+        </div>
+      </div>
+    </>
   );
 }
 

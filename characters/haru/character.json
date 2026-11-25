@@ -17,15 +17,22 @@
   "motionMap": {
     "idle": { "group": "Idle" },
     "tap": { "group": "TapBody", "index": 0 },
-    "tap_head": { "group": "TapBody", "index": 1 },
     "tap_body": { "group": "TapBody", "index": 0 },
-    "wave": { "group": "TapBody", "index": 2 },
-    "laugh": { "group": "TapBody", "index": 3 },
-    "head_pat_react": { "group": "TapBody", "index": 1 }
+    "tap_head": { "group": "TapBody", "index": 1 },
+    "head_pat_react": { "group": "TapBody", "index": 1 },
+    "laugh": { "group": "TapBody", "index": 1 },
+    "think_chin": { "group": "TapBody", "index": 2 },
+    "nod": { "group": "TapBody", "index": 3 }
   },
-  "hitAreas": { "Head": "head", "Body": "body" },
+  "hitAreas": {
+    "Head": "head",
+    "Body": "body"
+  },
   "persona": "persona.md",
-  "voice": { "engine": "hima", "voiceId": "Meera" },
+  "voice": {
+    "engine": "hima",
+    "voiceId": "Meera"
+  },
   "defaultLanguage": "hinglish",
   "license": {
     "source": "Live2D Inc. sample model (CubismWebSamples)",

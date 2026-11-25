@@ -1,27 +1,37 @@
-import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 import { loadAvatar } from "../avatar/loader";
 import type { CharacterPack } from "../avatar/characters";
 import type { AvatarController } from "../avatar/types";
+import { parseMotionId } from "./format";
 
 export interface PreviewHandle {
-  /** Play a gesture or signature by name (interrupting the current one). */
+  /** Play a gesture, signature or exact model motion (`motion:<group>:<index>`), interrupting the current one. */
   play(name: string): void;
+  /** Whether a move is still playing. */
+  busy(): boolean;
 }
 
 /** Preview the same rig, gesture player and secondary motion used on the desktop stage. */
-export function CharacterPreview({ pack, ref, onState }: {
+export function CharacterPreview({ pack: source, ref, onState }: {
   pack: CharacterPack;
   ref?: Ref<PreviewHandle>;
   onState?: (state: "loading" | "ready" | "error") => void;
 }) {
+  // A private copy whose motion map can gain entries for exact motions the Studio offers (the avatar reads it on play).
+  const pack = useMemo(() => ({ ...source, motionMap: { ...source.motionMap } }), [source]);
   const host = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const current = useRef<AvatarController | null>(null);
   const signatureIndex = useRef(0);
 
   useImperativeHandle(ref, () => ({
-    play: (name: string) => current.current?.playMotion(name, { interrupt: true }),
-  }), []);
+    play: (name: string) => {
+      const motion = parseMotionId(name);
+      if (motion) pack.motionMap[name] = motion;
+      current.current?.playMotion(name, { interrupt: true });
+    },
+    busy: () => current.current?.isBusy?.() ?? false,
+  }), [pack]);
 
   const react = () => {
     const signatures = pack.signatureMotions;

@@ -6,25 +6,10 @@
   "scale": 1.0,
   "expressionMap": {},
   "motionMap": {
-    "idle": {
-      "group": "Idle"
-    },
-    "tap": {
-      "group": "TapBody",
-      "index": 0
-    },
-    "tap_body": {
-      "group": "TapBody",
-      "index": 0
-    },
-    "wave": {
-      "group": "TapBody",
-      "index": 1
-    },
-    "laugh": {
-      "group": "TapBody",
-      "index": 2
-    }
+    "idle": { "group": "Idle" },
+    "tap": { "group": "TapBody", "index": 0 },
+    "tap_body": { "group": "TapBody", "index": 0 },
+    "wave": { "group": "TapBody", "index": 1 }
   },
   "hitAreas": {
     "Body": "body"

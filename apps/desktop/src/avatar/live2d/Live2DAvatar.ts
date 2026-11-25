@@ -237,7 +237,9 @@ export class Live2DAvatar implements AvatarController {
   playMotion(name: string, { interrupt = false } = {}): void {
     const m = this.pack.motionMap?.[name];
     if (!m) return;
-    void this.model.motion(m.group, m.index, interrupt ? MotionPriority.FORCE : MotionPriority.NORMAL);
+    // A gesture plays once. The sample models mark every motion `Loop: true` (they double as idle loops), which
+    // would keep a gesture repeating at its priority forever, so the idle never comes back.
+    void this.model.motion(m.group, m.index, interrupt ? MotionPriority.FORCE : MotionPriority.NORMAL, { loop: false });
   }
 
   lookAt(x: number, y: number): void {
@@ -261,7 +263,7 @@ export class Live2DAvatar implements AvatarController {
   react(event: AvatarEvent): void {
     if (event.kind === "click" || event.kind === "poke") {
       const m = this.pack.motionMap?.[`tap_${event.area.toLowerCase()}`] ?? this.pack.motionMap?.tap;
-      if (m) void this.model.motion(m.group, m.index, MotionPriority.NORMAL);
+      if (m) void this.model.motion(m.group, m.index, MotionPriority.NORMAL, { loop: false });
     }
   }
 

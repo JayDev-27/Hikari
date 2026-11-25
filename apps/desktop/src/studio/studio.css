@@ -322,8 +322,10 @@
 .st-moves-block .st-group-title { margin-left: 2px; }
 .st .st-icon-btn { width: 32px; height: 32px; padding: 0; justify-content: center; border-radius: 9px; }
 
-/* Segmented control (About / Details / Licence) and its one visible panel. */
+/* Segmented control (About / Details / Licence) and its one visible panel. The selection is one pill that slides
+   between the segments (grid columns of equal width, so --i × (its width + the gap) lands on segment i). */
 .st-tabs {
+  position: relative;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
@@ -332,8 +334,25 @@
   border-radius: 9px;
   background: var(--st-field);
   flex: none;
+  isolation: isolate;
+}
+.st-tabs-pill {
+  position: absolute;
+  z-index: -1;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc((100% - 8px) / 3);
+  border-radius: 7px;
+  background: var(--st-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 0.5px var(--st-card-line);
+  transform: translateX(calc(var(--i, 0) * (100% + 2px)));
+  /* A spring that settles without a visible bounce, like NSSegmentedControl. */
+  transition: transform 0.32s cubic-bezier(0.3, 1.12, 0.42, 1);
+  will-change: transform;
 }
 .st .st-tabs button {
+  position: relative;
   height: 26px;
   border: none;
   border-radius: 7px;
@@ -341,15 +360,31 @@
   color: var(--st-text-2);
   font: 500 12px var(--st-font);
   cursor: default;
-  transition: background 0.18s var(--st-ease), color 0.18s;
+  transition: color 0.2s var(--st-ease);
 }
-.st .st-tabs button.on { background: var(--st-bg); color: var(--st-text); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 0.5px var(--st-card-line); }
+.st .st-tabs button:hover:not(.on) { color: var(--st-text); }
+.st .st-tabs button.on { color: var(--st-text); }
+.st .st-tabs button:focus-visible { outline: 3px solid var(--st-accent-soft); outline-offset: 0; }
 .st-panel {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
   animation: st-in 0.24s var(--st-ease);
 }
+/* Incoming and outgoing pages share one cell, so the panel never changes size or scrolls mid-switch. */
+.st-panel-stack { display: grid; height: 100%; }
+.st-panel-page { grid-area: 1 / 1; min-width: 0; min-height: 0; }
+.st-panel-page.in.from-right { animation: st-page-in-right 0.3s var(--st-ease) both; }
+.st-panel-page.in.from-left { animation: st-page-in-left 0.3s var(--st-ease) both; }
+.st-panel-page.out { pointer-events: none; }
+.st-panel-page.out.to-left { animation: st-page-out-left 0.22s var(--st-ease) both; }
+.st-panel-page.out.to-right { animation: st-page-out-right 0.22s var(--st-ease) both; }
+.st-panel .st-licence { animation: none; }
+@keyframes st-page-in-right { from { opacity: 0; transform: translateX(18px); } }
+@keyframes st-page-in-left { from { opacity: 0; transform: translateX(-18px); } }
+@keyframes st-page-out-left { to { opacity: 0; transform: translateX(-18px); } }
+@keyframes st-page-out-right { to { opacity: 0; transform: translateX(18px); } }
+@keyframes st-fade-out { to { opacity: 0; } }
 .st-panel .st-prose { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden; }
 .st-panel .st-prose-sub { -webkit-line-clamp: 4; }
 .st-panel .st-licence { padding: 12px 0; }
@@ -532,4 +567,7 @@
 @keyframes st-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
   .st *, .st *::before, .st *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  /* Reduced motion: the pill jumps and the panel only cross-fades, without sliding. */
+  .st .st-panel-page.in { animation: st-fade 0.16s linear both !important; }
+  .st .st-panel-page.out { animation: st-fade-out 0.12s linear both !important; }
 }
