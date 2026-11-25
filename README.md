@@ -51,8 +51,8 @@ Five hand-rigged characters run on **Iki**, a lightweight 2D renderer built for 
       <sub><b>Rize Kamishiro</b>: her eyes turn ghoul red mid-conversation.</sub>
     </td>
     <td width="50%" align="center">
-      <img src="assets/readme/cheng-photo-dive.gif" alt="Cheng Xiaoshi raising a photo and diving into it" width="100%"><br>
-      <sub><b>Cheng Xiaoshi</b>: raises the photo and dives in.</sub>
+      <img src="assets/readme/cheng-photo-dive.gif" alt="Cheng Xiaoshi raising his hands, pressing his palms flat together at his chest with his eyes closed, then lowering them" width="100%"><br>
+      <sub><b>Cheng Xiaoshi</b>: presses his palms together, closes his eyes and dives into the photo.</sub>
     </td>
   </tr>
   <tr>
