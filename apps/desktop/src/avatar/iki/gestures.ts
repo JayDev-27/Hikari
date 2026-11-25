@@ -277,6 +277,35 @@ export const GESTURES: Record<string, Gesture> = {
       ParamLegShift: 0.58 * lift,
     };
   } },
+  /** clap on Lu Guang's rig: his left hand palm-up at the waist, his right turned palm-down (a mirrored hand,
+   *  ParamLuPalm, swapped in while it rises) claps onto it three times — palm meets palm, a quiet, polite clap.
+   *  Elbows measured on render_poses: right 92° rests on the left palm at 88°, 100° lifts it clear. */
+  "clap-palm-down": { dur: 2.4, timed: true, expression: "smile", pose: (t) => {
+    const up = smoother(t / 0.2) * smoother((1 - t) / 0.2);
+    const beat = smoother((t - 0.2) / 0.04) * smoother((0.8 - t) / 0.04);
+    // Contact at t = 0.35, 0.5, 0.65; the right hand bounces up off the left between claps.
+    const gap = 1 - beat * (1 - Math.abs(Math.sin(Math.PI * (t - 0.2) / 0.15)));
+    const palm = smoother((up - 0.45) / 0.05);
+    return {
+      ParamElbowL: 88 * up,
+      ParamElbowR: (92 + 8 * gap) * up,
+      ParamLuPalm: palm,
+      ParamAngleY: -4 * up - 1.5 * beat * (1 - gap),
+      ParamAngleZ: 2 * up,
+    };
+  } },
+  /** think_chin on Lu Guang's rig: his chin lift at 0.72 with the elbow folded 45° more puts his fingers on his
+   *  jaw while the shoulder holds (the full lift's 52° shows the sleeve's bend seam). */
+  "think_chin-lift": { dur: 3.2, timed: true, pose: (t) => {
+    const e = envelope(t, 0.25, 0.25);
+    return { ParamLuThought: 0.72 * e, ParamElbowR: 45 * e, ParamAngleY: -8 * e, ParamAngleZ: 4 * e, ParamEyeLOpen: -0.12 * e, ParamEyeROpen: -0.12 * e };
+  } },
+  /** facepalm on Lu Guang's rig: the same hand to his jaw, head bowed further, eyes shut — a weary sigh. */
+  "facepalm-lift": { dur: 2.8, timed: true, pose: (t) => {
+    const e = envelope(t, 0.25, 0.3);
+    const shut = smoother((t - 0.2) / 0.08) * smoother((0.8 - t) / 0.08);
+    return { ParamLuThought: 0.72 * e, ParamElbowR: 45 * e, ParamAngleY: -16 * e, ParamAngleZ: -3 * e, ParamEyeLOpen: -shut, ParamEyeROpen: -shut, ParamMouthForm: -0.3 * e };
+  } },
   /** Lu Guang's signature: he lifts a photo he's holding (ParamLuPhoto, a prop riding his right forearm; we see
    *  its back, the picture faces him) up to mid-chest and studies it, head bowed, lids lowered, a slight turn of
    *  the wrist as he looks, his irises glowing blue as he reads it (ParamLuGlow); then he lowers it.
@@ -413,11 +442,20 @@ export function limitArmLift(pose: Pose, max: number | undefined): Pose {
   return pose;
 }
 
-export function resolveGesture(name: string, armMax: number, elbowMin: number, elbowMax = 0, foreshortens = false): string {
+/**
+ * The variant of a gesture this rig can do well. `has` tells whether the model declares a parameter (a boolean
+ * stands for "has ParamChengClapDepth", the forearm foreshortening, as older callers pass).
+ */
+export function resolveGesture(name: string, armMax: number, elbowMin: number, elbowMax = 0, has: boolean | ((id: string) => boolean) = false): string {
+  const declares = typeof has === "function" ? has : (id: string) => has && id === "ParamChengClapDepth";
   const raised = armMax >= 32 && elbowMin <= -168;
   if (raised && name === "wave") return "wave-raised";
   // Palms meet only with the elbow fold plus a forearm that foreshortens on the way up (Cheng Xiaoshi).
-  if (elbowMax >= 168 && foreshortens && name === "clap") return "clap-fold";
+  if (elbowMax >= 168 && declares("ParamChengClapDepth") && name === "clap") return "clap-fold";
+  // Lu Guang: his right hand turns palm-down (ParamLuPalm) to clap onto his upturned left palm; his chin lift
+  // (ParamLuThought) carries the hand-to-face gestures his short forearms can't reach from the elbow.
+  if (declares("ParamLuPalm") && name === "clap") return "clap-palm-down";
+  if (declares("ParamLuThought") && (name === "think_chin" || name === "facepalm")) return `${name}-lift`;
   // A forearm that folds inward past 150° brings the hand to the face across the chest.
   if (elbowMax >= 168 && (name === "think_chin" || name === "facepalm")) return `${name}-fold`;
   return name;

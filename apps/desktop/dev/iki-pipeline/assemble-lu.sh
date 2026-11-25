@@ -80,4 +80,7 @@ node "$P/despeck-edges.mjs" iki-char/lu-rigged.iki
 node "$P/elbow-in.mjs" iki-char/lu-rigged.iki 140
 node "$P/add-prop.mjs" iki-char/lu-rigged.iki source/photo-back.png photo ParamLuPhoto 99.4,1732.7,194 5.6 forearmDeformer_R 119
 node "$P/eye-glow.mjs" iki-char/lu-rigged.iki ParamLuGlow '#3fb6ff'
+# His clap: the right hand mirrored about the wrist (below the wristband, crop row 735) turns palm-down when the
+# forearm lies level, so it claps onto his upturned left palm (ParamLuPalm, gestures.ts clap-palm-down).
+node "$P/palm-swap.mjs" iki-char/lu-rigged.iki ParamLuPalm 0 --sides=R --start=735
 mv iki-char/lu-rigged.iki iki-char/Lu.iki

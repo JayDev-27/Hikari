@@ -20,13 +20,18 @@ import { createRequire } from "node:module";
 const req = createRequire((await import("node:path")).resolve(process.env.IKI_REPO ?? "../iki") + "/packages/mcp/package.json");
 const sharp = (await import(req.resolve("sharp"))).default;
 
-const [file, param = "ParamChengPalm", wristS = "30", handPng] = process.argv.slice(2);
-const PAD = 120;
+// Flags: --sides=L,R (default both) · --start=<crop row where the hand begins> (default: below the cuff's stripe).
+const flags = Object.fromEntries(process.argv.slice(2).filter((a) => a.startsWith("--")).map((a) => a.slice(2).split("=")));
+const [file, param = "ParamChengPalm", wristS = "30", handPng] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+const SIDES = (flags.sides ?? "L,R").split(",");
+// Padding only matters when the hand is bent off the arm's line; it needs the forearm to be a plain quad to widen.
+const PAD = +wristS ? 120 : 0;
 const wrist = (+wristS * Math.PI) / 180;
 const model = JSON.parse(readFileSync(file, "utf8"));
 model.parameters = model.parameters.filter((p) => p.id !== param);
 model.parameters.push({ id: param, name: "Clap palms (forearm supinated)", min: 0, max: 1, default: 0 });
 model.parts = model.parts.filter((p) => !p.id.endsWith("_palm"));
+for (const p of model.parts) if (p.bindings) p.bindings = p.bindings.filter((b) => b.parameter !== param);
 
 const atlasCache = new Map();
 const atlas = async (index) => {
@@ -37,7 +42,7 @@ const atlas = async (index) => {
   return atlasCache.get(index);
 };
 
-for (const side of ["L", "R"]) {
+for (const side of SIDES) {
   const fore = model.parts.find((p) => p.id === `forearm_${side}`);
   const { buf, meta } = await atlas(fore.texture.index);
   const uv = fore.texture.uv;
@@ -49,7 +54,7 @@ for (const side of ["L", "R"]) {
   const blue = (i) => data[i + 3] > 128 && data[i + 2] > data[i] + 25 && data[i + 2] > 90;
   let cuff = 0;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (blue(at(x, y))) { cuff = y; break; }
-  const start = cuff + 6; // below the cuff's cream edge band
+  const start = flags.start ? +flags.start : cuff + 6; // below the cuff's cream edge band
   // The wrist's centre, from the opaque run just under the cuff: the hand flips about it.
   let lo = W, hi = -1;
   for (let y = start; y < start + 12; y++) for (let x = 0; x < W; x++) if (data[at(x, y) + 3] > 128) { lo = Math.min(lo, x); hi = Math.max(hi, x); }
@@ -115,9 +120,12 @@ for (const side of ["L", "R"]) {
   twin.texture = { index, uv: { x: 0, y: 0, width: 1, height: 1 } };
   // Widen the part by the padding: same centre, vertices and u's rescaled to the wider picture.
   const k = W / OW;
+  if (PAD && fore.mesh.vertices.length !== 8) throw new Error(`${fore.id}: bending the hand needs a quad forearm mesh`);
   twin.width = fore.width / k;
-  twin.mesh.vertices = fore.mesh.vertices.map((v, i) => (i % 2 === 0 ? (v < 0 ? -0.5 : v > 0 ? 0.5 : v) : v));
-  twin.mesh.uvs = fore.mesh.uvs.map((u, i) => (i % 2 === 0 ? (u <= uv.x + 1e-6 ? 0 : u >= uv.x + uv.width - 1e-6 ? 1 : (PAD + (u - uv.x) / uv.width * W) / OW) : (u - uv.y) / uv.height));
+  twin.mesh.vertices = fore.mesh.vertices.map((v, i) => (i % 2 === 0 && PAD ? (v < 0 ? -0.5 : v > 0 ? 0.5 : v) : v));
+  twin.mesh.uvs = fore.mesh.uvs.map((u, i) => Math.min(1, Math.max(0, i % 2 === 0
+    ? (PAD && u <= uv.x + 1e-6 ? 0 : PAD && u >= uv.x + uv.width - 1e-6 ? 1 : (PAD + (u - uv.x) / uv.width * W) / OW)
+    : (u - uv.y) / uv.height)));
   for (const w of twin.warps ?? []) for (const kf of w.keyforms) kf.offsets = kf.offsets.map((o, i) => (i % 2 === 0 ? o * k : o));
   twin.bindings = [...(fore.bindings ?? []).filter((b) => b.parameter !== param), { parameter: param, channel: "opacity", from: 0, to: 1 }];
   fore.bindings = [...(fore.bindings ?? []).filter((b) => b.parameter !== param), { parameter: param, channel: "opacity", from: 1, to: 0 }];

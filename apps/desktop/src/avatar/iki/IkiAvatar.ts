@@ -165,7 +165,7 @@ export class IkiAvatar implements AvatarController {
     }
     const range = (id: string) => this.model.parameters.find((p) => p.id === id);
     const tag = mapped && this.pack.signatureMotions?.includes(mapped.group) ? mapped.group : name;
-    const gname = resolveGesture(tag, range("ParamArmR")?.max ?? 0, range("ParamElbowR")?.min ?? 0, range("ParamElbowR")?.max ?? 0, this.params.has("ParamChengClapDepth"));
+    const gname = resolveGesture(tag, range("ParamArmR")?.max ?? 0, range("ParamElbowR")?.min ?? 0, range("ParamElbowR")?.max ?? 0, (id) => this.params.has(id));
     const g = GESTURES[gname];
     if (g) {
       // A gesture already in progress is not restarted by a repeat request (a burst of identical cues).

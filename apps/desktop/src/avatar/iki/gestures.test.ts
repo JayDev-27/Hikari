@@ -21,6 +21,7 @@ const RANGE: Record<string, [number, number]> = {
   ParamLuStudy: [0, 1],
   ParamLuPhoto: [0, 1],
   ParamLuGlow: [0, 1],
+  ParamLuPalm: [0, 1],
   ParamLuThought: [0, 1],
   ParamLuFoldL: [0, 1],
   ParamLuFoldR: [0, 1],
@@ -149,6 +150,26 @@ describe("Iki gestures", () => {
       expect(p.ParamChengClapDepth).toBeGreaterThan(0.9);
       expect(p.ParamArmL).toBeGreaterThan(5);
     }
+  });
+
+  it("gives Lu Guang a palm-down clap and hand-to-jaw think/facepalm his rig can do", () => {
+    const lu = (id: string) => ["ParamLuPalm", "ParamLuThought"].includes(id);
+    expect(resolveGesture("clap", 150, -170, 140, lu)).toBe("clap-palm-down");
+    expect(resolveGesture("think_chin", 150, -170, 140, lu)).toBe("think_chin-lift");
+    expect(resolveGesture("facepalm", 150, -170, 140, lu)).toBe("facepalm-lift");
+    expect(resolveGesture("wave", 150, -170, 140, lu)).toBe("wave-raised");
+    const clap = GESTURES["clap-palm-down"].pose;
+    for (const t of [0.35, 0.5, 0.65]) {
+      expect(clap(t).ParamElbowR).toBeCloseTo(92, 0); // right palm resting on the left
+      expect(clap(t).ParamElbowL).toBeCloseTo(88, 0);
+      expect(clap(t).ParamLuPalm).toBe(1); // palm-down hand, so palm meets palm
+    }
+    for (const t of [0.275, 0.425, 0.575]) expect(clap(t).ParamElbowR).toBeGreaterThan(97);
+    expect(clap(0.05).ParamLuPalm).toBe(0);
+    const think = GESTURES["think_chin-lift"].pose(0.5);
+    expect(think.ParamLuThought).toBeCloseTo(0.72);
+    expect(think.ParamElbowR).toBeCloseTo(45);
+    expect(GESTURES["facepalm-lift"].pose(0.5).ParamEyeLOpen).toBe(-1);
   });
 
   it("claps three times on Cheng Xiaoshi's elbow-fold rig", () => {
