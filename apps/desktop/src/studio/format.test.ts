@@ -68,19 +68,19 @@ describe("Moves each character can really perform", () => {
   it("Iki: signatures first (marked), then the everyday gestures that rig resolves", () => {
     const moves = previewMoves(cast("makima"), iki("makima"));
     expect(moves.filter((m) => m.signature).map((m) => m.id)).toEqual(["signature-clasp", "signature-smile", "signature-bang"]);
-    expect(ids("makima", iki("makima"))).toEqual(["signature-clasp", "signature-smile", "signature-bang", "wave", "nod", "head_tilt", "think_chin", "clap", "laugh"]);
-    expect(labels("makima", iki("makima"))).toEqual(["Clasp", "Smile", "Bang", "Wave", "Nod", "Head Tilt", "Think", "Clap", "Laugh"]);
-    for (const id of ["reze", "rize", "cheng-xiaoshi"]) {
-      expect(ids(id, iki(id)).slice(3)).toEqual(["wave", "nod", "head_tilt", "think_chin", "clap", "laugh"]);
-    }
+    expect(ids("makima", iki("makima"))).toEqual(["signature-clasp", "signature-smile", "signature-bang", "wave", "nod", "head_tilt", "think_chin", "laugh"]);
+    expect(labels("makima", iki("makima"))).toEqual(["Clasp", "Smile", "Bang", "Wave", "Nod", "Head Tilt", "Think", "Laugh"]);
+    for (const id of ["reze", "rize"]) expect(ids(id, iki(id)).slice(3)).toEqual(["wave", "nod", "head_tilt", "think_chin", "laugh"]);
+    // Cheng's elbows fold inward for his palm-to-palm clap.
+    expect(ids("cheng-xiaoshi", iki("cheng-xiaoshi")).slice(3)).toEqual(["wave", "nod", "head_tilt", "think_chin", "clap", "laugh"]);
   });
 
-  it("Iki: point and crossed arms only where the rig has its own variant (Lu Guang)", () => {
+  it("Iki: point, crossed arms, clap and think only where the rig has its own variant", () => {
     expect(ids("lu-guang", iki("lu-guang"))).toEqual([
       "signature-study-photo", "signature-folded-nod", "signature-quiet-thought",
       "wave", "nod", "head_tilt", "think_chin", "clap", "point", "cross_arms", "laugh",
     ]);
-    expect(ids("makima", iki("makima"))).not.toContain("point");
+    for (const move of ["point", "cross_arms", "clap"]) expect(ids("makima", iki("makima"))).not.toContain(move);
   });
 
   it("Iki: nod and head tilt need the model's own motion, gestures need the parameters they move", () => {

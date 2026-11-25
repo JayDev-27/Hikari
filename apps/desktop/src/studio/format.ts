@@ -75,9 +75,12 @@ export function parseMotionId(id: string): { group: string; index: number } | nu
 
 /** Everyday gestures an Iki character may offer after its signatures, in chip order. */
 const IKI_EVERYDAY = ["wave", "nod", "head_tilt", "think_chin", "clap", "point", "cross_arms", "laugh"];
-/** Offered only on rigs with their own variant: the generic straight-arm point and crossed forearms read as a
- *  twitch or a muddle on most rigs (Lu Guang has point-present and cross_arms-fold). */
-const IKI_VARIANT_ONLY = new Set(["point", "cross_arms"]);
+/** Offered only on rigs with their own variant. The generic straight-arm point and crossed forearms read as a
+ *  twitch or a muddle on most rigs (Lu Guang has point-present and cross_arms-fold). The generic clap and think
+ *  keep the forearms low: the hands only cross or rest at the waist, which reads as neither. Rigs whose elbows fold
+ *  inward get think_chin-fold (hand to the chin); a clap needs Cheng Xiaoshi's clap-fold or Lu Guang's
+ *  clap-palm-down, so Makima, Reze and Rize offer no Clap until their rigs have one. */
+const IKI_VARIANT_ONLY = new Set(["point", "cross_arms", "clap", "think_chin"]);
 
 /** Iki: signatures, then the everyday gestures this rig performs (resolved per rig exactly as IkiAvatar does). */
 function ikiMoves(pack: CharacterPack, model: ModelInfo): string[] {
