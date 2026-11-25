@@ -1,8 +1,16 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { Stage } from "./stage/Stage";
 import { Studio } from "./studio/Studio";
 import { Chat } from "./chat/Chat";
+
+// Panels that open rarely load on demand, so the stage's bundle stays small.
+const Settings = lazy(() => import("./settings/Settings").then((m) => ({ default: m.Settings })));
+const Memory = lazy(() => import("./memory/Memory").then((m) => ({ default: m.Memory })));
+const VoiceLab = lazy(() => import("./voicelab/VoiceLab").then((m) => ({ default: m.VoiceLab })));
+const Activity = lazy(() => import("./activity/Activity").then((m) => ({ default: m.Activity })));
+const Confirm = lazy(() => import("./activity/Confirm").then((m) => ({ default: m.Confirm })));
+const Onboarding = lazy(() => import("./onboarding/Onboarding").then((m) => ({ default: m.Onboarding })));
 import "./styles.css";
 import { installDiagnostics } from "./diagnostics";
 
@@ -19,6 +27,18 @@ function App() {
       return <Studio />;
     case "chat":
       return <Chat />;
+    case "settings":
+      return <Suspense fallback={null}><Settings /></Suspense>;
+    case "memory":
+      return <Suspense fallback={null}><Memory /></Suspense>;
+    case "voicelab":
+      return <Suspense fallback={null}><VoiceLab /></Suspense>;
+    case "activity":
+      return <Suspense fallback={null}><Activity /></Suspense>;
+    case "confirm":
+      return <Suspense fallback={null}><Confirm /></Suspense>;
+    case "onboarding":
+      return <Suspense fallback={null}><Onboarding /></Suspense>;
     case "stage":
     default:
       return <Stage />;

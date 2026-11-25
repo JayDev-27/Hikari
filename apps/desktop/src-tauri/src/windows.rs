@@ -1,9 +1,19 @@
-//! Secondary windows (Character Studio, Chat): shown on demand, hidden on close.
+//! Secondary windows (Studio, Chat, Settings, Memories, Voice Lab, Activity, Confirm, Onboarding): shown on
+//! demand, hidden on close.
 
 use tauri::{AppHandle, Manager, Runtime, Window, WindowEvent};
 
 /// Windows the frontend may ask to show. Anything else is refused.
-pub const PANELS: [&str; 2] = ["studio", "chat"];
+pub const PANELS: [&str; 8] = [
+    "studio",
+    "chat",
+    "settings",
+    "memory",
+    "voicelab",
+    "activity",
+    "confirm",
+    "onboarding",
+];
 
 #[tauri::command]
 pub fn show_window<R: Runtime>(app: AppHandle<R>, label: String) -> Result<(), String> {

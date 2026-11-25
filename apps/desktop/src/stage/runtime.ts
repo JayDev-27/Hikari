@@ -12,7 +12,8 @@ import { Subscriptions } from "../util/subscriptions";
 import { matchSwitch } from "../avatar/switchIntent";
 import { listPacks } from "../avatar/packs";
 import type { CharacterPack } from "../avatar/characters";
-import { emitTo } from "@tauri-apps/api/event";
+import { emit, emitTo } from "@tauri-apps/api/event";
+import { PANEL_MESSAGES, type CoreEvent, type CoreStatus } from "../ui/coreBridge";
 import { FrameScheduler, type FrameTier } from "./frameScheduler";
 import type { AvatarEmotion, AvatarGesture, Emotion } from "@hikari/protocol";
 
@@ -147,9 +148,11 @@ export class StageRuntime {
   }
 
   start(): void {
-    this.core.onStatus = (ok) => {
+    this.core.onStatus = (ok, reason) => {
       useStage.getState().setCore(ok);
       if (ok) this.sendCharacter();
+      this.coreStatus = { connected: ok, ...(reason ? { reason } : {}) };
+      if (inTauri) void emit("core://status", this.coreStatus);
     };
     this.core.connect();
     if (inTauri) this.wireTauri();
@@ -199,6 +202,8 @@ export class StageRuntime {
     });
     c.on("error", (p, env) => this.chat({ kind: "system", text: `${p.code}: ${p.message}`, turnId: env.turnId }));
     c.on("barge_in", () => this.bargeIn("core"));
+    // Panels (Settings, Memory, Voice Lab, Activity, Confirm) see the core through the stage: ui/coreBridge.ts.
+    if (inTauri) for (const type of PANEL_MESSAGES) c.on(type, (payload, env) => void emit("core://event", { type, payload, turnId: env.turnId } as CoreEvent));
   }
 
   private newTurn(): void {
@@ -240,6 +245,7 @@ export class StageRuntime {
   }
 
   private chatLog: ChatEvent[] = [];
+  private coreStatus: CoreStatus = { connected: false };
 
   /** Record + forward a transcript event to the chat window (keeps the last 200). */
   chat(e: ChatEvent): void {
@@ -338,6 +344,8 @@ export class StageRuntime {
       this.subs.add(listen<boolean>("stage://visible", (e) => this.setVisible(e.payload)));
       this.subs.add(listen<{ text: string }>("chat://send", (e) => void this.sendText(e.payload.text)));
       this.subs.add(listen("chat://hello", () => void emitTo("chat", "chat://history", this.chatLog)));
+      this.subs.add(listen<CoreEvent>("core://send", (e) => this.core.send(e.payload.type, e.payload.payload)));
+      this.subs.add(listen("core://hello", () => void emit("core://status", this.coreStatus)));
       this.subs.add(listen("hotkey://panic", () => {
         this.bargeIn("ui");
         this.core.send("tool.confirm", { callId: "*", approved: false, via: "click" });

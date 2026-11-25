@@ -48,9 +48,11 @@ pub fn set_stage_visible<R: Runtime>(app: &AppHandle<R>, visible: bool) {
     // Frontend pauses its render loop while hidden.
     let _ = app.emit_to(STAGE, "stage://visible", visible);
     if let Some(item) = app.try_state::<ToggleItem<R>>() {
-        let _ = item
-            .0
-            .set_text(if visible { "Hide Hikari" } else { "Show Hikari" });
+        let _ = item.0.set_text(if visible {
+            "Hide Hikari"
+        } else {
+            "Show Hikari"
+        });
     }
 }
 
@@ -58,6 +60,10 @@ pub fn setup<R: Runtime>(app: &AppHandle<R>, show_in_dock: bool) -> tauri::Resul
     let toggle = MenuItem::with_id(app, "toggle", "Hide Hikari", true, None::<&str>)?;
     let chat = MenuItem::with_id(app, "chat", "Chat…", true, None::<&str>)?;
     let studio = MenuItem::with_id(app, "studio", "Character Studio…", true, None::<&str>)?;
+    let memory = MenuItem::with_id(app, "memory", "Memories…", true, None::<&str>)?;
+    let voicelab = MenuItem::with_id(app, "voicelab", "Voice Lab…", true, None::<&str>)?;
+    let activity = MenuItem::with_id(app, "activity", "Activity…", true, None::<&str>)?;
+    let settings = MenuItem::with_id(app, "settings", "Settings…", true, Some("CmdOrCtrl+,"))?;
     let lock =
         CheckMenuItem::with_id(app, "lock", "Click-through lock", true, false, None::<&str>)?;
     let mute = CheckMenuItem::with_id(app, "mute", "Mute mic", true, false, None::<&str>)?;
@@ -83,6 +89,9 @@ pub fn setup<R: Runtime>(app: &AppHandle<R>, show_in_dock: bool) -> tauri::Resul
             &toggle,
             &chat,
             &studio,
+            &memory,
+            &voicelab,
+            &activity,
             &PredefinedMenuItem::separator(app)?,
             &lock,
             &mute,
@@ -90,6 +99,7 @@ pub fn setup<R: Runtime>(app: &AppHandle<R>, show_in_dock: bool) -> tauri::Resul
             &PredefinedMenuItem::separator(app)?,
             &panic,
             &PredefinedMenuItem::separator(app)?,
+            &settings,
             &quit,
         ],
     )?;
@@ -116,7 +126,7 @@ pub fn setup<R: Runtime>(app: &AppHandle<R>, show_in_dock: bool) -> tauri::Resul
                     set_stage_visible(app, !w.is_visible().unwrap_or(true));
                 }
             }
-            "chat" | "studio" => {
+            "chat" | "studio" | "memory" | "voicelab" | "activity" | "settings" => {
                 if let Err(e) = crate::windows::show(app, ev.id().as_ref()) {
                     log::warn!("show window: {e}");
                 }

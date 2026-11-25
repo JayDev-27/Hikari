@@ -1,8 +1,17 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "panels",
-  "description": "Character Studio and Chat windows: events to the stage, file picker, hide on close",
-  "windows": ["studio", "chat"],
+  "description": "Panel windows (Studio, Chat, Settings, Memories, Voice Lab, Activity, Confirm, Onboarding): events to the stage, file picker, hide on close",
+  "windows": [
+    "studio",
+    "chat",
+    "settings",
+    "memory",
+    "voicelab",
+    "activity",
+    "confirm",
+    "onboarding"
+  ],
   "permissions": [
     "core:default",
     "core:window:allow-hide",
