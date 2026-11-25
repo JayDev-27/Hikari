@@ -71,18 +71,22 @@ node "$P/armpit-patch.mjs" iki-char/lu-rigged.iki iki-char/armpits/before-R-0.pn
 node "$P/armpit-patch.mjs" iki-char/lu-rigged.iki iki-char/armpits/before-L-0.png iki-char/armpits/before-L-20.png 767,713,178,316 851 951 L 166,163,156
 cp iki-char/lu-rigged.iki iki-char/lu-before-edges.iki
 node "$P/despeck-edges.mjs" iki-char/lu-rigged.iki
-# His study-photo signature: the right forearm folds inward to 140° (hand palm-up at mid-chest from the elbow
-# alone, so the shoulder never lifts), holding a photo (Codex, source/photo.png). The photo rides the forearm: it
-# is placed where it sits in the REST pose and turned 119° there, so at elbow 130° / arm 2° it is upright in his
-# hand, tilted 9°, pinched between thumb and fingers (canvas centre 634,864, from render_poses). He is looking at
-# it, so we see its back (source/photo-back.png, Codex, masked to the front print's outline source/photo.png).
-# His irises glow blue while he reads it (ParamLuGlow), as his power does in the show.
+# His study-photo signature: the right forearm folds inward to 140° (hand at mid-chest from the elbow alone, so
+# the shoulder never lifts). His irises glow blue while he reads it (ParamLuGlow), as his power does in the show.
 node "$P/elbow-in.mjs" iki-char/lu-rigged.iki 140
-node "$P/add-prop.mjs" iki-char/lu-rigged.iki source/photo-back.png photo ParamLuPhoto 99.4,1732.7,194 5.6 forearmDeformer_R 119
 node "$P/eye-glow.mjs" iki-char/lu-rigged.iki ParamLuGlow '#3fb6ff'
 # His clap: the right hand mirrored about the wrist (below the wristband, crop row 735) turns palm-down when the
 # forearm lies level, so it claps onto his upturned left palm (ParamLuPalm, gestures.ts clap-palm-down).
 node "$P/palm-swap.mjs" iki-char/lu-rigged.iki ParamLuPalm 0 --sides=R --start=735
+# The photo, held the way a person holds a picture up to look at it: one Codex painting of his right hand
+# gripping it (source/photo-grip.png, from a render of his own hand and the photo's back, source/photo-back.png):
+# fingers flat on the back of the photo, the back of the hand to us, the thumb behind; we see the photo's back
+# because he is looking at its front. While it shows, the forearm's own hand hides (hand-hide.mjs, below the
+# wristband, crop row 735). It rides the forearm, placed in the REST pose: the forearm turns 128.02° counter-
+# clockwise from rest to the study peak (elbow 130°, arm 2°, measured with the engine's landParts), so the
+# picture is turned 128.02° there and centred where the peak framing (canvas 523.1,944.0) maps back to.
+node "$P/add-prop.mjs" iki-char/lu-rigged.iki source/photo-grip.png photo ParamLuPhoto 104.7,1596.0,246.3 6.5 forearmDeformer_R 128.02
+node "$P/hand-hide.mjs" iki-char/lu-rigged.iki R ParamLuPhoto 735
 # His face warps alone barely show a nod or a turn: the head also travels (34 px nod, 22 px turn at ±30;
 # the app draws him small, so less is invisible).
 node "$P/head-shift.mjs" iki-char/lu-rigged.iki 34 22
