@@ -320,13 +320,17 @@ export const GESTURES: Record<string, Gesture> = {
       ParamMouthForm: 0.23 * left,
     };
   } },
+  /** Lu Guang's quiet thought: fingers to his jaw, head bowed a little, eyes half-lowered. The rig's chin lift
+   *  (ParamLuThought) swings the upper arm up 52° at full, which shows the sleeve's bend seam and a step at the
+   *  shoulder; at 0.72 (≈37°) with the elbow folded 45° more, the hand still reaches his jaw and the shoulder holds. */
   "signature-quiet-thought": { dur: 7.4, timed: true, pose: (t) => {
     const raise = envelope(t, 0.31, 0.31);
     const consider = smoother((t - 0.22) / 0.19) * smoother((0.88 - t) / 0.20);
     return {
-      ParamLuThought: raise,
-      ParamAngleY: -3 * consider,
-      ParamAngleZ: 3 * consider,
+      ParamLuThought: 0.72 * raise,
+      ParamElbowR: 45 * raise,
+      ParamAngleY: -10 * raise,
+      ParamAngleZ: 3 * raise,
       ParamEyeLOpen: -0.16 * consider,
       ParamEyeROpen: -0.16 * consider,
       ParamMouthForm: -0.12 * consider,

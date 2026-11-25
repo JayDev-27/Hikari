@@ -210,10 +210,13 @@ describe("Iki gestures", () => {
 
   it("lifts Lu Guang's hand to his chin, holds it, then releases quietly", () => {
     const thought = GESTURES["signature-quiet-thought"].pose;
-    expect(thought(0.35).ParamLuThought).toBe(1);
-    expect(thought(0.65).ParamLuThought).toBe(1);
-    expect(thought(0.5).ParamAngleY).toBeCloseTo(-3);
-    expect(thought(0.88).ParamLuThought).toBeLessThan(0.35);
+    // Never the full 52° shoulder swing (its sleeve seam shows): 0.72 plus a 45° elbow fold reaches his jaw.
+    expect(thought(0.35).ParamLuThought).toBeCloseTo(0.72);
+    expect(thought(0.35).ParamElbowR).toBeCloseTo(45);
+    expect(thought(0.65).ParamLuThought).toBeCloseTo(0.72);
+    for (let t = 0; t <= 1; t += 0.01) expect(thought(t).ParamLuThought).toBeLessThanOrEqual(0.72 + 1e-9);
+    expect(thought(0.5).ParamAngleY).toBeCloseTo(-10);
+    expect(thought(0.88).ParamLuThought).toBeLessThan(0.3);
   });
 
   it("offsets do not accumulate on parameters nothing else writes (the stuck-arm bug)", () => {
