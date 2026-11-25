@@ -57,7 +57,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' hikari-pack: http://hikari-pack.localhost asset: http://asset.localhost blob: data:; connect-src 'self' hikari-pack: http://hikari-pack.localhost ipc: http://ipc.localhost ws://127.0.0.1:* http://127.0.0.1:* asset: http://asset.localhost blob:; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src 'self' blob: asset: http://asset.localhost",
+      "csp": "default-src 'self'; img-src 'self' hikari-pack: http://hikari-pack.localhost asset: http://asset.localhost blob: data:; connect-src 'self' hikari-pack: http://hikari-pack.localhost ipc: http://ipc.localhost ws://127.0.0.1:* http://127.0.0.1:* asset: http://asset.localhost blob: data:; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src 'self' blob: asset: http://asset.localhost",
       "assetProtocol": {
         "enable": true,
         "scope": [
