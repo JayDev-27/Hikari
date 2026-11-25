@@ -1,14 +1,28 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 import { loadAvatar } from "../avatar/loader";
 import type { CharacterPack } from "../avatar/characters";
 import type { AvatarController } from "../avatar/types";
 
+export interface PreviewHandle {
+  /** Play a gesture or signature by name (interrupting the current one). */
+  play(name: string): void;
+}
+
 /** Preview the same rig, gesture player and secondary motion used on the desktop stage. */
-export function CharacterPreview({ pack }: { pack: CharacterPack }) {
+export function CharacterPreview({ pack, ref, onState }: {
+  pack: CharacterPack;
+  ref?: Ref<PreviewHandle>;
+  onState?: (state: "loading" | "ready" | "error") => void;
+}) {
   const host = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const current = useRef<AvatarController | null>(null);
   const signatureIndex = useRef(0);
+
+  useImperativeHandle(ref, () => ({
+    play: (name: string) => current.current?.playMotion(name, { interrupt: true }),
+  }), []);
+
   const react = () => {
     const signatures = pack.signatureMotions;
     if (signatures?.length) {
@@ -16,6 +30,7 @@ export function CharacterPreview({ pack }: { pack: CharacterPack }) {
     } else if (pack.motionMap?.wave) current.current?.playMotion("wave");
     else current.current?.react({ kind: "click", area: "body" });
   };
+
   useEffect(() => {
     const el = host.current;
     if (!el) return;
@@ -37,12 +52,16 @@ export function CharacterPreview({ pack }: { pack: CharacterPack }) {
         frame = requestAnimationFrame(tick);
       } else if (!loading) {
         loading = true;
+        onState?.("loading");
         void loadAvatar(el, pack).then((avatar) => {
           if (!live) return avatar.destroy();
           current.current = avatar;
+          onState?.("ready");
           show();
         }).catch((reason: unknown) => {
-          if (live) setError(String(reason));
+          if (!live) return;
+          setError(String(reason));
+          onState?.("error");
         });
       }
     };
@@ -55,13 +74,15 @@ export function CharacterPreview({ pack }: { pack: CharacterPack }) {
       current.current?.destroy();
       current.current = null;
     };
+    // onState is a notification only; re-creating the avatar for a new callback identity would flash it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pack]);
 
-  if (error) return <p role="status">Preview unavailable. {error}</p>;
+  if (error) return <p className="st-preview-error" role="status">Preview unavailable. {error}</p>;
   return (
     <div className="character-preview" ref={host}
-      role="button" tabIndex={0} aria-label={`Play a gesture for ${pack.displayName}`}
-      title={pack.signatureMotions?.length ? "Play signature animation" : "Play gesture"}
+      role="button" tabIndex={0} aria-label={`Play a move for ${pack.displayName}`}
+      title={pack.signatureMotions?.length ? "Click to play a signature move" : "Click to play a gesture"}
       onClick={react}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
