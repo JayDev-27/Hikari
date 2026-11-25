@@ -11,3 +11,6 @@ apps/desktop/public/live2d/
 
 # Iki character workdirs (generated parts, layers, renders)
 characters/*/iki-char/
+
+# Editor / AI assistant configs
+.claude/

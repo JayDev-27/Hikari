@@ -1,3 +1,4 @@
+mod dock;
 mod hotkeys;
 mod packs;
 mod stage;
@@ -45,11 +46,11 @@ pub fn run() {
         ])
         .on_window_event(windows::on_window_event)
         .setup(|app| {
-            #[cfg(target_os = "macos")]
-            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let handle = app.handle();
+            // Accessory (menu bar only) unless the user ticked "Show in Dock".
+            let show_in_dock = dock::init(handle);
             stage::setup(handle)?;
-            tray::setup(handle)?;
+            tray::setup(handle, show_in_dock)?;
             hotkeys::setup(handle)?;
             // Debug builds: HIKARI_OPEN=studio,chat opens those panels at launch (testing without the tray).
             #[cfg(debug_assertions)]
@@ -62,6 +63,18 @@ pub fn run() {
             }
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running Hikari");
+        .build(tauri::generate_context!())
+        .expect("error while building Hikari")
+        .run(|_app, _event| {
+            // Dock icon clicked (or app relaunched from Finder): bring her back.
+            #[cfg(target_os = "macos")]
+            use tauri::Manager;
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = _event
+                && let Some(w) = _app.get_webview_window(stage::STAGE)
+                && !w.is_visible().unwrap_or(true)
+            {
+                tray::set_stage_visible(_app, true);
+            }
+        });
 }

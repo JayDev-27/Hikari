@@ -3,7 +3,7 @@
 use tauri::{AppHandle, Manager, Runtime, Window, WindowEvent};
 
 /// Windows the frontend may ask to show. Anything else is refused.
-const PANELS: [&str; 2] = ["studio", "chat"];
+pub const PANELS: [&str; 2] = ["studio", "chat"];
 
 #[tauri::command]
 pub fn show_window<R: Runtime>(app: AppHandle<R>, label: String) -> Result<(), String> {
