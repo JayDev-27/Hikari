@@ -153,7 +153,12 @@ describe("Iki gestures", () => {
   });
 
   it("gives Lu Guang a palm-down clap and hand-to-jaw think/facepalm his rig can do", () => {
-    const lu = (id: string) => ["ParamLuPalm", "ParamLuThought"].includes(id);
+    const lu = (id: string) => ["ParamLuPalm", "ParamLuThought", "ParamLuFoldL"].includes(id);
+    expect(resolveGesture("cross_arms", 150, -170, 140, lu)).toBe("cross_arms-fold");
+    expect(resolveGesture("point", 150, -170, 140, lu)).toBe("point-present");
+    expect(GESTURES["cross_arms-fold"].pose(0.5).ParamLuFoldL).toBe(1);
+    expect(GESTURES["point-present"].pose(0.5).ParamElbowR).toBeCloseTo(86); // palm up toward the listener
+    expect(GESTURES["point-present"].pose(0.5).ParamArmR).toBeLessThanOrEqual(8); // his shoulder cap
     expect(resolveGesture("clap", 150, -170, 140, lu)).toBe("clap-palm-down");
     expect(resolveGesture("think_chin", 150, -170, 140, lu)).toBe("think_chin-lift");
     expect(resolveGesture("facepalm", 150, -170, 140, lu)).toBe("facepalm-lift");

@@ -300,6 +300,20 @@ export const GESTURES: Record<string, Gesture> = {
     const e = envelope(t, 0.25, 0.25);
     return { ParamLuThought: 0.72 * e, ParamElbowR: 45 * e, ParamAngleY: -8 * e, ParamAngleZ: 4 * e, ParamEyeLOpen: -0.12 * e, ParamEyeROpen: -0.12 * e };
   } },
+  /** cross_arms on Lu Guang's rig: his own folded arms (right arm folds first), a slight lean back, chin up. */
+  "cross_arms-fold": { dur: 3.4, timed: true, pose: (t) => {
+    const r = smoother(t / 0.2) * smoother((0.94 - t) / 0.2);
+    const l = smoother((t - 0.05) / 0.2) * smoother((1 - t) / 0.24);
+    const hold = Math.min(r, l);
+    return { ParamLuFoldR: r, ParamLuFoldL: l, ParamAngleY: 3 * hold, ParamAngleZ: -2 * hold, ParamBodyAngleY: 1.2 * hold };
+  } },
+  /** point on Lu Guang's rig: an open palm turned up toward the listener ("you"), elbow at his side, a slight
+   *  turn of the head and a small nod as he offers it. */
+  "point-present": { dur: 2.4, timed: true, pose: (t) => {
+    const e = envelope(t, 0.22, 0.28);
+    const nod = Math.sin(Math.PI * Math.min(1, Math.max(0, (t - 0.3) / 0.35)));
+    return { ParamElbowR: 86 * e, ParamArmR: 7 * e, ParamAngleX: -6 * e, ParamAngleY: -3 * nod * e, ParamEyeBallX: -0.2 * e };
+  } },
   /** facepalm on Lu Guang's rig: the same hand to his jaw, head bowed further, eyes shut — a weary sigh. */
   "facepalm-lift": { dur: 2.8, timed: true, pose: (t) => {
     const e = envelope(t, 0.25, 0.3);
@@ -456,6 +470,10 @@ export function resolveGesture(name: string, armMax: number, elbowMin: number, e
   // (ParamLuThought) carries the hand-to-face gestures his short forearms can't reach from the elbow.
   if (declares("ParamLuPalm") && name === "clap") return "clap-palm-down";
   if (declares("ParamLuThought") && (name === "think_chin" || name === "facepalm")) return `${name}-lift`;
+  // His folded-arms rig (ParamLuFoldL/R) crosses the arms properly; his capped shoulder makes a straight-arm point
+  // a twitch, so he points the way he would: an open palm turned up toward you, from the elbow.
+  if (declares("ParamLuFoldL") && name === "cross_arms") return "cross_arms-fold";
+  if (declares("ParamLuFoldL") && name === "point") return "point-present";
   // A forearm that folds inward past 150° brings the hand to the face across the chest.
   if (elbowMax >= 168 && (name === "think_chin" || name === "facepalm")) return `${name}-fold`;
   return name;
