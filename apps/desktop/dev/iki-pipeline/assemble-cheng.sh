@@ -80,4 +80,17 @@ node "$P/fill-under.mjs" iki-char/cheng-rigged.iki body '^face$' 0
 # The clap: palm-side hands that swap in while the forearms fold up, so palms meet palms. The hand is a flat,
 # fingers-together repaint of his own (Codex, source/clap-hand.png), mirrored and bent 50° so it stands straight up.
 node "$P/palm-swap.mjs" iki-char/cheng-rigged.iki ParamChengPalm 50 source/clap-hand.png
+# Folded elbows: the cut leaves a sliver of backdrop between torso and upper arm; with the forearm folded across
+# the chest it shows as a white wedge inside each elbow. Measure it over the elbow folds he uses and paint the
+# jacket behind it, shown only while the elbow is bent.
+mkdir -p iki-char/elbows
+node --input-type=module <<'JS'
+import { writeFileSync } from 'node:fs';
+const crop = { x: 100, y: 600, w: 900, h: 700 }, poses = [{ name: 'rest', crop, values: {} }];
+for (const e of [90, 110, 124, 132, 150, 170]) for (const a of [0, 6]) for (const d of [0, 1])
+  poses.push({ name: `f_${e}_${a}_${d}`, crop, values: { ParamElbowL: e, ParamElbowR: e, ParamArmL: a, ParamArmR: a, ParamChengClapDepth: d, ParamChengPalm: e >= 110 ? 1 : 0 } });
+writeFileSync('iki-char/elbows.json', JSON.stringify({ modelPath: 'iki-char/cheng-rigged.iki', outDir: 'iki-char/elbows', poses }));
+JS
+node "$P/call.mjs" "$PWD" render_poses iki-char/elbows.json > iki-char/elbows.log
+for side in L R; do node "$P/elbow-gap.mjs" iki-char/cheng-rigged.iki $side 100,600,900,700 720,1060 iki-char/elbows/rest.png iki-char/elbows/f_*.png; done
 mv iki-char/cheng-rigged.iki iki-char/Cheng.iki
