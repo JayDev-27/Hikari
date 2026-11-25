@@ -27,20 +27,20 @@ She floats over every app, talks with you in Hindi, English and Hinglish with ph
 </div>
 
 > [!NOTE]
-> **Early development.** The desktop body is far along: the stage, renderers, lip sync, mic and push-to-talk, Character Studio and the chat panel all work today. The voice brain (speech-to-text, LLM, text-to-speech), memory and Mac control are still being built (`core/`). Until then, a dev fake core and an in-browser mock turn drive her. See the [roadmap](#-roadmap).
+> **Early development.** The desktop body is far along: the stage, the Iki, Live2D and VRM renderers, lip sync, mic and push-to-talk, Character Studio and the chat panel all work today. The voice brain (speech-to-text, LLM, text-to-speech), memory and Mac control are still being built (`core/`). Until then, a dev fake core and an in-browser mock turn drive her. See the [roadmap](#-roadmap).
 
 ## ✨ Highlights
 
 - 🪟 **Lives on your desktop.** A transparent, non-activating panel that floats over every Space and full-screen app without stealing focus. Clicks pass through everywhere except where she's actually drawn.
 - 💋 **Lips that match the audio.** Hindi and English phonemes map to visemes with coarticulation and full m/b/p closure, landing within **±8 ms** of what you hear, Bluetooth latency included.
-- 🎭 **Characters that act like themselves.** Each character has a signature move: Makima's finger-gun, Rize's book and ghoul eyes, Cheng Xiaoshi's clap and photo dive. Natural hand gestures run alongside.
+- 🎭 **Characters that act like themselves.** Each character has a signature move: Makima's finger-gun, Rize's book and ghoul eyes, Cheng Xiaoshi's palm-to-palm clap and photo dive, Lu Guang studying a photo as his eyes glow blue. Natural hand gestures run alongside.
 - 🎙️ **Push-to-talk or always listening.** A 16 kHz mic worklet with echo cancellation, device select, mute and barge-in: interrupt her mid-sentence.
-- 🧑‍🎨 **Character Studio.** Switch characters, import your own Live2D, Iki or VRM pack (folder or zip) with its licence shown, or just type `switch to Reze` in chat.
+- 🧑‍🎨 **Character Studio.** A native-feeling Mac app to browse the cast, preview every move a character can really do, switch characters, and import your own Live2D, Iki or VRM pack (folder or zip) with its licence shown. Or just type `switch to Reze` in chat.
 - 🔒 **Local first.** Everything runs on your Mac by default; cloud providers are optional.
 
 ## 🎭 The cast
 
-Four hand-rigged characters run on **Iki**, a lightweight 2D renderer built for Hikari. Each one has a persona, idle life (breathing, blinking, eyes that follow your cursor) and a signature move that plays on cue.
+Five hand-rigged characters run on **Iki**, a lightweight 2D renderer built for Hikari. Each one has a persona, idle life (breathing, blinking, eyes that follow your cursor) and a signature move that plays on cue.
 
 <img src="assets/readme/signatures.png" alt="Signature moves: Makima's finger-gun bang, Reze's flower, Rize holding her open book, and Cheng Xiaoshi's photo dive" width="100%">
 
@@ -55,6 +55,12 @@ Four hand-rigged characters run on **Iki**, a lightweight 2D renderer built for 
       <sub><b>Cheng Xiaoshi</b>: raises the photo and dives in.</sub>
     </td>
   </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="assets/readme/lu-photo.png" alt="Lu Guang at rest on the left; on the right he holds up a photo, its back to the viewer, and his eyes glow blue as he reads it" width="100%"><br>
+      <sub><b>Lu Guang</b>: studies a photo, and his eyes glow blue as he reads it.</sub>
+    </td>
+  </tr>
 </table>
 
 | Character | Renderer | Signature move |
@@ -62,10 +68,33 @@ Four hand-rigged characters run on **Iki**, a lightweight 2D renderer built for 
 | Makima | Iki | Finger-gun "bang" |
 | Reze | Iki | Offers a flower |
 | Rize Kamishiro | Iki | Reads her open book · ghoul eyes |
-| Cheng Xiaoshi | Iki | Claps · photo dive |
-| Lu Guang, Hiyori, Haru, Mao, Rice | Live2D (Cubism) | Expressions and motions from the model |
+| Cheng Xiaoshi | Iki | Palm-to-palm clap · photo dive · sheepish neck rub |
+| Lu Guang | Iki | Studies a photo (eyes glow blue) · folded nod · quiet thought |
+| Hiyori, Haru, Mao, Rice | Live2D (Cubism) | The model's own motions: Mao's magic, Rice's fire spell, Hiyori's cheer |
+| Your own `.vrm` | VRM 0.x / 1.0 | Idle life, lip sync, expressions and the everyday gestures |
 
 Build your own Iki character from one reference picture: [`docs/IKI.md`](docs/IKI.md).
+
+## 🧑‍🎨 Character Studio & Chat
+
+<img src="assets/readme/studio.png" alt="Character Studio: a sidebar of characters with face portraits, Lu Guang's full-body preview, his Use Character button, a Moves strip with Study Photo, Folded Nod, Quiet Thought, Wave, Nod, Head Tilt, Think, Clap, Point, Cross Arms and Laugh, and About, Details and Licence tabs" width="100%">
+
+<table>
+  <tr>
+    <td width="38%" align="center">
+      <img src="assets/readme/chat.png" alt="Chat window for Reze: her portrait, 'Say hi to Reze', and suggestion chips in English, Hindi and Hinglish" width="100%">
+    </td>
+    <td width="62%">
+
+**Character Studio** shows each character with a face portrait and a live preview. The **Moves** strip lists only what that character can really do (their signatures first, then the gestures their rig performs, or a Live2D model's own motions), and every chip plays it in the preview. About, Details and Licence slide between each other like a native segmented control, and nothing scrolls.
+
+**Chat** is a Messages-style window: type in English, हिंदी or Hinglish, or hold <kbd>⌥ Space</kbd> and talk. Your voice turns show up in the transcript too.
+
+The menu-bar icon opens both, and **Show in Dock** gives Hikari a Dock icon and a place in <kbd>⌘ Tab</kbd> if you'd rather not keep her menu-bar only.
+
+</td>
+  </tr>
+</table>
 
 ## 🚀 Quick start
 
@@ -78,7 +107,7 @@ pnpm install
 pnpm dev
 ```
 
-The four Iki characters work out of the box. Double-click her, or press and release <kbd>⌥ Space</kbd> with no core running, to play a demo conversation with lip sync.
+The five Iki characters work out of the box. Double-click her, or press and release <kbd>⌥ Space</kbd> with no core running, to play a demo conversation with lip sync.
 
 <details>
 <summary><b>Optional: Live2D models</b></summary>
@@ -167,7 +196,7 @@ core/                Python core: voice pipeline, memory, agent (in progress)
 - [x] **M0** Desktop stage, Live2D renderer, lip sync, A/V sync, protocol and console
 - [ ] **M1** Voice loop: mic, push-to-talk and barge-in are done on the desktop side; VAD → STT → LLM → TTS streaming under 1.2 s comes with the core
 - [ ] **M2** Personas: Character Studio, pack import, persona switcher and chat are done; Hindi / English / Hinglish handling comes with the core
-- [ ] **M3** Emotions, layered gestures, VRM renderer
+- [ ] **M3** Emotions and layered gestures; the VRM renderer is done
 - [ ] **M4** Multi-provider router with failover, hardware profiles for 8 GB Macs
 - [ ] **M5** Long-term memory and a memory browser
 - [ ] **M6** Voice Lab: consented voice cloning
