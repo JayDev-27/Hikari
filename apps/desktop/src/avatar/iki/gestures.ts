@@ -71,7 +71,12 @@ export const GESTURES: Record<string, Gesture> = {
   facepalm: { dur: 2.6, pose: (t) => { const e = envelope(t, 0.25, 0.3); return { ParamArmR: 8 * e, ParamElbowR: 88 * e, ParamAngleY: -12 * e, ParamAngleZ: 4 * e }; } },
   bow: { dur: 2.2, pose: (t) => { const e = envelope(t, 0.3, 0.35); return { ParamAngleY: -16 * e, ParamBodyAngleY: -6 * e, ParamElbowL: 20 * e, ParamElbowR: 20 * e }; } },
   shy_look_away: { dur: 2.6, expression: "smile", pose: (t) => { const e = envelope(t, 0.25, 0.3); return { ParamAngleX: 16 * e, ParamAngleY: -8 * e, ParamElbowL: 28 * e, ParamArmL: -2 * e }; } },
-  laugh: { dur: 2.0, expression: "laugh", pose: (t) => { const e = envelope(t, 0.15, 0.3); return { ParamAngleY: (3 + 3 * Math.sin(t * Math.PI * 8)) * e, ParamBodyAngleY: 2.5 * e, ParamAngleZ: 3 * e }; } },
+  laugh: { dur: 2.0, expression: "laugh", pose: (t) => {
+    const e = envelope(t, 0.15, 0.3);
+    const bob = Math.sin(t * Math.PI * 8);
+    // An open, happy mouth on rigs without a "laugh" expression; it rides on top of lip sync and closes with e.
+    return { ParamAngleY: (3 + 3 * bob) * e, ParamBodyAngleY: 2.5 * e, ParamAngleZ: 3 * e, ParamMouthForm: 0.8 * e, ParamMouthOpenY: (0.28 + 0.12 * bob) * e, ParamEyeLOpen: -0.25 * e, ParamEyeROpen: -0.25 * e };
+  } },
   pout: { dur: 2.0, pose: (t) => { const e = envelope(t); return { ParamAngleZ: -5 * e, ParamAngleX: 8 * e }; } },
   head_pat_react: { dur: 2.2, expression: "smile", pose: (t) => { const e = envelope(t); return { ParamAngleY: -6 * e, ParamAngleZ: 6 * e }; } },
 
@@ -294,11 +299,11 @@ export const GESTURES: Record<string, Gesture> = {
       ParamAngleZ: 2 * up,
     };
   } },
-  /** think_chin on Lu Guang's rig: his chin lift at 0.72 with the elbow folded 45° more puts his fingers on his
-   *  jaw while the shoulder holds (the full lift's 52° shows the sleeve's bend seam). */
+  /** think_chin on Lu Guang's rig: his chin lift at 0.72 with the elbow folded 52° more and a small bow puts his
+   *  fingers on his jaw while the shoulder holds (the full lift's 52° shows the sleeve's bend seam). */
   "think_chin-lift": { dur: 3.2, timed: true, pose: (t) => {
     const e = envelope(t, 0.25, 0.25);
-    return { ParamLuThought: 0.72 * e, ParamElbowR: 45 * e, ParamAngleY: -8 * e, ParamAngleZ: 4 * e, ParamEyeLOpen: -0.12 * e, ParamEyeROpen: -0.12 * e };
+    return { ParamLuThought: 0.72 * e, ParamElbowR: 52 * e, ParamAngleY: -12 * e, ParamAngleZ: 4 * e, ParamEyeLOpen: -0.12 * e, ParamEyeROpen: -0.12 * e };
   } },
   /** cross_arms on Lu Guang's rig: his own folded arms (right arm folds first), a slight lean back, chin up. */
   "cross_arms-fold": { dur: 3.4, timed: true, pose: (t) => {
@@ -318,7 +323,7 @@ export const GESTURES: Record<string, Gesture> = {
   "facepalm-lift": { dur: 2.8, timed: true, pose: (t) => {
     const e = envelope(t, 0.25, 0.3);
     const shut = smoother((t - 0.2) / 0.08) * smoother((0.8 - t) / 0.08);
-    return { ParamLuThought: 0.72 * e, ParamElbowR: 45 * e, ParamAngleY: -16 * e, ParamAngleZ: -3 * e, ParamEyeLOpen: -shut, ParamEyeROpen: -shut, ParamMouthForm: -0.3 * e };
+    return { ParamLuThought: 0.72 * e, ParamElbowR: 52 * e, ParamAngleY: -16 * e, ParamAngleZ: -3 * e, ParamEyeLOpen: -shut, ParamEyeROpen: -shut, ParamMouthForm: -0.3 * e };
   } },
   /** Lu Guang's signature: he lifts a photo he's holding (ParamLuPhoto, a prop riding his right forearm; we see
    *  its back, the picture faces him) up to mid-chest and studies it, head bowed, lids lowered, a slight turn of
@@ -327,8 +332,9 @@ export const GESTURES: Record<string, Gesture> = {
    *  shoulder stays down, so the sleeve never opens at the armpit. */
   "signature-study-photo": { dur: 8.6, timed: true, pose: (t) => {
     const raise = envelope(t, 0.17, 0.19);
-    // The photo is in his hand as it starts to move, and gone once the hand is back down.
-    const photo = smoother((t - 0.01) / 0.03) * smoother((0.99 - t) / 0.03);
+    // The photo is in his hand as it starts to move, and gone once the hand is back down. The swap is instant
+    // (a fade would show a half-transparent card over the desktop for a quarter second).
+    const photo = t > 0.012 && t < 0.988 ? 1 : 0;
     const focus = smoother((t - 0.13) / 0.1) * smoother((0.84 - t) / 0.1);
     // A small turn of the photo toward him, and a slower drift of his gaze over it.
     const look = Math.sin(Math.PI * clamp01((t - 0.3) / 0.4));
@@ -365,14 +371,15 @@ export const GESTURES: Record<string, Gesture> = {
   } },
   /** Lu Guang's quiet thought: fingers to his jaw, head bowed a little, eyes half-lowered. The rig's chin lift
    *  (ParamLuThought) swings the upper arm up 52° at full, which shows the sleeve's bend seam and a step at the
-   *  shoulder; at 0.72 (≈37°) with the elbow folded 45° more, the hand still reaches his jaw and the shoulder holds. */
+   *  shoulder; at 0.72 (≈37°) with the elbow folded 52° more and the head bowed a little (his head travels with the
+   *  nod, dev/iki-pipeline/head-shift.mjs), his fingers rest on his jaw and the shoulder holds. */
   "signature-quiet-thought": { dur: 7.4, timed: true, pose: (t) => {
     const raise = envelope(t, 0.31, 0.31);
     const consider = smoother((t - 0.22) / 0.19) * smoother((0.88 - t) / 0.20);
     return {
       ParamLuThought: 0.72 * raise,
-      ParamElbowR: 45 * raise,
-      ParamAngleY: -10 * raise,
+      ParamElbowR: 52 * raise,
+      ParamAngleY: -12 * raise,
       ParamAngleZ: 3 * raise,
       ParamEyeLOpen: -0.16 * consider,
       ParamEyeROpen: -0.16 * consider,

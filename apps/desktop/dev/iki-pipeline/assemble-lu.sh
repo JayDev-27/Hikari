@@ -83,4 +83,7 @@ node "$P/eye-glow.mjs" iki-char/lu-rigged.iki ParamLuGlow '#3fb6ff'
 # His clap: the right hand mirrored about the wrist (below the wristband, crop row 735) turns palm-down when the
 # forearm lies level, so it claps onto his upturned left palm (ParamLuPalm, gestures.ts clap-palm-down).
 node "$P/palm-swap.mjs" iki-char/lu-rigged.iki ParamLuPalm 0 --sides=R --start=735
+# His face warps alone barely show a nod or a turn: the head also travels (34 px nod, 22 px turn at ±30;
+# the app draws him small, so less is invisible).
+node "$P/head-shift.mjs" iki-char/lu-rigged.iki 34 22
 mv iki-char/lu-rigged.iki iki-char/Lu.iki

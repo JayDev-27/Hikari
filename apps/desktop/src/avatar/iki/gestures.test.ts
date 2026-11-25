@@ -173,7 +173,7 @@ describe("Iki gestures", () => {
     expect(clap(0.05).ParamLuPalm).toBe(0);
     const think = GESTURES["think_chin-lift"].pose(0.5);
     expect(think.ParamLuThought).toBeCloseTo(0.72);
-    expect(think.ParamElbowR).toBeCloseTo(45);
+    expect(think.ParamElbowR).toBeCloseTo(52);
     expect(GESTURES["facepalm-lift"].pose(0.5).ParamEyeLOpen).toBe(-1);
   });
 
@@ -220,7 +220,8 @@ describe("Iki gestures", () => {
       expect(Math.abs(p(t).ParamArmR)).toBeLessThanOrEqual(2);
       expect(p(t).ParamLuStudy).toBeUndefined();
     }
-    expect(p(0.995).ParamLuPhoto).toBeLessThan(0.5);
+    expect(p(0.995).ParamLuPhoto).toBe(0);
+    for (let t = 0; t <= 1; t += 0.001) expect([0, 1]).toContain(p(t).ParamLuPhoto); // never half-transparent
   });
 
   it("holds Lu Guang's folded arms through one small nod and a faint smile", () => {
@@ -236,12 +237,12 @@ describe("Iki gestures", () => {
 
   it("lifts Lu Guang's hand to his chin, holds it, then releases quietly", () => {
     const thought = GESTURES["signature-quiet-thought"].pose;
-    // Never the full 52° shoulder swing (its sleeve seam shows): 0.72 plus a 45° elbow fold reaches his jaw.
+    // Never the full 52° shoulder swing (its sleeve seam shows): 0.72 plus a 52° elbow fold reaches his jaw.
     expect(thought(0.35).ParamLuThought).toBeCloseTo(0.72);
-    expect(thought(0.35).ParamElbowR).toBeCloseTo(45);
+    expect(thought(0.35).ParamElbowR).toBeCloseTo(52);
     expect(thought(0.65).ParamLuThought).toBeCloseTo(0.72);
     for (let t = 0; t <= 1; t += 0.01) expect(thought(t).ParamLuThought).toBeLessThanOrEqual(0.72 + 1e-9);
-    expect(thought(0.5).ParamAngleY).toBeCloseTo(-10);
+    expect(thought(0.5).ParamAngleY).toBeCloseTo(-12);
     expect(thought(0.88).ParamLuThought).toBeLessThan(0.3);
   });
 
