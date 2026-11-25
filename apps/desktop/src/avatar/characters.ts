@@ -63,6 +63,8 @@ export interface CharacterPack extends CharacterJson {
   modelUrl: string | null;
   /** persona.md contents (built-in persona, also kept for imported slot models). */
   personaText: string;
+  /** Square profile portrait (characters/<id>/avatar.webp), when the pack has one. */
+  avatarUrl?: string;
 }
 
 export const DEFAULT_CHARACTER = "hiyori";

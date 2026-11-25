@@ -7,7 +7,8 @@ import { deleteUserPack, importModel, listPacks, type ImportResult } from "../av
 import { CharacterPreview, type PreviewHandle } from "./CharacterPreview";
 import { Subscriptions } from "../util/subscriptions";
 import { characterHue, groupPacks, initials, languageName, moveLabel, personaSection, previewMoves, rendererLabel } from "./format";
-import { IconCheck, IconChevron, IconDoc, IconFolder, IconLink, IconPlay, IconPlus, IconSearch, IconTrash, IconTray, IconWarn } from "./icons";
+import { IconCheck, IconDoc, IconFolder, IconLink, IconPlay, IconPlus, IconSearch, IconTrash, IconTray, IconWarn } from "./icons";
+import "../ui/tokens.css";
 import "./studio.css";
 
 /** First paragraph of the persona's "## Identity" section (or of the file). */
@@ -156,7 +157,7 @@ export function Studio() {
   });
 
   return (
-    <div className={`st${dragging ? " st-dragging" : ""}${unifiedTitlebar() ? " st-unified" : ""}`}>
+    <div className={`st hk${dragging ? " st-dragging" : ""}${unifiedTitlebar() ? " st-unified" : ""}`}>
       {unifiedTitlebar() && <div className="st-titlebar" data-tauri-drag-region />}
       <Sidebar
         groups={groups}
@@ -231,10 +232,12 @@ export function Studio() {
   );
 }
 
+/** The character's portrait (or, for a pack without one, a monogram on their tint). */
 function Avatar({ pack, size = 32 }: { pack: CharacterPack; size?: number }) {
+  const [broken, setBroken] = useState(false);
   return (
-    <span className="st-avatar" style={{ ...hueStyle(pack), width: size, height: size, fontSize: size * 0.38 }} aria-hidden="true">
-      {initials(pack.displayName)}
+    <span className={`st-avatar${pack.avatarUrl && !broken ? " has-img" : ""}`} style={{ ...hueStyle(pack), width: size, height: size, fontSize: size * 0.38 }} aria-hidden="true">
+      {pack.avatarUrl && !broken ? <img src={pack.avatarUrl} alt="" draggable={false} onError={() => setBroken(true)} /> : initials(pack.displayName)}
     </span>
   );
 }
@@ -321,11 +324,12 @@ function Detail({ pack, isActive, busy, onUse, onImportFile, onImportFolder, onD
   const preview = useRef<PreviewHandle>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [playing, setPlaying] = useState<string | null>(null);
-  const [licenceOpen, setLicenceOpen] = useState(false);
+  const [tab, setTab] = useState<"about" | "details" | "licence">("about");
   const canPreview = (pack.renderer === "live2d" || pack.renderer === "iki") && pack.modelUrl;
   const identity = personaSummary(pack.personaText ?? "");
   const speech = personaSection(pack.personaText ?? "", "Speech style");
   const meta = [pack.modelUrl ? rendererLabel[pack.renderer] : null, languageName(pack.defaultLanguage), pack.source === "user" ? "Imported" : "Built-in"].filter(Boolean);
+  const canImport = pack.importSlot || pack.imported;
 
   const play = (m: string) => {
     preview.current?.play(m);
@@ -351,17 +355,6 @@ function Detail({ pack, isActive, busy, onUse, onImportFile, onImportFolder, onD
             </div>
           )}
         </div>
-
-        {canPreview && (
-          <div className="st-moves" role="group" aria-label="Preview moves">
-            {previewMoves(pack).map((m, i) => (
-              <button key={m} className={`st-chip${i < (pack.signatureMotions?.length ?? 0) ? " sig" : ""}${playing === m ? " on" : ""}`}
-                disabled={state !== "ready"} onClick={() => play(m)}>
-                <IconPlay /> {moveLabel(m)}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="st-info">
@@ -378,69 +371,80 @@ function Detail({ pack, isActive, busy, onUse, onImportFile, onImportFolder, onD
             ) : (
               <button className="st-btn st-btn-primary" disabled={busy} onClick={onImportFile}>Import Model…</button>
             )}
+            {canImport && pack.modelUrl && (
+              <>
+                <button className="st-btn st-icon-btn" disabled={busy} onClick={onImportFile} title={pack.imported ? "Replace with a model file…" : "Import a model file…"} aria-label="Import a model file"><IconDoc /></button>
+                <button className="st-btn st-icon-btn" disabled={busy} onClick={onImportFolder} title={pack.imported ? "Replace with a Live2D folder…" : "Import a Live2D folder…"} aria-label="Import a Live2D folder"><IconFolder /></button>
+              </>
+            )}
+            {pack.imported && (
+              <button className="st-btn st-icon-btn st-btn-danger-plain" disabled={busy} onClick={onDelete} title="Delete the imported model" aria-label="Delete the imported model"><IconTrash /></button>
+            )}
           </div>
         </header>
 
+        {canPreview && (
+          <section className="st-moves-block">
+            <h2 className="st-group-title">Moves</h2>
+            <div className="st-moves" role="group" aria-label="Preview moves">
+              {previewMoves(pack).map((m, i) => (
+                <button key={m} className={`st-chip${i < (pack.signatureMotions?.length ?? 0) ? " sig" : ""}${playing === m ? " on" : ""}`}
+                  disabled={state !== "ready"} onClick={() => play(m)}>
+                  <IconPlay /> {moveLabel(m)}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {!pack.modelUrl && (
-          <Group>
-            <div className="st-callout">
-              <p>Bring your own model for {pack.displayName}: a Live2D folder or .zip, or a .vrm, that you bought, commissioned or made. Drag it onto this window or choose a file.</p>
-              <p className="st-fine">Ripped or fan-extracted models aren't allowed.</p>
-            </div>
-          </Group>
-        )}
-
-        {(identity || speech) && (
-          <Group title="About">
-            {identity && <p className="st-prose">{identity}</p>}
-            {speech && <p className="st-prose st-prose-sub">{speech}</p>}
-          </Group>
-        )}
-
-        <Group title="Details">
-          <Row label="Renderer" value={pack.modelUrl ? rendererLabel[pack.renderer] : "—"} />
-          <Row label="Language" value={languageName(pack.defaultLanguage)} />
-          <Row label="Voice" value={pack.voice ? `${pack.voice.voiceId ?? "Default"}` : "—"} hint={pack.voice?.engine} />
-          <Row label="Signature moves" value={pack.signatureMotions?.length ? pack.signatureMotions.map(moveLabel).join(", ") : "—"} />
-          <Row label="Source" value={pack.source === "user" ? "Imported to Hikari's data folder" : "Built into Hikari"} />
-        </Group>
-
-        {(pack.importSlot || pack.imported) && (
-          <Group title="Model">
+          <div className="st-card st-callout">
+            <p>Bring your own model for {pack.displayName}: a Live2D folder or .zip, or a .vrm, that you bought, commissioned or made. Drag it onto this window or choose a file.</p>
+            <p className="st-fine">Ripped or fan-extracted models aren't allowed.</p>
             <div className="st-actions-row">
-              <button className="st-btn" disabled={busy} onClick={onImportFile}><IconDoc /> {pack.imported ? "Replace with File…" : "Choose File…"}</button>
-              <button className="st-btn" disabled={busy} onClick={onImportFolder}><IconFolder /> {pack.imported ? "Replace with Folder…" : "Choose Folder…"}</button>
-              {pack.imported && <button className="st-btn st-btn-danger-plain" disabled={busy} onClick={onDelete}><IconTrash /> Delete Import</button>}
+              <button className="st-btn" disabled={busy} onClick={onImportFile}><IconDoc /> Choose File…</button>
+              <button className="st-btn" disabled={busy} onClick={onImportFolder}><IconFolder /> Choose Folder…</button>
             </div>
-          </Group>
+          </div>
         )}
 
-        <Group>
-          <button className="st-disclosure" aria-expanded={licenceOpen} onClick={() => setLicenceOpen((o) => !o)}>
-            <IconChevron open={licenceOpen} /> Licence &amp; Credits
-          </button>
-          {licenceOpen && (
+        <div className="st-tabs" role="tablist" aria-label="Character information">
+          {(["about", "details", "licence"] as const).map((t) => (
+            <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
+              {t === "about" ? "About" : t === "details" ? "Details" : "Licence"}
+            </button>
+          ))}
+        </div>
+
+        <div className="st-card st-panel" role="tabpanel">
+          {tab === "about" && (
+            identity || speech ? (
+              <>
+                {identity && <p className="st-prose">{identity}</p>}
+                {speech && <p className="st-prose st-prose-sub">{speech}</p>}
+              </>
+            ) : <p className="st-prose st-prose-sub">No persona yet.</p>
+          )}
+          {tab === "details" && (
+            <>
+              <Row label="Renderer" value={pack.modelUrl ? rendererLabel[pack.renderer] : "—"} />
+              <Row label="Language" value={languageName(pack.defaultLanguage)} />
+              <Row label="Voice" value={pack.voice ? `${pack.voice.voiceId ?? "Default"}` : "—"} hint={pack.voice?.engine} />
+              <Row label="Signature moves" value={pack.signatureMotions?.length ? pack.signatureMotions.map(moveLabel).join(", ") : "—"} />
+              <Row label="Source" value={pack.source === "user" ? "Imported to Hikari's data folder" : "Built into Hikari"} />
+            </>
+          )}
+          {tab === "licence" && (
             <div className="st-licence">
               <p className="st-licence-source">{pack.license.source}</p>
               <p>{pack.license.terms}</p>
               {pack.license.credit && <p className="st-fine">{pack.license.credit}</p>}
-              {pack.license.url && (
-                <p className="st-url"><IconLink /> <span>{pack.license.url}</span></p>
-              )}
+              {pack.license.url && <p className="st-url"><IconLink /> <span>{pack.license.url}</span></p>}
             </div>
           )}
-        </Group>
+        </div>
       </div>
     </div>
-  );
-}
-
-function Group({ title, children }: { title?: string; children: ReactNode }) {
-  return (
-    <section className="st-group-card">
-      {title && <h2 className="st-group-title">{title}</h2>}
-      <div className="st-card">{children}</div>
-    </section>
   );
 }
 

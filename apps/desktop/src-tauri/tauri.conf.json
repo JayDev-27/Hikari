@@ -47,9 +47,11 @@
         "title": "Chat with Hikari",
         "url": "index.html#/chat",
         "width": 420,
-        "height": 620,
-        "minWidth": 320,
-        "minHeight": 360,
+        "height": 640,
+        "minWidth": 340,
+        "minHeight": 420,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
         "visible": false,
         "center": true
       }

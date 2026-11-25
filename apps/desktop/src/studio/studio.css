@@ -2,29 +2,6 @@
    Every colour is a token; the per-character tint comes from --hue (set on the detail and avatars). */
 
 .st {
-  --st-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
-  --st-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
-  --st-bg: #ffffff;
-  --st-sidebar: rgba(242, 240, 245, 0.92);
-  --st-sidebar-line: rgba(0, 0, 0, 0.08);
-  --st-card: #f5f4f7;
-  --st-card-line: rgba(0, 0, 0, 0.07);
-  --st-text: #1d1d1f;
-  --st-text-2: #6e6e73;
-  --st-text-3: #a1a1a6;
-  --st-accent: #e2508c;
-  --st-accent-press: #c93f78;
-  --st-accent-soft: rgba(226, 80, 140, 0.12);
-  --st-sel: rgba(226, 80, 140, 0.14);
-  --st-sel-text: #b0336a;
-  --st-green: #28a745;
-  --st-red: #d63048;
-  --st-field: rgba(0, 0, 0, 0.055);
-  --st-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.08);
-  --st-shadow-lg: 0 24px 64px rgba(20, 10, 30, 0.22), 0 2px 6px rgba(20, 10, 30, 0.1);
-  --st-ease: cubic-bezier(0.32, 0.72, 0, 1);
-  color-scheme: light;
-
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
   height: 100vh;
@@ -37,29 +14,6 @@
   -webkit-font-smoothing: antialiased;
   user-select: none;
   -webkit-user-select: none;
-}
-@media (prefers-color-scheme: dark) {
-  .st {
-    --st-bg: #1c1b1f;
-    --st-sidebar: rgba(40, 38, 44, 0.92);
-    --st-sidebar-line: rgba(255, 255, 255, 0.07);
-    --st-card: #26252a;
-    --st-card-line: rgba(255, 255, 255, 0.07);
-    --st-text: #f5f5f7;
-    --st-text-2: #a1a1a6;
-    --st-text-3: #6e6e73;
-    --st-accent: #ff6aa6;
-    --st-accent-press: #ff8bbb;
-    --st-accent-soft: rgba(255, 106, 166, 0.16);
-    --st-sel: rgba(255, 106, 166, 0.2);
-    --st-sel-text: #ffb3d1;
-    --st-green: #32d74b;
-    --st-red: #ff6b7f;
-    --st-field: rgba(255, 255, 255, 0.08);
-    --st-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
-    --st-shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.3);
-    color-scheme: dark;
-  }
 }
 .st *, .st *::before, .st *::after { box-sizing: border-box; }
 .st p { margin: 0; }
@@ -130,7 +84,6 @@
 }
 .st-unified .st-search { margin-top: 46px; }
 .st-unified .st-detail { padding-top: 46px; }
-.st-unified .st-stage { top: 46px; }
 
 /* ---------- sidebar (source list) ---------- */
 .st-sidebar {
@@ -170,11 +123,14 @@
 .st-search input::-webkit-search-cancel-button { filter: grayscale(1); opacity: 0.5; }
 .st-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 4px 8px 12px;
+  scrollbar-width: none;
+  padding: 2px 8px 8px;
 }
+.st-list::-webkit-scrollbar { display: none; }
 .st-group {
-  margin: 14px 8px 4px;
+  margin: 10px 8px 3px;
   font: 600 11px var(--st-font);
   letter-spacing: 0.01em;
   color: var(--st-text-3);
@@ -184,7 +140,7 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 6px 8px;
+  padding: 5px 8px;
   border: none;
   border-radius: 8px;
   background: transparent;
@@ -220,6 +176,9 @@
   background: linear-gradient(160deg, hsl(var(--hue) 70% 68%), hsl(calc(var(--hue) + 18) 58% 46%));
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.12);
 }
+.st-avatar.has-img { overflow: hidden; background: hsl(var(--hue) 40% 50%); }
+.st-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 .st-sidebar-foot {
   position: relative;
   padding: 8px 10px 12px;
@@ -260,31 +219,30 @@
 .st-menu kbd { margin-left: auto; }
 
 /* ---------- main ---------- */
+/* Nothing in the Studio scrolls: the detail is a fixed-height grid sized to the window. */
 .st-main {
   min-width: 0;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
   background: var(--st-bg);
 }
 .st-detail {
   display: grid;
-  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
-  gap: 28px;
-  padding: 26px 30px 40px;
+  grid-template-columns: minmax(210px, 0.82fr) minmax(300px, 1fr);
+  gap: 26px;
+  height: 100%;
+  padding: 24px 28px 24px;
   animation: st-in 0.32s var(--st-ease);
 }
-@media (max-width: 860px) {
-  .st-detail { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 20px 22px 32px; }
-  .st-stage { position: relative; top: 0; height: clamp(260px, 52vh, 380px); }
-}
-.st-stage-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.st-stage-col { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 /* The stage tint is resolved here, where the character's --hue is in scope (set on .st-detail). */
 .st-stage {
   --st-stage-a: hsl(var(--hue, 330) 70% 96%);
   --st-stage-b: hsl(var(--hue, 330) 45% 86%);
   --st-stage-glow: hsl(var(--hue, 330) 90% 82% / 0.9);
-  position: sticky;
-  top: 26px;
-  height: clamp(360px, calc(100vh - 170px), 560px);
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
   border-radius: 18px;
   overflow: hidden;
   background: radial-gradient(120% 90% at 50% 18%, var(--st-stage-a), var(--st-stage-b));
@@ -359,7 +317,43 @@
 .st .st-chip.on svg { opacity: 1; }
 .st .st-chip:disabled { opacity: 0.4; }
 
-.st-info { min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+.st-info { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 16px; }
+.st-moves-block { display: flex; flex-direction: column; gap: 8px; }
+.st-moves-block .st-group-title { margin-left: 2px; }
+.st .st-icon-btn { width: 32px; height: 32px; padding: 0; justify-content: center; border-radius: 9px; }
+
+/* Segmented control (About / Details / Licence) and its one visible panel. */
+.st-tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--st-field);
+  flex: none;
+}
+.st .st-tabs button {
+  height: 26px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--st-text-2);
+  font: 500 12px var(--st-font);
+  cursor: default;
+  transition: background 0.18s var(--st-ease), color 0.18s;
+}
+.st .st-tabs button.on { background: var(--st-bg); color: var(--st-text); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 0.5px var(--st-card-line); }
+.st-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  animation: st-in 0.24s var(--st-ease);
+}
+.st-panel .st-prose { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden; }
+.st-panel .st-prose-sub { -webkit-line-clamp: 4; }
+.st-panel .st-licence { padding: 12px 0; }
+.st-panel .st-licence > p:not(.st-licence-source) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
 .st-head h1 {
   margin: 4px 0 2px;
   font: 700 30px/1.1 var(--st-display);

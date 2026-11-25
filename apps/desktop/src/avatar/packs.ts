@@ -13,7 +13,15 @@ const builtinPersona = import.meta.glob<string>("../../../../characters/*/person
   import: "default",
 });
 
+// Profile portraits (characters/<id>/avatar.webp), bundled as hashed assets; optional per pack.
+const builtinAvatar = import.meta.glob<string>("../../../../characters/*/avatar.webp", {
+  eager: true,
+  query: "?url",
+  import: "default",
+});
+
 const idFromPath = (p: string) => p.split("/").at(-2)!;
+const avatarFor = (id: string) => Object.entries(builtinAvatar).find(([p]) => idFromPath(p) === id)?.[1];
 const personaFor = (id: string) =>
   Object.entries(builtinPersona).find(([p]) => idFromPath(p) === id)?.[1] ?? "";
 
@@ -41,6 +49,7 @@ export function builtinPacks(): CharacterPack[] {
         source: "builtin" as const,
         modelUrl: json.modelPath ? builtinUrl(id, json.modelPath) : null,
         personaText: personaFor(id),
+        avatarUrl: avatarFor(id),
       };
     })
     .sort(sortPacks);
