@@ -48,7 +48,7 @@
   },
   "idleTempo": 0.52,
   "idleAmplitude": 0.23,
-  "armLiftMax": 19,
+  "armLiftMax": 8,
   "signatureMotions": [
     "signature-study-photo",
     "signature-folded-nod",

@@ -71,4 +71,13 @@ node "$P/armpit-patch.mjs" iki-char/lu-rigged.iki iki-char/armpits/before-R-0.pn
 node "$P/armpit-patch.mjs" iki-char/lu-rigged.iki iki-char/armpits/before-L-0.png iki-char/armpits/before-L-20.png 767,713,178,316 851 951 L 166,163,156
 cp iki-char/lu-rigged.iki iki-char/lu-before-edges.iki
 node "$P/despeck-edges.mjs" iki-char/lu-rigged.iki
+# His study-photo signature: the right forearm folds inward to 140° (hand palm-up at mid-chest from the elbow
+# alone, so the shoulder never lifts), holding a photo (Codex, source/photo.png). The photo rides the forearm: it
+# is placed where it sits in the REST pose and turned 119° there, so at elbow 130° / arm 2° it is upright in his
+# hand, tilted 9°, pinched between thumb and fingers (canvas centre 634,864, from render_poses). He is looking at
+# it, so we see its back (source/photo-back.png, Codex, masked to the front print's outline source/photo.png).
+# His irises glow blue while he reads it (ParamLuGlow), as his power does in the show.
+node "$P/elbow-in.mjs" iki-char/lu-rigged.iki 140
+node "$P/add-prop.mjs" iki-char/lu-rigged.iki source/photo-back.png photo ParamLuPhoto 99.4,1732.7,194 5.6 forearmDeformer_R 119
+node "$P/eye-glow.mjs" iki-char/lu-rigged.iki ParamLuGlow '#3fb6ff'
 mv iki-char/lu-rigged.iki iki-char/Lu.iki

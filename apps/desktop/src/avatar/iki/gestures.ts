@@ -277,18 +277,34 @@ export const GESTURES: Record<string, Gesture> = {
       ParamLegShift: 0.58 * lift,
     };
   } },
+  /** Lu Guang's signature: he lifts a photo he's holding (ParamLuPhoto, a prop riding his right forearm; we see
+   *  its back, the picture faces him) up to mid-chest and studies it, head bowed, lids lowered, a slight turn of
+   *  the wrist as he looks, his irises glowing blue as he reads it (ParamLuGlow); then he lowers it.
+   *  The hand comes up from the elbow alone (folded inward to 130°, dev/iki-pipeline/elbow-in.mjs 140): the
+   *  shoulder stays down, so the sleeve never opens at the armpit. */
   "signature-study-photo": { dur: 8.6, timed: true, pose: (t) => {
-    const raise = envelope(t, 0.28, 0.27);
-    const focus = smoother((t - 0.18) / 0.17) * smoother((0.90 - t) / 0.18);
+    const raise = envelope(t, 0.17, 0.19);
+    // The photo is in his hand as it starts to move, and gone once the hand is back down.
+    const photo = smoother((t - 0.01) / 0.03) * smoother((0.99 - t) / 0.03);
+    const focus = smoother((t - 0.13) / 0.1) * smoother((0.84 - t) / 0.1);
+    // A small turn of the photo toward him, and a slower drift of his gaze over it.
+    const look = Math.sin(Math.PI * clamp01((t - 0.3) / 0.4));
+    // The glow wakes once his eyes are on the photo and fades before he looks up.
+    const glow = smoother((t - 0.21) / 0.07) * smoother((0.79 - t) / 0.06);
     return {
-      ParamLuStudy: raise,
-      ParamAngleX: -6 * focus,
-      ParamAngleZ: 5 * focus,
-      ParamEyeBallX: -0.26 * focus,
-      ParamEyeLOpen: -0.22 * focus,
-      ParamEyeROpen: -0.22 * focus,
-      ParamBrowLY: -0.07 * focus,
-      ParamBrowRY: -0.07 * focus,
+      ParamLuPhoto: photo,
+      ParamLuGlow: glow,
+      ParamElbowR: 130 * raise + 4 * look * focus,
+      ParamArmR: 2 * raise,
+      ParamAngleY: -18 * focus,
+      ParamAngleX: (6 - 3 * look) * focus,
+      ParamAngleZ: 2 * focus,
+      ParamEyeBallY: -0.8 * focus,
+      ParamEyeBallX: (0.15 - 0.25 * look) * focus,
+      ParamEyeLOpen: -0.3 * focus,
+      ParamEyeROpen: -0.3 * focus,
+      ParamBrowLY: -0.08 * focus,
+      ParamBrowRY: -0.08 * focus,
     };
   } },
   "signature-folded-nod": { dur: 7.9, timed: true, pose: (t) => {

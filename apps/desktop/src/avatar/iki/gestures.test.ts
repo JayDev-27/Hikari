@@ -19,10 +19,13 @@ const RANGE: Record<string, [number, number]> = {
   ParamChengClap: [0, 1],
   ParamChengClapDepth: [0, 1],
   ParamLuStudy: [0, 1],
+  ParamLuPhoto: [0, 1],
+  ParamLuGlow: [0, 1],
   ParamLuThought: [0, 1],
   ParamLuFoldL: [0, 1],
   ParamLuFoldR: [0, 1],
   ParamEyeBallX: [-1, 1],
+  ParamEyeBallY: [-1, 1],
   ParamChengPalm: [0, 1],
   ParamMouthOpenY: [0, 1],
   ParamBrowLY: [-1, 1],
@@ -49,6 +52,7 @@ describe("Iki gestures", () => {
     if (name === "signature-wave-shy") R.ParamElbowR = [-170, 170];
     // Cheng Xiaoshi's claps fold both elbows on his 170° rig.
     if (name === "clap-fold" || name === "signature-photo-dive") R.ParamElbowL = R.ParamElbowR = [-170, 170];
+    if (name === "signature-study-photo") R.ParamElbowR = [-170, 140]; // Lu Guang's elbow-in 140
     for (const [id, v] of Object.entries(g.pose(0))) expect(Math.abs(v), `${id} at t=0`).toBeLessThan(1e-6);
     for (const [id, v] of Object.entries(g.pose(1))) expect(Math.abs(v), `${id} at t=1`).toBeLessThan(1e-6);
     for (let t = 0; t <= 1; t += 0.01) {
@@ -169,15 +173,28 @@ describe("Iki gestures", () => {
     expect(wink.ParamEyeLOpen ?? 0).toBe(0);
   });
 
-  it("holds Lu Guang's hand at eye level and narrows his gaze after the lift starts", () => {
-    const study = GESTURES["signature-study-photo"].pose;
-    expect(study(0.15).ParamLuStudy).toBeGreaterThan(0.4);
-    expect(study(0.15).ParamEyeLOpen).toBeCloseTo(0);
-    expect(study(0.33).ParamLuStudy).toBe(1);
-    expect(study(0.66).ParamLuStudy).toBe(1);
-    expect(study(0.5).ParamEyeLOpen).toBeCloseTo(-0.22);
-    expect(study(0.5).ParamEyeBallX).toBeLessThan(0);
-    expect(study(0.91).ParamLuStudy).toBeLessThan(0.25);
+  it("lifts Lu Guang's photo to his chest from the elbow and studies it, head bowed", () => {
+    const study = GESTURES["signature-study-photo"];
+    expect(study.timed).toBe(true); // the photo rides the hand: no spring lag between them
+    const p = study.pose;
+    expect(p(0.03).ParamLuPhoto).toBeGreaterThan(0.5); // in his hand as it starts to rise
+    expect(p(0.03).ParamElbowR).toBeLessThan(40);
+    for (const t of [0.3, 0.5, 0.7]) {
+      expect(p(t).ParamLuPhoto).toBe(1);
+      expect(p(t).ParamElbowR).toBeGreaterThan(125);
+      expect(p(t).ParamElbowR).toBeLessThanOrEqual(140); // the rig's fold stops at 140
+      expect(p(t).ParamAngleY).toBeCloseTo(-18); // looking down at it
+      expect(p(t).ParamEyeBallY).toBeLessThan(-0.7);
+      expect(p(t).ParamLuGlow).toBeGreaterThan(0.6); // his eyes glow blue while he reads it
+    }
+    expect(p(0.12).ParamLuGlow).toBe(0); // not before his eyes are on it
+    expect(p(0.9).ParamLuGlow).toBe(0); // gone before he looks up
+    // The shoulder stays down the whole way (no armpit gap) and the old hand-to-temple rig is unused.
+    for (let t = 0; t <= 1; t += 0.01) {
+      expect(Math.abs(p(t).ParamArmR)).toBeLessThanOrEqual(2);
+      expect(p(t).ParamLuStudy).toBeUndefined();
+    }
+    expect(p(0.995).ParamLuPhoto).toBeLessThan(0.5);
   });
 
   it("holds Lu Guang's folded arms through one small nod and a faint smile", () => {
