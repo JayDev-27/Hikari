@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, Copy, ExternalLink, X } from 'lucide-react';
 import { GITHUB_RELEASES_URL, GITHUB_REPO_URL } from '../data/hikariData';
 
@@ -11,36 +11,37 @@ const DEV_CLONE_CMD = 'git clone https://github.com/JayDev-27/Hikari.git && cd H
 
 export function DownloadModal({ open, onClose }: DownloadModalProps) {
   const [copied, setCopied] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const copyTimer = useRef<number>(0);
 
   useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+    const element = dialog.current;
+    if (!element) return;
+    if (open && !element.open) element.showModal();
+    if (!open && element.open) element.close();
+  }, [open]);
 
-  if (!open) return null;
+  useEffect(() => () => window.clearTimeout(copyTimer.current), []);
 
   const copyCommand = async () => {
     try {
       await navigator.clipboard.writeText(DEV_CLONE_CMD);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
+      window.clearTimeout(copyTimer.current);
+      copyTimer.current = window.setTimeout(() => setCopied(false), 1800);
     } catch {
       setCopied(false);
     }
   };
 
   return (
-    <div
+    <dialog
+      ref={dialog}
       className="modal-backdrop"
-      role="dialog"
-      aria-modal="true"
       aria-labelledby="download-modal-title"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+      onClose={onClose}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
       }}
     >
       <div className="modal-card">
@@ -48,9 +49,9 @@ export function DownloadModal({ open, onClose }: DownloadModalProps) {
           <X size={18} />
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16, paddingRight: 28 }}>
           <img
-            src="/media/hikari-app-icon.png"
+            src="/media/hikari-mark.png"
             alt="Hikari app icon"
             style={{ width: 52, height: 52, borderRadius: 13 }}
           />
@@ -73,9 +74,7 @@ export function DownloadModal({ open, onClose }: DownloadModalProps) {
         </div>
 
         <p style={{ margin: '0 0 14px', color: 'var(--ink-secondary)', fontSize: 15 }}>
-          The signed <code>Hikari.app</code> / <code>.dmg</code> installer is scheduled for
-          milestone <strong>M8</strong> while the Python voice brain (<code>core/</code>) is
-          being completed.
+          The signed <code>Hikari.app</code> / <code>.dmg</code> installer is planned. The Apple Silicon desktop stage is available to build from source.
         </p>
 
         <div
@@ -141,6 +140,6 @@ export function DownloadModal({ open, onClose }: DownloadModalProps) {
           </a>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

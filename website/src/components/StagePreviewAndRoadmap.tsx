@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { HOTKEYS, ROADMAP_MILESTONES } from '../data/hikariData';
-import { useScrambleText } from '../hooks/useScrambleText';
+import { ScrollHeading } from './ScrollHeading';
 
 const STAGE_STATES = {
   ptt: {
@@ -22,9 +22,6 @@ const STAGE_STATES = {
 
 export function StagePreviewAndRoadmap() {
   const [simMode, setSimMode] = useState<keyof typeof STAGE_STATES>('ptt');
-  const { ref: roadmapTagRef, text: roadmapTag } = useScrambleText(
-    'HONEST BUILD STATUS • M0 COMPLETE • CORE & .DMG IN PROGRESS'
-  );
 
   const activeSim = STAGE_STATES[simMode];
 
@@ -37,12 +34,7 @@ export function StagePreviewAndRoadmap() {
             <span className="mono-tag" style={{ display: 'block', marginBottom: 10 }}>
               DESKTOP STAGE CONTROLS
             </span>
-            <h2
-              className="section-title-xl"
-              style={{ fontSize: 'clamp(1.85rem, 3.6vw, 3rem)', marginBottom: 14 }}
-            >
-              Always on top. Never in your way.
-            </h2>
+            <ScrollHeading className="section-title-xl sim-heading" first="Always within reach." />
             <p style={{ margin: '0 0 22px', color: 'var(--ink-secondary)', fontSize: 15 }}>
               Hikari lives in your macOS menu bar with zero Dock clutter. Test how her global
               hotkeys drive speech turns, mute state, and instant 5 ms panic interruption:
@@ -106,9 +98,7 @@ export function StagePreviewAndRoadmap() {
 
       {/* Honest M0–M8 Roadmap */}
       <div>
-        <span ref={roadmapTagRef} className="mono-tag" style={{ display: 'block', marginBottom: 12 }}>
-          {roadmapTag}
-        </span>
+        <p className="bloom-kicker"><i aria-hidden="true" /> Project status</p>
         <div
           style={{
             display: 'flex',
@@ -119,7 +109,7 @@ export function StagePreviewAndRoadmap() {
             marginBottom: 28,
           }}
         >
-          <h2 className="section-title-xl">Development Roadmap</h2>
+          <ScrollHeading className="section-title-xl" first="What’s next." />
           <p style={{ margin: 0, maxWidth: 460, fontSize: 14, color: 'var(--ink-muted)' }}>
             The desktop body, renderers, lip sync, and Character Studio run today. The Python voice
             brain (<code>core/</code>) and signed macOS <code>.dmg</code> release are actively being built.
@@ -128,7 +118,7 @@ export function StagePreviewAndRoadmap() {
 
         <div className="roadmap-list">
           {ROADMAP_MILESTONES.map((item) => (
-            <div key={item.id} className="roadmap-row">
+            <div key={item.id} className="roadmap-row reveal-rise" data-reveal>
               <span className="mono-tag" style={{ color: 'var(--ink-primary)', fontWeight: 600 }}>
                 {item.id}
               </span>

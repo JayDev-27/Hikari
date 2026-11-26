@@ -2,7 +2,6 @@ export interface CastCharacter {
   id: string;
   name: string;
   renderer: 'Iki' | 'Live2D';
-  tags: string;
   signatureMove: string;
   image: string;
   imageAlt: string;
@@ -12,16 +11,6 @@ export interface CastCharacter {
     hindi: string;
     hinglish: string;
   };
-  accentColor: string;
-  licenseNote: string;
-}
-
-export interface TunnelChapter {
-  index: string;
-  kicker: string;
-  title: string;
-  description: string;
-  specs: string[];
 }
 
 export interface RoadmapMilestone {
@@ -37,10 +26,9 @@ export const CAST_CHARACTERS: CastCharacter[] = [
     id: 'makima',
     name: 'Makima',
     renderer: 'Iki',
-    tags: 'IKI RIG • POISE • FINGER-GUN BANG',
     signatureMove: 'Finger-gun "bang" · folded-hands stance',
-    image: '/media/signatures.png',
-    imageAlt: 'Hikari signature character moves lineup including Makima, Reze, Rize and Cheng Xiaoshi',
+    image: '/media/hikari-cast-makima.webp',
+    imageAlt: 'Makima’s current Iki rig with her hands clasped',
     summary:
       'Composed, deliberate, and quietly in control. Cut from layered reference artwork with custom leg-shift body mesh warp and procedural arm springs.',
     samples: {
@@ -48,17 +36,14 @@ export const CAST_CHARACTERS: CastCharacter[] = [
       hindi: 'शांत रहो। एक-एक करके सब हो जाएगा।',
       hinglish: 'Pehle sabse important kaam. Baaki baad mein. Theek hai na?',
     },
-    accentColor: '#ff7eb6',
-    licenseNote: 'Hikari fan rig & original persona; Chainsaw Man design belongs to its rights holders.',
   },
   {
     id: 'reze',
     name: 'Reze',
     renderer: 'Iki',
-    tags: 'IKI RIG • PLAYFUL • FLOWER OFFER',
     signatureMove: 'Offers a white flower · shy wave',
-    image: '/media/cast.png',
-    imageAlt: 'Reze and the four Hikari Iki characters standing side by side',
+    image: '/media/hikari-cast-reze.webp',
+    imageAlt: 'Reze’s current Iki rig offering a white flower',
     summary:
       'Warm café-counter banter with playful mystery. Reaches forward with an offered bloom while lifting her smile across a 70 ms arm exchange.',
     samples: {
@@ -66,17 +51,14 @@ export const CAST_CHARACTERS: CastCharacter[] = [
       hindi: 'बारिश हो रही है… चलो, थोड़ी देर बातें करते हैं।',
       hinglish: 'Aaj ka plan? Hmm… pehle chai, phir dekhte hain kya adventure milta hai.',
     },
-    accentColor: '#8832f7',
-    licenseNote: 'Hikari fan rig & original persona; Chainsaw Man design belongs to its rights holders.',
   },
   {
     id: 'rize',
     name: 'Rize Kamishiro',
     renderer: 'Iki',
-    tags: 'IKI RIG • LITERARY • GHOUL EYES',
     signatureMove: 'Reads open book · glasses push · ghoul eyes',
-    image: '/media/rize-ghoul.png',
-    imageAlt: 'Rize Kamishiro eye color shift from calm purple to ghoul red',
+    image: '/media/hikari-cast-rize.webp',
+    imageAlt: 'Rize looking down at a book held in both hands in the current Iki rig',
     summary:
       'Bookish, theatrical, and sharp. Features a separately keyed glasses frame layer and irises that shift to crimson ghoul red mid-conversation.',
     samples: {
@@ -84,17 +66,14 @@ export const CAST_CHARACTERS: CastCharacter[] = [
       hindi: 'अच्छी कहानी और अच्छी चाय… और क्या चाहिए?',
       hinglish: 'Hmm, interesting. Tum jitne lagte ho usse zyada mysterious ho.',
     },
-    accentColor: '#ff4c6a',
-    licenseNote: 'Hikari fan rig & original persona; Tokyo Ghoul design belongs to its rights holders.',
   },
   {
     id: 'cheng-xiaoshi',
     name: 'Cheng Xiaoshi',
     renderer: 'Iki',
-    tags: 'IKI RIG • 1.48X TEMPO • PHOTO DIVE',
     signatureMove: 'Claps hands · photo dive',
-    image: '/media/cheng-photo-dive.gif',
-    imageAlt: 'Cheng Xiaoshi raising a photograph and clapping into a photo dive',
+    image: '/media/hikari-cast-cheng-xiaoshi.webp',
+    imageAlt: 'Cheng Xiaoshi’s current Iki rig during his photo dive gesture',
     summary:
       'Energetic photographer from Time Photo Studio. Animated at 1.48× idle tempo with 0.78 spring damping for crisp overshoot on his signature clap.',
     samples: {
@@ -102,43 +81,20 @@ export const CAST_CHARACTERS: CastCharacter[] = [
       hindi: 'चलो, एक तस्वीर और लेते हैं।',
       hinglish: 'Arre, light dekho! Bas ek photo aur.',
     },
-    accentColor: '#1a2ffb',
-    licenseNote: 'Hikari fan rig & original persona; Link Click design belongs to its rights holders.',
-  },
-];
-
-export const TUNNEL_CHAPTERS: TunnelChapter[] = [
-  {
-    index: '01',
-    kicker: 'ACT 01 // NON-ACTIVATING STAGE',
-    title: 'Floats Over Every App Without Stealing Focus.',
-    description:
-      'Built on a Tauri v2 transparent NSPanel that lives across all macOS Spaces and full-screen windows. Clicks pass straight through empty pixels via real-time 1-px alpha readPixels hit-testing.',
-    specs: ['NSPanel Floating Level', 'Per-Pixel Click-Through', '60 ms Hysteresis', 'Menu-Bar Accessory'],
   },
   {
-    index: '02',
-    kicker: 'ACT 02 // SINGLE-CLOCK LIP SYNC',
-    title: '±8 ms Phoneme-Accurate Hindi, English & Hinglish.',
-    description:
-      'All audio chunks, gestures, and IPA phonemes schedule against one WebAudio AudioContext clock. Cohen–Massaro coarticulation and a strict bilabial gate ensure m/b/p lip closure.',
-    specs: ['AudioContext Clock', 'Cohen–Massaro Visemes', 'Bilabial Closure', 'Bluetooth Compensated'],
-  },
-  {
-    index: '03',
-    kicker: 'ACT 03 // VOICE & BARGE-IN',
-    title: 'Interrupt Her Mid-Sentence With 5 ms Audio Fade.',
-    description:
-      'A 16 kHz mic worklet with echo cancellation powers push-to-talk (⌥ Space) and open-mic modes. When you speak over her, audio stops inside one render quantum and trims transcript history cleanly.',
-    specs: ['16 kHz AudioWorklet', '⌥ Space Push-to-Talk', '5 ms Barge-In Fade', 'JSON-Schema WebSocket'],
-  },
-  {
-    index: '04',
-    kicker: 'ACT 04 // LOCAL FIRST ARCHITECTURE',
-    title: 'Your Mac Runs the Show. Bring Any Character.',
-    description:
-      'Switch between built-in Iki rigs or drop your own Live2D, Iki, or upcoming VRM pack into Character Studio with licence inspection built in. Cloud models remain completely optional.',
-    specs: ['Apple Silicon Native', 'Character Studio', 'Iki · Live2D · VRM (M3)', 'MIT Open Source'],
+    id: 'lu-guang',
+    name: 'Lu Guang',
+    renderer: 'Iki',
+    signatureMove: 'Studies a photograph · blue-eye reveal',
+    image: '/media/hikari-cast-lu-guang.webp',
+    imageAlt: 'Lu Guang’s current Iki rig looking at a photograph held in his right hand',
+    summary: 'Lu Guang studies a photo with a restrained gesture and a blue-eye reveal. The photograph moves with his hand.',
+    samples: {
+      english: 'Look at the details in the photo. What do you notice first?',
+      hindi: 'तस्वीर को ध्यान से देखो। तुम्हें पहले क्या दिखता है?',
+      hinglish: 'Photo dhyaan se dekho. Pehle kya nazar aata hai?',
+    },
   },
 ];
 

@@ -95,8 +95,11 @@ describe("Iki gestures", () => {
     expect(book.ParamElbowL).toBeGreaterThan(30);
     expect(book.ParamElbowR).toBeGreaterThan(30);
     expect(book.ParamAngleY).toBeLessThan(0);
-    expect(book.ParamEyeLOpen).toBeCloseTo(-0.47);
-    expect(book.ParamEyeROpen).toBeCloseTo(-0.47);
+    expect(book.ParamArmL).toBeCloseTo(14);
+    expect(book.ParamArmR).toBeCloseTo(14);
+    expect(book.ParamEyeBallY).toBeLessThan(0);
+    expect(book.ParamEyeLOpen).toBeCloseTo(-0.24);
+    expect(book.ParamEyeROpen).toBeCloseTo(-0.24);
   });
 
   it("changes Rize's eyes under the blink, holds the ghoul reveal, and restores her eyes under a second blink", () => {

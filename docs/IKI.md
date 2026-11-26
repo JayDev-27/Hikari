@@ -140,7 +140,8 @@ node apps/desktop/scripts/sync-packs.mjs
   curls lag the head turn so they stay close to her shoulders.
 - The spectacle frame follows both eye warps through head turns and the same head rotation
   through tilts. The glasses gesture rotates Rize's original arm to the bridge and raises
-  the frame by 7 canvas pixels on contact. The book gesture brings her empty hands together.
+  the frame by 7 canvas pixels on contact. The timed reading gesture separates the hands,
+  places the tilted book behind both grips, and turns her gaze down toward the pages.
 - Click Rize's body for the ghoul reveal. She blinks into dark sclera and red irises, then
   blinks back. Both states use the PSD eye paint, with render-time tint and the same eye masks.
 - The shoulder patches use the sleeve palette and were drawn from 18° lifts. The runtime

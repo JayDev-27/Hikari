@@ -55,7 +55,7 @@ const TRAIL_FRAG = /* glsl */ `
   }
 `;
 
-// Final chromatic dispersion + iridescent sakura/cobalt wake composite
+// Chromatic refraction and ice-blue light in the original pointer wake
 const COMPOSITE_FRAG = /* glsl */ `
   precision highp float;
   varying vec2 vUv;
@@ -74,6 +74,8 @@ const COMPOSITE_FRAG = /* glsl */ `
 
     if (energy < 0.004) {
       gl_FragColor = base;
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
       return;
     }
 
@@ -84,14 +86,16 @@ const COMPOSITE_FRAG = /* glsl */ `
     vec3 refracted = vec3(rSample.r, gSample.g, bSample.b);
     float alpha = max(base.a, max(rSample.a, bSample.a));
 
-    // Iridescent sakura-cobalt wake ribbon across light and dark surfaces
+    // Match the pearl and periwinkle light on the blossom.
     float edgeGlow = smoothstep(0.06, 0.65, energy) * (1.0 - smoothstep(0.62, 1.0, energy) * 0.35);
     float wave = 0.5 + 0.5 * sin(vUv.x * 11.0 + vUv.y * 8.0 - uTime * 2.4);
-    vec3 prismTint = mix(vec3(0.10, 0.18, 0.98), vec3(1.0, 0.49, 0.71), wave);
+    vec3 prismTint = mix(vec3(0.085, 0.21, 0.78), vec3(0.31, 0.48, 0.91), wave);
     vec3 finalRgb = mix(refracted, prismTint, edgeGlow * 0.38);
     float finalAlpha = clamp(alpha + edgeGlow * 0.34, 0.0, 1.0);
 
     gl_FragColor = vec4(finalRgb, finalAlpha);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
   }
 `;
 
@@ -109,8 +113,9 @@ export class FluidPass {
   private mouse = new THREE.Vector2(0.5, 0.5);
   private velocity = new THREE.Vector2(0, 0);
   private hasMoved = false;
+  private targetVelocity = new THREE.Vector2();
 
-  constructor(width: number, height: number, dpr: number) {
+  constructor(width: number, height: number, dpr: number, type: THREE.TextureDataType) {
     this.quadGeo = new THREE.PlaneGeometry(2, 2);
     this.orthoCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
@@ -133,7 +138,7 @@ export class FluidPass {
         minFilter: THREE.LinearFilter,
         magFilter: THREE.LinearFilter,
         format: THREE.RGBAFormat,
-        type: THREE.UnsignedByteType,
+        type,
         depthBuffer: true,
       }
     );
@@ -148,7 +153,7 @@ export class FluidPass {
         uVelocity: { value: this.velocity },
         uSpeed: { value: 0 },
         uAspect: { value: width / Math.max(1, height) },
-        uDecay: { value: 0.962 },
+        uDecay: { value: 0.924 },
       },
       depthTest: false,
       depthWrite: false,
@@ -185,6 +190,10 @@ export class FluidPass {
     this.mouse.set(uvX, uvY);
   }
 
+  resetPointer() {
+    this.hasMoved = false;
+  }
+
   resize(width: number, height: number, dpr: number) {
     this.sceneTarget.setSize(
       Math.max(1, Math.floor(width * dpr)),
@@ -197,17 +206,11 @@ export class FluidPass {
     renderer: THREE.WebGLRenderer,
     renderIntoTarget: (target: THREE.WebGLRenderTarget | null) => void,
     elapsed: number,
-    enabled: boolean
   ) {
-    if (!enabled) {
-      renderIntoTarget(null);
-      return;
-    }
-
     const dx = this.mouse.x - this.prevMouse.x;
     const dy = this.mouse.y - this.prevMouse.y;
     const speed = Math.hypot(dx, dy);
-    this.velocity.lerp(new THREE.Vector2(dx * 22, dy * 22), 0.45);
+    this.velocity.lerp(this.targetVelocity.set(dx * 22, dy * 22), 0.45);
 
     this.trailMat.uniforms.uPrev.value = this.trailA.texture;
     this.trailMat.uniforms.uSpeed.value = speed;
@@ -230,8 +233,6 @@ export class FluidPass {
     this.compositeMat.uniforms.uTime.value = elapsed;
 
     renderer.setRenderTarget(null);
-    renderer.setClearColor(0x000000, 0);
-    renderer.clear();
     renderer.render(this.compositeScene, this.orthoCam);
   }
 

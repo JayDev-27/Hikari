@@ -181,23 +181,22 @@ export const GESTURES: Record<string, Gesture> = {
       ParamEyeROpen: -0.13 * smile,
     };
   } },
-  /** She holds an open book low in front, cradled in both hands, and reads it: head bowed, eyes lowered, weight on
-   *  one leg. The book (ParamRizeBook) shows once the hands are nearly there and goes before they drop. */
-  "signature-book": { dur: 7.2, pose: (t) => {
-    const hold = envelope(t, 0.27, 0.29);
-    // A ~0.1 s swap while the hands are still moving: a slow fade would show a see-through book over the hands.
-    const book = smoother((t - 0.215) / 0.015) * smoother((0.775 - t) / 0.015);
+  /** Both elbows bend while the shoulders open just enough for one hand under each lower corner. */
+  "signature-book": { dur: 7.2, timed: true, pose: (t) => {
+    const hold = envelope(t, 0.24, 0.245);
+    const book = smoother((t - 0.227) / 0.023) * smoother((0.765 - t) / 0.023);
     return {
       ParamRizeBook: book,
-      ParamElbowL: 44 * hold,
+      ParamElbowL: 46 * hold,
       ParamElbowR: 46 * hold,
-      ParamArmL: 2 * hold,
-      ParamArmR: 2 * hold,
-      ParamAngleY: -9 * hold,
-      ParamAngleZ: 5 * hold,
-      ParamEyeLOpen: -0.47 * hold,
-      ParamEyeROpen: -0.47 * hold,
-      ParamLegShift: 0.47 * hold,
+      ParamArmL: 14 * hold,
+      ParamArmR: 14 * hold,
+      ParamAngleY: -12 * hold,
+      ParamAngleZ: 4 * hold,
+      ParamEyeBallY: -0.32 * hold,
+      ParamEyeLOpen: -0.24 * hold,
+      ParamEyeROpen: -0.24 * hold,
+      ParamLegShift: 0.32 * hold,
     };
   } },
   "signature-ghoul": { dur: 6.4, pose: (t) => {
