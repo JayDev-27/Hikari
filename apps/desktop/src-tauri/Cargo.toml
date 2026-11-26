@@ -32,6 +32,8 @@ anyhow = "1.0.104"
 zip = { version = "9.8.1", default-features = false, features = ["deflate"] }
 tauri-plugin-dialog = "2.8.4"
 percent-encoding = "2.3.2"
+# Provider API keys in the macOS Keychain (secrets.rs). Default "v1" feature = classic Entry API.
+keyring = "=4.2.0"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
@@ -45,3 +47,8 @@ strip = true
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2-core-graphics = { version = "0.3.2", default-features = false, features = ["CGEvent", "CGEventTypes", "CGEventSource", "objc2"] }
 tauri-nspanel = "2.1.1"
+# TCC checks (permissions.rs); already in the tree via tauri, pinned to the locked versions.
+objc2 = "=0.6.5"
+block2 = "=0.6.2"
+# Memory meters (sysmem.rs): sysctl / host_statistics64 / proc_pid_rusage; already in the tree, pinned to the lock.
+libc = "=0.2.191"

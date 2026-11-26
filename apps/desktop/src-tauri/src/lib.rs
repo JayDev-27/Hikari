@@ -1,7 +1,13 @@
+mod audit;
 mod dock;
 mod hotkeys;
+mod onboarding;
 mod packs;
+mod permissions;
+mod secrets;
+mod settings_store;
 mod stage;
+mod sysmem;
 mod tray;
 mod windows;
 
@@ -43,6 +49,23 @@ pub fn run() {
             packs::import_model,
             packs::delete_user_pack,
             windows::show_window,
+            audit::audit_append,
+            audit::audit_read,
+            audit::audit_reveal,
+            audit::audit_clear,
+            audit::audit_export,
+            secrets::secret_set,
+            secrets::secret_status,
+            secrets::secret_delete,
+            settings_store::settings_load,
+            settings_store::settings_save,
+            sysmem::memory_stats,
+            onboarding::onboarding_open,
+            onboarding::onboarding_finish,
+            permissions::permissions_status,
+            permissions::permission_request,
+            permissions::permission_open_settings,
+            permissions::relaunch_app,
         ])
         .on_window_event(windows::on_window_event)
         .setup(|app| {
@@ -52,6 +75,8 @@ pub fn run() {
             stage::setup(handle)?;
             tray::setup(handle, show_in_dock)?;
             hotkeys::setup(handle)?;
+            // First run: the welcome window (until the user finishes it once).
+            onboarding::setup(handle);
             // Debug builds: HIKARI_OPEN=studio,chat opens those panels at launch (testing without the tray).
             #[cfg(debug_assertions)]
             if let Ok(list) = std::env::var("HIKARI_OPEN") {

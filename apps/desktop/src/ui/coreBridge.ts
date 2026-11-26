@@ -15,6 +15,9 @@ export interface CoreEvent<T extends MessageType = MessageType> {
   type: T;
   payload: PayloadMap[T];
   turnId?: string;
+  /** The envelope's id, and the id of the request it answers (when the core sets them). */
+  id?: string;
+  replyTo?: string;
 }
 export interface CoreStatus {
   connected: boolean;
