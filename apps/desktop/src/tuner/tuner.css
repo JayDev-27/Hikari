@@ -1,0 +1,73 @@
+/* Animation tuner (dev only). Uses the panel tokens from styles.css (html.panel, light/dark). */
+.tuner {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  height: 100vh;
+  font: 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--p-fg);
+  background: var(--p-bg);
+}
+.tuner * { box-sizing: border-box; }
+.tuner header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--p-border);
+}
+.tuner select, .tuner input[type="number"] {
+  font: inherit;
+  color: var(--p-fg);
+  background: var(--p-surface);
+  border: 1px solid var(--p-border);
+  border-radius: 5px;
+  padding: 2px 4px;
+}
+.tuner button { font: inherit; padding: 3px 8px; border-radius: 5px; }
+.tuner button.on { background: var(--p-sel); border-color: var(--accent); }
+.tn-spacer { flex: 1; }
+.tn-muted, .tn-status { color: var(--p-muted); }
+.tn-copied {
+  margin: 0;
+  padding: 8px 12px;
+  max-height: 160px;
+  overflow: auto;
+  background: var(--p-surface);
+  border-bottom: 1px solid var(--p-border);
+  white-space: pre-wrap;
+}
+.tuner main {
+  display: grid;
+  grid-template-columns: minmax(280px, 42%) minmax(0, 1fr);
+  min-height: 0;
+}
+.tn-stage { display: flex; flex-direction: column; gap: 6px; padding: 10px; min-height: 0; overflow: auto; }
+.tn-host {
+  position: relative;
+  flex: none;
+  height: min(62vh, 620px);
+  border: 1px solid var(--p-border);
+  border-radius: 8px;
+  background: repeating-conic-gradient(var(--p-surface) 0 25%, var(--p-bg) 0 50%) 0 0 / 24px 24px;
+  overflow: hidden;
+}
+.tn-check { display: flex; align-items: center; gap: 6px; }
+.tn-readout { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tn-readout h4 { margin: 4px 0; font-size: 11px; color: var(--p-muted); font-weight: 600; }
+.tn-bar { display: grid; grid-template-columns: 70px 1fr 38px; align-items: center; gap: 6px; }
+.tn-bar i { display: block; height: 6px; border-radius: 3px; background: var(--p-border); overflow: hidden; }
+.tn-bar b { display: block; height: 100%; background: var(--accent); }
+.tn-bar em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--p-muted); text-align: right; }
+.tn-controls { overflow: auto; padding: 10px 12px 24px; min-height: 0; }
+.tn-controls fieldset { border: 1px solid var(--p-border); border-radius: 8px; margin: 0 0 10px; padding: 6px 10px 8px; }
+.tn-controls legend { font-weight: 600; padding: 0 4px; display: flex; gap: 6px; align-items: center; }
+.tn-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.tn-slider { display: grid; grid-template-columns: 120px 1fr 72px; align-items: center; gap: 8px; }
+.tn-slider.changed span { color: var(--accent); font-weight: 600; }
+.tn-slider input[type="range"] { width: 100%; }
+.tuner footer { padding: 6px 12px; border-top: 1px solid var(--p-border); }
+@media (max-width: 760px) {
+  .tuner main { grid-template-columns: 1fr; }
+  .tuner { height: auto; }
+}

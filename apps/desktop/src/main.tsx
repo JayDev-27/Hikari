@@ -48,6 +48,9 @@ function App() {
 // Dev-only rig test (renders a model through bare Cubism, see src/dev/rigtest.ts).
 if (import.meta.env.DEV && route === "rigtest") {
   void import("./dev/rigtest").then((m) => m.mount());
+} else if (import.meta.env.DEV && route === "tuner") {
+  // Dev-only animation tuner (src/tuner): states, gestures, emotions, visemes and the layer numbers, live.
+  void import("./tuner/mount").then((m) => m.mount());
 } else
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

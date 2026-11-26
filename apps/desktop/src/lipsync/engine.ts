@@ -1,6 +1,6 @@
 import type { Phoneme } from "@hikari/protocol";
 import { ZERO_VISEMES, type Visemes } from "../avatar/types";
-import { resolvePhoneme, splitDiphthong, type VisemeTarget } from "./phonemeMap";
+import { markLanguages, resolvePhoneme, splitDiphthong, type PhonemeLanguage, type VisemeTarget } from "./phonemeMap";
 
 const KEYS = ["aa", "ih", "ou", "ee", "oh"] as const;
 
@@ -22,6 +22,8 @@ interface Segment {
  * - Attack/release envelope smooths frame to frame (fast open, slower close).
  * - Jaw follows audio energy (if an analyser RMS is provided) on top of the shape.
  * - Fallback with no phonemes: energy + spectral band → a/i/u/e/o heuristic.
+ * - Hindi/Hinglish: per-phoneme language (phonemeMap.markLanguages) picks the open Hindi schwa or the reduced
+ *   English one; aspirated stops release with a puff, breathy-voiced (ʱ) ones with a longer, more open murmur.
  */
 export class LipSyncEngine {
   private segs: Segment[] = [];
@@ -29,36 +31,43 @@ export class LipSyncEngine {
   attack = 0.035; // s, time constant for opening
   release = 0.07; // s, time constant for closing
 
-  /** Register phonemes for a chunk that starts playing at `ctxStart` (AudioContext seconds). */
-  addChunk(ctxStart: number, phonemes: Phoneme[]): void {
-    for (const ph of phonemes) {
+  /**
+   * Register phonemes for a chunk that starts playing at `ctxStart` (AudioContext seconds). `language` is the
+   * chunk's (TtsChunk.language): Hindi, English or Hinglish, refined per phoneme.
+   */
+  addChunk(ctxStart: number, phonemes: Phoneme[], language?: string): void {
+    const langs = markLanguages(phonemes.map((ph) => ph.p), language);
+    phonemes.forEach((ph, i) => {
       const start = ctxStart + ph.start / 1000;
       const end = ctxStart + ph.end / 1000;
       const parts = splitDiphthong(ph.p);
       if (parts) {
         const mid = (start + end) / 2;
-        this.push(parts[0], start, mid, ph.stress);
-        this.push(parts[1], mid, end, ph.stress);
+        this.push(parts[0], start, mid, ph.stress, langs[i]);
+        this.push(parts[1], mid, end, ph.stress, langs[i]);
       } else {
-        this.push(ph.p, start, end, ph.stress);
+        this.push(ph.p, start, end, ph.stress, langs[i]);
       }
-    }
+    });
     this.segs.sort((a, b) => a.start - b.start);
   }
 
-  private push(p: string, start: number, end: number, stress = 0.5) {
-    const r = resolvePhoneme(p);
-    if (r.aspirated && !r.target.closed && end - start > 0.04) {
-      // Stop closure/contact for ~65% then a breathy open puff.
-      const split = start + (end - start) * 0.65;
-      this.segs.push({ start, end: split, target: r.target, stress });
-      this.segs.push({ start: split, end, target: { v: { aa: 0.3 }, dominance: 0.5, spread: 0.03 }, stress });
-    } else if (r.aspirated && r.target.closed) {
-      const split = start + (end - start) * 0.7;
-      this.segs.push({ start, end: split, target: r.target, stress });
-      this.segs.push({ start: split, end, target: { v: { aa: 0.3 }, dominance: 0.6, spread: 0.03 }, stress });
+  private push(p: string, start: number, end: number, stress?: number, lang?: PhonemeLanguage) {
+    const r = resolvePhoneme(p, lang);
+    const s = stress ?? (r.stressed ? 0.8 : 0.5);
+    // Release after an aspirated stop: a short open puff (ʰ), or a longer, more open murmur (ʱ, breathy voice).
+    const puff: VisemeTarget = r.breathy ? { v: { aa: 0.38 }, dominance: 0.65, spread: 0.04 } : { v: { aa: 0.24, ih: 0.05 }, dominance: 0.5, spread: 0.03 };
+    if (r.aspirated && r.target.closed) {
+      // Lips seal for most of the stop (never less than 60 %), then open with the release.
+      const split = start + (end - start) * (r.breathy ? 0.6 : 0.7);
+      this.segs.push({ start, end: split, target: r.target, stress: s });
+      this.segs.push({ start: split, end, target: puff, stress: s });
+    } else if (r.aspirated && end - start > 0.04) {
+      const split = start + (end - start) * (r.breathy ? 0.55 : 0.65);
+      this.segs.push({ start, end: split, target: r.target, stress: s });
+      this.segs.push({ start: split, end, target: puff, stress: s });
     } else {
-      this.segs.push({ start, end, target: r.target, stress });
+      this.segs.push({ start, end, target: r.target, stress: s });
     }
   }
 
@@ -112,8 +121,10 @@ export class LipSyncEngine {
       if (s.start > t + 0.25) break;
       if (s.end < t - 0.25) continue;
       if (s.target.closed && t >= s.start && t <= s.end) {
+        // Ramp over 20 ms, or a third of a short stop (fast Hindi speech has 30–40 ms bilabials), so even a short
+        // m/b/p reaches a full seal in its middle.
         const edge = Math.min(t - s.start, s.end - t);
-        closure = Math.max(closure, Math.min(1, edge / 0.02));
+        closure = Math.max(closure, Math.min(1, edge / Math.min(0.02, (s.end - s.start) / 3)));
       }
       const d = t < s.start ? s.start - t : t > s.end ? t - s.end : 0;
       const w = s.target.dominance * (0.75 + 0.5 * s.stress) * Math.exp(-d / s.target.spread);

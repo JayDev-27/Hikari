@@ -6,7 +6,10 @@ import type { CharacterPack } from "../characters";
 import type { AvatarController, AvatarEvent, AvatarState, Visemes } from "../types";
 import { ZERO_VISEMES } from "../types";
 import { GESTURES, PoseSpring, envelope, idlePose, resolveGesture, type Gesture } from "./gestures";
-import { EMOTION_EXPRESSIONS, EMOTION_EYES, REST, VISEME_KEYS, addPoses, clampPose, emotionToVrm, poseToBones, toVrm0Frame, visemeWeights, type Pose } from "./pose";
+import { EMOTION_EXPRESSIONS, REST, VISEME_KEYS, addPoses, clampPose, emotionToVrm, poseToBones, toVrm0Frame, visemeWeights, type Pose } from "./pose";
+import { LayerAnimator, type LayerFrame } from "../layers/animator";
+import { vrmOffsets } from "../layers/mapping";
+import { loadTuning } from "../layers/tuning";
 
 /**
  * Renderer for VRM 0.x and 1.0 models (three.js + @pixiv/three-vrm). Same contract as the Live2D and Iki
@@ -17,6 +20,11 @@ import { EMOTION_EXPRESSIONS, EMOTION_EYES, REST, VISEME_KEYS, addPoses, clampPo
  * VRM 0.x models face −Z; `VRMUtils.rotateVRM0` turns them to face +Z like VRM 1.0, and three-vrm maps their
  * expression presets (a/i/u/e/o, joy, sorrow, fun, blink_l…) onto the VRM 1.0 names, so nothing else here branches
  * on the version.
+ *
+ * The four layers (layers/animator.ts): (1) life — idlePose breathing/sway on the animator's breath phase and
+ * tempo, its blinks and saccades, weight shift; (2) the state posture (layers/mapping.ts vrmOffsets) added outside
+ * the gesture spring; (3) gestures through the spring, ducking the posture; (4) the face — decaying emotion weights
+ * on the VRM expressions, visemes, and the gaze (cursor, state gaze, look-aways) on eyes and head.
  */
 
 /** Degrees the eyes/head may turn for a full-scale (±1) look target. */
@@ -26,6 +34,7 @@ const HEAD_SHARE = 0.38;
 
 export class VrmAvatar implements AvatarController {
   readonly renderer = "vrm" as const;
+  readonly layers: LayerAnimator;
   onHitChange?: (hit: string | null) => void;
   onDestroy?: () => void;
 
@@ -44,21 +53,21 @@ export class VrmAvatar implements AvatarController {
 
   private state: AvatarState = "idle";
   private visemes: Visemes = { ...ZERO_VISEMES };
-  private look = { x: 0, y: 0, tx: 0, ty: 0 };
+  private look = { x: 0, y: 0 };
   private emotion: Record<string, number> = {};
-  private emotionEyes = 0;
   private exprNow = new Map<string, number>();
   private gesture: { name: string; g: Gesture; start: number; dur: number; scale: number } | null = null;
   private spring = new PoseSpring(9);
   private lastTarget: Pose = {};
-  private blink = { next: 2, start: -1, double: false };
   private clock = 0;
   private pendingHit: { x: number; y: number } | null = null;
   private lastHit: string | null = null;
   private pixel = new Uint8Array(4);
   private destroyed = false;
 
-  private constructor(private host: HTMLElement, private pack: CharacterPack) {}
+  private constructor(private host: HTMLElement, private pack: CharacterPack) {
+    this.layers = new LayerAnimator({ tuning: loadTuning(pack.id), ownBlink: true });
+  }
 
   static async create(host: HTMLElement, pack: CharacterPack): Promise<VrmAvatar> {
     const a = new VrmAvatar(host, pack);
@@ -163,10 +172,21 @@ export class VrmAvatar implements AvatarController {
     }
   }
 
+  /** The emotion goes to the face layer, which holds it and decays it; expression weights follow each frame. */
   setExpression(emotion: Emotion, intensity: number): void {
-    const override = this.pack.expressionMap?.[emotion];
-    this.emotion = intensity < 0.15 ? {} : emotionToVrm(emotion, intensity, (n) => this.expressions.has(n), override);
-    this.emotionEyes = intensity < 0.15 ? 0 : (EMOTION_EYES[emotion] ?? 0) * intensity;
+    this.layers.setEmotion(emotion, intensity);
+  }
+
+  /** Expression weights for every emotion still showing (a cross-fade blends both). */
+  private emotionWeights(): Record<string, number> {
+    const out: Record<string, number> = {};
+    const th = this.layers.tuning.emotion.threshold * 0.5;
+    for (const [name, level] of this.layers.emotion.levels) {
+      if (level < th) continue;
+      const w = emotionToVrm(name, level, (n) => this.expressions.has(n), this.pack.expressionMap?.[name]);
+      for (const [k, v] of Object.entries(w)) out[k] = Math.min(1, (out[k] ?? 0) + v);
+    }
+    return out;
   }
 
   playMotion(name: GestureTag | string, opts?: { interrupt?: boolean }): void {
@@ -177,41 +197,44 @@ export class VrmAvatar implements AvatarController {
     // A burst of identical cues doesn't restart a gesture already in progress.
     if (this.gesture?.name === resolved && now - this.gesture.start < this.gesture.dur) return;
     const g = GESTURES[resolved];
-    // A little variation each time, so repeats never look canned (timed gestures keep exact reach).
-    const dur = g.dur * (0.93 + Math.random() * 0.14);
-    this.gesture = { name: resolved, g, start: now, dur, scale: g.timed ? 1 : 0.92 + Math.random() * 0.12 };
+    // A little variation each time, so repeats never look canned (timed gestures keep exact reach). The tuner's
+    // speed scales the whole timeline, its intensity the free gestures' amplitude.
+    const tg = this.layers.tuning.gesture;
+    const dur = g.dur * (0.93 + Math.random() * 0.14) / Math.max(0.2, tg.speed);
+    this.gesture = { name: resolved, g, start: now, dur, scale: g.timed ? 1 : (0.92 + Math.random() * 0.12) * tg.intensity };
   }
 
   lookAt(x: number, y: number): void {
     const k = this.pack.gazeScale ?? 1;
-    this.look.tx = Math.max(-1, Math.min(1, x * k));
-    this.look.ty = Math.max(-1, Math.min(1, y * k));
+    this.layers.lookAt(x * k, y * k);
   }
 
   setVisemes(weights: Visemes): void {
     this.visemes = weights;
   }
 
+  /** The posture cross-fades in the layer animator; a gesture in progress keeps playing over it. */
   setState(state: AvatarState): void {
     this.state = state;
+    this.layers.setState(state);
   }
 
   idle(): void {
-    this.emotion = {};
-    this.emotionEyes = 0;
-    this.look.tx = 0;
-    this.look.ty = 0;
+    this.layers.setEmotion("neutral", 0);
+    this.layers.releaseLook();
   }
 
   react(event: AvatarEvent): void {
     if (event.kind !== "click" && event.kind !== "poke") return;
     if (this.gesture && this.clock - this.gesture.start < this.gesture.dur) return;
+    if (event.area === "head") this.layers.blink();
     this.playMotion(event.area === "head" ? "head_pat_react" : "wave");
   }
 
   isBusy(): boolean {
     const gesturing = !!this.gesture && this.clock - this.gesture.start < this.gesture.dur;
-    const eyes = Math.abs(this.look.x - this.look.tx) + Math.abs(this.look.y - this.look.ty) > 0.02;
+    const goal = this.layers.frame?.gaze ?? this.look;
+    const eyes = Math.abs(this.look.x - goal.x) + Math.abs(this.look.y - goal.y) > 0.02;
     return gesturing || eyes || !this.spring.settled(this.lastTarget);
   }
 
@@ -225,14 +248,14 @@ export class VrmAvatar implements AvatarController {
     dt = Math.max(0, Math.min(0.1, dt));
     this.clock += dt;
     const t = this.clock;
+    const gesturing = !!this.gesture && t - this.gesture.start < this.gesture.dur;
+    const f = this.layers.update(dt, { gesturing });
+    this.emotion = this.emotionWeights();
 
-    // Gaze: eyes lead (fast), the head follows part of the way (slower).
-    const lookRate = 1 - Math.exp(-dt / 0.12);
-    let tx = this.look.tx, ty = this.look.ty;
-    if (this.state === "thinking") { tx = 0.4; ty = 0.55; }
-    if (this.state === "sleeping") { tx = 0; ty = -0.4; }
-    this.look.x += (tx - this.look.x) * lookRate;
-    this.look.y += (ty - this.look.y) * lookRate;
+    // Gaze (cursor, state gaze, look-aways, saccades): eyes lead (fast), the head follows part of the way (slower).
+    const lookRate = 1 - Math.exp(-dt / (this.state === "sleeping" ? 0.6 : 0.1));
+    this.look.x += (f.gaze.x - this.look.x) * lookRate;
+    this.look.y += (f.gaze.y - this.look.y) * lookRate;
 
     // Gesture.
     let gesturePose: Pose = {};
@@ -253,20 +276,19 @@ export class VrmAvatar implements AvatarController {
       }
     }
 
-    // State posture: leaning in to listen, looking up to think, head down asleep.
-    const statePose: Pose =
-      this.state === "listening" ? { headZ: 5, headX: 3, spineX: 2 } :
-      this.state === "thinking" ? { headZ: -4, chestY: -3 } :
-      this.state === "sleeping" ? { headX: 14, neckX: 6, spineX: 5, shoulderL: -3, shoulderR: -3 } : {};
     const headLook: Pose = { headY: this.look.x * LOOK_YAW * HEAD_SHARE, headX: -this.look.y * LOOK_PITCH * HEAD_SHARE };
-    // Everything that moves the body as a whole goes through the spring, so changes ease in and out.
-    const target = addPoses(gesturePose, statePose);
+    // The gesture goes through the spring, so a cut-short gesture eases into the next one. The state posture is
+    // already smooth (it cross-fades on springs in the animator) and ducks under a gesture.
+    const target = gesturePose;
     this.lastTarget = target;
     const body = this.spring.step(target, dt, timed ? 26 : 9);
     const mouth = Math.min(1, this.visemes.aa + this.visemes.oh * 0.8 + this.visemes.ee * 0.5 + this.visemes.ih * 0.4 + this.visemes.ou * 0.4);
     const talk = this.state === "speaking" ? 0.5 + 0.5 * mouth : 0;
-    const slow = this.state === "sleeping" ? 0.6 : 1;
-    const pose = clampPose(addPoses(REST, idlePose(t * slow, talk), headLook, body));
+    const life = idlePose(f.lifeTime, talk, { breath: 2 * f.breath - 1, depth: f.breathDepth, sway: f.sway });
+    const posture = vrmOffsets(f);
+    posture.spineZ += 1.6 * f.weightShift;
+    posture.chestZ = -0.7 * f.weightShift;
+    const pose = clampPose(addPoses(REST, life, posture, headLook, body));
     this.applyPose(pose);
 
     // Eyes: the look target sits in front of the face at the camera's distance, so (0, 0) is eye contact.
@@ -279,13 +301,13 @@ export class VrmAvatar implements AvatarController {
       origin.z + d,
     );
 
-    this.updateExpressions(dt, gestureExpr, face);
+    this.updateExpressions(dt, gestureExpr, face, f);
     this.vrm.update(dt);
     this.renderer3.render(this.scene, this.camera);
     if (this.pendingHit) this.readHit();
   }
 
-  private updateExpressions(dt: number, gestureExpr: Record<string, number>, face: { aa?: number; eyes?: number }): void {
+  private updateExpressions(dt: number, gestureExpr: Record<string, number>, face: { aa?: number; eyes?: number }, f: LayerFrame): void {
     const em = this.vrm.expressionManager;
     if (!em) return;
     const rate = 1 - Math.exp(-dt / 0.15);
@@ -306,26 +328,13 @@ export class VrmAvatar implements AvatarController {
 
     // Lip sync (+ the open mouth of a laugh). A smile morph adds to the mouth shapes, so they are scaled down under it.
     const smile = Math.max(this.exprNow.get("happy") ?? 0, this.exprNow.get("relaxed") ?? 0);
-    const v = visemeWeights(this.visemes, face.aa ?? 0, smile, this.emotion.oh ?? 0);
+    const gain = this.layers.tuning.face.mouthGain;
+    const vis = gain === 1 ? this.visemes : { aa: this.visemes.aa * gain, ih: this.visemes.ih * gain, ou: this.visemes.ou * gain, ee: this.visemes.ee * gain, oh: this.visemes.oh * gain };
+    const v = visemeWeights(vis, face.aa ?? 0, smile, this.emotion.oh ?? 0);
     for (const k of VISEME_KEYS) if (has(k)) em.setValue(k, v[k]);
 
-    // Blink: every 2–6 s, sometimes twice; closes in ~70 ms, opens in ~130 ms.
-    const t = this.clock, b = this.blink;
-    if (t >= b.next && b.start < 0) {
-      b.start = t;
-      b.double = Math.random() < 0.15;
-    }
-    let blink = 0;
-    if (b.start >= 0) {
-      const u = t - b.start;
-      blink = u < 0.07 ? u / 0.07 : u < 0.2 ? 1 - (u - 0.07) / 0.13 : 0;
-      if (u >= 0.2) {
-        if (b.double) { b.start = t + 0.06; b.double = false; }
-        else { b.start = -1; b.next = t + 2 + Math.random() * 4; }
-      }
-    }
-    const asleep = this.state === "sleeping" ? 1 : 0;
-    const eyes = Math.max(blink, asleep, Math.min(1, this.emotionEyes + (face.eyes ?? 0)));
+    // Lids: the life layer's blinks (varied, double, on gaze shifts) ∪ state (asleep) ∪ emotion ∪ the gesture's.
+    const eyes = Math.max(f.eyeClose, Math.min(1, face.eyes ?? 0));
     if (has("blink")) em.setValue("blink", Math.min(1, eyes));
   }
 

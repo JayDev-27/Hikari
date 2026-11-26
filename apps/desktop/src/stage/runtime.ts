@@ -90,7 +90,7 @@ export class StageRuntime {
     this.wireProtocol();
     this.playback.onChunkScheduled = (sc) => {
       this.chunkStart.set(sc.seq, sc.ctxStart);
-      this.lipsync.addChunk(sc.ctxStart, sc.chunk.phonemes ?? []);
+      this.lipsync.addChunk(sc.ctxStart, sc.chunk.phonemes ?? [], sc.chunk.language);
       if (!this.firstAudioMarked) {
         this.firstAudioMarked = true;
         const lead = (sc.ctxStart - this.playback.audibleTime()) * 1000;
@@ -102,6 +102,11 @@ export class StageRuntime {
   attach(avatar: AvatarController): void {
     if (this.avatar && this.avatar !== avatar) this.avatar.destroy();
     this.avatar = avatar;
+    // Lip-sync envelope from the avatar's tuning (dev tuner overrides; defaults otherwise).
+    if (avatar.layers) {
+      this.lipsync.attack = avatar.layers.tuning.lipsync.attack;
+      this.lipsync.release = avatar.layers.tuning.lipsync.release;
+    }
     // Fresh per-pixel answer after a render: apply it now. Without this the
     // toggle lagged one cursor event behind — with a resting cursor, she stayed
     // click-through until the mouse moved again (found by the cursor test).
@@ -159,6 +164,16 @@ export class StageRuntime {
     // Always-listening mode opens the mic at start (macOS asks for permission the first time).
     if (this.voice.state.mode === "open") void this.voice.setMode("open").then(() => this.syncMic());
     this.syncMic();
+    // Settings (another window, same origin) writes the mic prefs; apply them here without restarting the stage.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "hikari.micMode" && (e.newValue === "ptt" || e.newValue === "open") && import.meta.env.VITE_MIC_MODE === undefined) {
+        void this.voice.setMode(e.newValue).then(() => this.syncMic());
+      } else if (e.key === "hikari.micDevice") {
+        void this.voice.mic.setDevice(e.newValue || undefined).then(() => this.syncMic());
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    this.subs.add(() => window.removeEventListener("storage", onStorage));
     // Note: no document.visibilitychange pause — WebKit reports this floating,
     // mostly transparent panel as "hidden" while it is on screen (observed in
     // release builds). Only the tray's explicit hide pauses rendering.
@@ -203,7 +218,7 @@ export class StageRuntime {
     c.on("error", (p, env) => this.chat({ kind: "system", text: `${p.code}: ${p.message}`, turnId: env.turnId }));
     c.on("barge_in", () => this.bargeIn("core"));
     // Panels (Settings, Memory, Voice Lab, Activity, Confirm) see the core through the stage: ui/coreBridge.ts.
-    if (inTauri) for (const type of PANEL_MESSAGES) c.on(type, (payload, env) => void emit("core://event", { type, payload, turnId: env.turnId } as CoreEvent));
+    if (inTauri) for (const type of PANEL_MESSAGES) c.on(type, (payload, env) => void emit("core://event", { type, payload, turnId: env.turnId, id: env.id, replyTo: env.replyTo } as CoreEvent));
   }
 
   private newTurn(): void {
@@ -214,7 +229,11 @@ export class StageRuntime {
     this.firstAudioMarked = false;
   }
 
-  private resetSpeechAnimation(): void {
+  /**
+   * Forget the turn's queued cues. `keepFace` (her reply simply ended): the last emotion stays and decays to neutral
+   * on its own (face layer); otherwise (new turn, barge-in, switch) it fades out now.
+   */
+  private resetSpeechAnimation(keepFace = false): void {
     this.speechStreamEnded = false;
     this.gestures = [];
     this.emotions.clear();
@@ -223,7 +242,7 @@ export class StageRuntime {
     this.lastEmotionSeq = -1;
     this.nextSpeechMotion = 0;
     this.captionSeq = -1;
-    this.avatar?.setExpression("neutral", 0);
+    if (!keepFace) this.avatar?.setExpression("neutral", 0);
   }
 
   private applyEmotion(emotion: AvatarEmotion): void {
@@ -342,6 +361,19 @@ export class StageRuntime {
       }));
       this.subs.add(listen<boolean>("hotkey://mute", (e) => void this.voice.setMuted(e.payload).then(() => this.syncMic())));
       this.subs.add(listen<boolean>("stage://visible", (e) => this.setVisible(e.payload)));
+      // A confirmed tool runs (Confirm window, M7): she looks focused on it (layer 2 "working" posture) unless
+      // she is talking or listening; when it ends she goes back to idle, if nothing else changed her state.
+      this.subs.add(listen<{ working: boolean; tool?: string }>("activity://working", (e) => {
+        const st = useStage.getState().state;
+        if (e.payload.working) {
+          if (st === "speaking" || st === "listening" || st === "thinking" || this.playback.isPlaying) return;
+          this.avatar?.setState("working");
+          useStage.getState().setState("working");
+        } else if (st === "working") {
+          this.avatar?.setState("idle");
+          useStage.getState().setState("idle");
+        }
+      }));
       this.subs.add(listen<{ text: string }>("chat://send", (e) => void this.sendText(e.payload.text)));
       this.subs.add(listen("chat://hello", () => void emitTo("chat", "chat://history", this.chatLog)));
       this.subs.add(listen<CoreEvent>("core://send", (e) => this.core.send(e.payload.type, e.payload.payload)));
@@ -420,7 +452,7 @@ export class StageRuntime {
       a.setState("speaking");
       useStage.getState().setState("speaking");
     } else if (this.speechStreamEnded && this.captionSeq >= 0 && !this.playback.isPlaying && t >= (this.playback.scheduled.at(-1)?.ctxEnd ?? t)) {
-      this.resetSpeechAnimation();
+      this.resetSpeechAnimation(true);
       if (useStage.getState().state === "speaking") {
         a.setState("idle");
         useStage.getState().setState("idle");

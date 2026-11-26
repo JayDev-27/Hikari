@@ -1,4 +1,5 @@
 import type { Emotion, GestureTag } from "@hikari/protocol";
+import type { LayerAnimator } from "./layers/animator";
 
 /** VRM 1.0 viseme set (あいうえお). Live2D maps these to MouthOpenY/MouthForm. */
 export interface Visemes {
@@ -24,6 +25,8 @@ export type AvatarEvent =
  */
 export interface AvatarController {
   readonly renderer: "live2d" | "vrm" | "iki";
+  /** The four animation layers this renderer applies every frame (layers/animator.ts); the dev tuner edits its tuning. */
+  readonly layers?: LayerAnimator;
   setExpression(emotion: Emotion, intensity: number): void;
   playMotion(name: GestureTag | string, opts?: { interrupt?: boolean }): void;
   /** Normalised -1..1 target in model space (0,0 = straight ahead). */

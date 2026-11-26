@@ -7,6 +7,14 @@ import type { Visemes } from "../avatar/types";
  * Hindi "ṛ" (ɽ). Schwa deletion is resolved upstream: the phoneme stream we get
  * already reflects what is actually spoken, so we never insert inherent schwas.
  *
+ * Hindi vs English (Hinglish code-switching): the same symbol can look different
+ * in the two languages. Hindi's short "a" (अ, written ə) is a full, fairly open
+ * vowel, while English ə is a reduced, nearly closed one. {@link markLanguages}
+ * decides per phoneme from the phones around it (retroflex, aspirated, dental,
+ * nasal-vowel and tap-r phones say Hindi; ɹ æ θ ð ɜ w and English diphthongs say
+ * English), falling back to the chunk's language, and {@link resolvePhoneme}
+ * picks the variant. m/b/p are full closures in both.
+ *
  * `dominance` (Cohen–Massaro coarticulation): how strongly a segment imposes its
  * shape on neighbours. Bilabials are highest so lips always close on m/b/p.
  */
@@ -30,6 +38,18 @@ const vowels: Record<string, VisemeTarget> = {
   o: V({ oh: 1 }, 1.1), "oː": V({ oh: 1 }, 1.1), "ɔ": V({ oh: 0.85, aa: 0.25 }), "ɔː": V({ oh: 0.85, aa: 0.25 }), "ɒ": V({ oh: 0.7, aa: 0.3 }),
 };
 
+/** Language-specific variants (only where the mouth really differs). */
+const hindiVowels: Record<string, VisemeTarget> = {
+  // अ: open-mid central, the most common Hindi vowel; a full syllable nucleus, not a reduced one.
+  "ə": V({ aa: 0.55 }, 0.75),
+  // ऐ / औ in standard Hindi are long monophthongs [ɛː] [ɔː]: hold the shape (no glide).
+  "ɛ": V({ ee: 0.8, aa: 0.3 }), "ɔ": V({ oh: 0.85, aa: 0.3 }, 1.1),
+};
+const englishVowels: Record<string, VisemeTarget> = {
+  // Reduced English schwa ("about", "the"): barely open, yields to its neighbours.
+  "ə": V({ aa: 0.28 }, 0.4, 0.05),
+};
+
 // Consonants: lips/jaw only; tongue-only distinctions collapse to a small opening.
 const consonants: Record<string, VisemeTarget> = {
   // bilabials: full closure, high dominance
@@ -44,9 +64,12 @@ const consonants: Record<string, VisemeTarget> = {
   n: V({ ih: 0.2, aa: 0.1 }, 0.5), s: V({ ih: 0.35 }, 1.2), z: V({ ih: 0.35 }, 1.1), l: V({ aa: 0.25, ih: 0.15 }, 0.5),
   "θ": V({ ih: 0.3, aa: 0.15 }, 1), "ð": V({ ih: 0.3, aa: 0.15 }, 0.9),
   r: V({ ou: 0.25, aa: 0.15 }, 0.7), "ɾ": V({ aa: 0.2 }, 0.4), "ɹ": V({ ou: 0.35, aa: 0.1 }, 0.8),
-  // retroflex series (tongue curl; slightly rounded, jaw a bit lower)
-  "ʈ": V({ aa: 0.2, oh: 0.12 }, 0.6), "ɖ": V({ aa: 0.2, oh: 0.12 }, 0.6), "ɳ": V({ aa: 0.18, oh: 0.1 }, 0.5),
-  "ɽ": V({ aa: 0.25, oh: 0.15 }, 0.5), "ɻ": V({ aa: 0.2, oh: 0.15 }, 0.6), "ʂ": V({ ou: 0.3, ih: 0.2 }, 1.1),
+  // retroflex series: the tongue tip curls back, so the jaw sits a little lower than for dentals and the lips are
+  // neutral to slightly rounded. Low-ish dominance: the vowels around them shape the lips.
+  "ʈ": V({ aa: 0.22, oh: 0.1 }, 0.55), "ɖ": V({ aa: 0.22, oh: 0.1 }, 0.55), "ɳ": V({ aa: 0.2, oh: 0.08 }, 0.45),
+  // ड़ / ढ़: a quick flap, nearly all neighbour.
+  "ɽ": V({ aa: 0.28, oh: 0.12 }, 0.4, 0.04), "ɻ": V({ aa: 0.2, oh: 0.15 }, 0.6), "ɭ": V({ aa: 0.25, oh: 0.08 }, 0.45),
+  "ʂ": V({ ou: 0.3, ih: 0.2 }, 1.1), "ʐ": V({ ou: 0.3, ih: 0.2 }, 1.0),
   // post-alveolars: lip protrusion
   "ʃ": V({ ou: 0.45, ee: 0.25 }, 1.4), "ʒ": V({ ou: 0.45, ee: 0.25 }, 1.3),
   "tʃ": V({ ou: 0.4, ee: 0.25 }, 1.3), "dʒ": V({ ou: 0.4, ee: 0.25 }, 1.3), "ʧ": V({ ou: 0.4, ee: 0.25 }, 1.3), "ʤ": V({ ou: 0.4, ee: 0.25 }, 1.3),
@@ -58,6 +81,8 @@ const consonants: Record<string, VisemeTarget> = {
 };
 
 const special: Record<string, VisemeTarget> = {
+  // Anusvara / chandrabindu written as its own token: the velum drops, the lips do nothing of their own.
+  "ⁿ": V({ aa: 0.12 }, 0.25), "ṃ": V({ aa: 0.12 }, 0.25), "ṁ": V({ aa: 0.12 }, 0.25), "̃": V({ aa: 0.12 }, 0.25),
   // Silence = resting posture: weak, short reach, NOT a closure (that's for m/b/p).
   // Alone it still yields a closed mouth (all-zero target); next to speech it yields.
   sil: V({}, 0.4, 0.03),
@@ -65,42 +90,93 @@ const special: Record<string, VisemeTarget> = {
   sp: V({}, 0.6, 0.05),
 };
 
-const NASAL = /[̃]/g; // combining tilde
+const NASAL = /\u0303/g; // combining tilde
 const LENGTH = /ː/g;
 const ASPIRATION = /[ʰʱ]/g;
+/** Stress marks, tie bars, syllable breaks and espeak's ASCII stress: not sounds, stripped before lookup. */
+const MARKS = /[ˈˌ'",.]|\u035C|\u0361/g;
+
+export type PhonemeLanguage = "hi" | "en";
 
 export interface ResolvedPhoneme {
   target: VisemeTarget;
-  /** Aspirated/breathy stops release with a short open puff after closure. */
+  /** Aspirated (ʰ) or breathy-voiced (ʱ) stop: releases with an open puff after the closure. */
   aspirated: boolean;
+  /** ʱ: murmured release, longer and more open than a plain ʰ puff. */
+  breathy: boolean;
   nasal: boolean;
+  /** Primary stress mark (ˈ) on the token. */
+  stressed: boolean;
 }
 
-/** Resolve one IPA token (possibly with diacritics) to its viseme target. */
-export function resolvePhoneme(p: string): ResolvedPhoneme {
-  const raw = p.trim().normalize("NFD");
-  if (special[raw]) return { target: special[raw], aspirated: false, nasal: false };
+/** Strip diacritics that don't change the mouth (stress, tie bars) and normalise for lookup. */
+export function cleanPhoneme(p: string): { raw: string; stressed: boolean } {
+  const n = p.trim().normalize("NFD");
+  return { raw: n.replace(MARKS, ""), stressed: n.includes("ˈ") || n.includes("'") };
+}
+
+/** Resolve one IPA token (possibly with diacritics) to its viseme target. `lang` picks Hindi/English variants. */
+export function resolvePhoneme(p: string, lang?: PhonemeLanguage): ResolvedPhoneme {
+  const { raw, stressed } = cleanPhoneme(p);
+  const sp = special[raw] ?? special[raw.normalize("NFC")];
+  if (sp) return { target: sp, aspirated: false, breathy: false, nasal: raw !== "sil" && raw !== "sp" && raw !== "br", stressed };
   const aspirated = ASPIRATION.test(raw);
   ASPIRATION.lastIndex = 0;
-  const nasal = NASAL.test(raw) || raw.endsWith("ⁿ") || raw === "ṃ";
+  const breathy = raw.includes("ʱ");
+  const nasal = NASAL.test(raw) || raw.endsWith("ⁿ");
   NASAL.lastIndex = 0;
   const base = raw.replace(ASPIRATION, "").replace(NASAL, "").replace("ⁿ", "").normalize("NFC");
-  const hit = vowels[base] ?? consonants[base] ?? vowels[base.replace(LENGTH, "")] ?? consonants[base.replace(LENGTH, "")];
+  const short = base.replace(LENGTH, "");
+  const variant = lang === "hi" ? hindiVowels : lang === "en" ? englishVowels : undefined;
+  const hit = variant?.[short] ?? vowels[base] ?? consonants[base] ?? vowels[short] ?? consonants[short];
   if (hit) {
-    // Nasal vowels: same shape, slightly less jaw opening.
-    if (nasal && vowels[base.replace(LENGTH, "")]) {
+    // Nasal vowels: same shape, slightly less jaw opening (the velum, not the lips, makes the difference).
+    if (nasal && (vowels[short] || variant?.[short])) {
       const v: Partial<Visemes> = {};
       for (const [k, w] of Object.entries(hit.v)) v[k as keyof Visemes] = (w ?? 0) * 0.85;
-      return { target: { ...hit, v }, aspirated, nasal };
+      return { target: { ...hit, v }, aspirated, breathy, nasal, stressed };
     }
-    return { target: hit, aspirated, nasal };
+    return { target: hit, aspirated, breathy, nasal, stressed };
   }
   // Diphthong / affricate cluster like "aɪ", "oʊ": take the first resolvable char.
   for (const ch of base) {
     const t = vowels[ch] ?? consonants[ch];
-    if (t) return { target: t, aspirated, nasal };
+    if (t) return { target: t, aspirated, breathy, nasal, stressed };
   }
-  return { target: V({ aa: 0.2 }, 0.3), aspirated, nasal };
+  return { target: V({ aa: 0.2 }, 0.3), aspirated, breathy, nasal, stressed };
+}
+
+// \u032A: dental bridge (t̪ d̪), \u0303: nasal vowel tilde.
+const HINDI_MARKERS = /[ʈɖɳɽʂɭɦʋɾʰʱ]|\u032A|\u0303|aː|eː|oː/;
+const ENGLISH_MARKERS = /[ɹæθðɜɚɒw]|eɪ|oʊ|aɪ|aʊ|ɔɪ|ɪə|ʊə|əʊ/;
+const BOUNDARY = new Set(["sil", "sp", "br", "|", " ", ""]);
+
+/**
+ * Hindi or English, per phoneme, for a chunk that may switch between them (Hinglish). Evidence comes from the
+ * phones within ±`reach` of each one (not across a pause): Hindi-only phones vs English-only phones. Ties (and
+ * phones with no evidence nearby) take the chunk's language; "hinglish"/"unknown" chunks default to Hindi, since
+ * an English word in Hinglish usually carries its own English markers.
+ */
+export function markLanguages(phonemes: string[], chunkLanguage?: string, reach = 3): PhonemeLanguage[] {
+  const fallback: PhonemeLanguage = chunkLanguage === "en" ? "en" : "hi";
+  const score = phonemes.map((p) => {
+    const n = cleanPhoneme(p).raw;
+    if (BOUNDARY.has(n)) return null;
+    return (HINDI_MARKERS.test(n) ? 1 : 0) - (ENGLISH_MARKERS.test(n) ? 1 : 0);
+  });
+  return phonemes.map((_, i) => {
+    if (score[i] === null) return fallback;
+    let sum = 0;
+    for (const dir of [-1, 1]) {
+      for (let k = dir === -1 ? 0 : 1; k <= reach; k++) {
+        const s = score[i + dir * k];
+        if (s === undefined || s === null) break;
+        // Nearer phones count more.
+        sum += s * (k === 0 ? 1.5 : 1 / k);
+      }
+    }
+    return sum > 0.01 ? "hi" : sum < -0.01 ? "en" : fallback;
+  });
 }
 
 /** Split diphthongs into two halves so the mouth actually travels (aɪ → a…ɪ). */

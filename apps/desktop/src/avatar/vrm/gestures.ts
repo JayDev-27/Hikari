@@ -168,19 +168,21 @@ export function resolveGesture(name: string, motionMap?: Record<string, { group:
 
 /**
  * Idle life at time `t` (s): breathing (chest and shoulders), a slow weight sway, small head drift, arms that hang
- * and swing very slightly. `talk` 0..1 adds the small head beats people make while speaking.
+ * and swing very slightly. `talk` 0..1 adds the small head beats people make while speaking. `life` comes from the
+ * layer animator: its breath (-1 out .. 1 in, else a fixed 4.2 s cycle), breath depth and a sway multiplier.
  */
-export function idlePose(t: number, talk = 0): Pose {
-  const breath = Math.sin(t * Math.PI * 2 / 4.2);
-  const sway = noise(t * 0.35, 1);
+export function idlePose(t: number, talk = 0, life: { breath?: number; depth?: number; sway?: number } = {}): Pose {
+  const breath = (life.breath ?? Math.sin(t * Math.PI * 2 / 4.2)) * Math.min(2, life.depth ?? 1);
+  const k = Math.min(1.5, life.sway ?? 1);
+  const sway = noise(t * 0.35, 1) * k;
   const p: Pose = {
     chestX: -1.1 * breath, spineX: 0.4 * breath,
     shoulderL: 0.9 * (0.5 + 0.5 * breath), shoulderR: 0.9 * (0.5 + 0.5 * breath),
-    spineZ: 1.3 * sway, chestZ: -0.6 * sway, spineY: 1.2 * noise(t * 0.27, 2),
-    headX: 1.8 * noise(t * 0.5, 3), headY: 2.5 * noise(t * 0.4, 4), headZ: 1.8 * noise(t * 0.45, 5) + 0.8 * sway,
+    spineZ: 1.3 * sway, chestZ: -0.6 * sway, spineY: 1.2 * k * noise(t * 0.27, 2),
+    headX: 1.8 * k * noise(t * 0.5, 3), headY: 2.5 * k * noise(t * 0.4, 4), headZ: 1.8 * k * noise(t * 0.45, 5) + 0.8 * sway,
     armDownL: -1.2 * sway + 0.6 * breath, armDownR: 1.2 * sway + 0.6 * breath,
-    armFwdL: 1.5 * noise(t * 0.6, 6), armFwdR: 1.5 * noise(t * 0.6, 7),
-    elbowL: 2 * noise(t * 0.5, 8), elbowR: 2 * noise(t * 0.5, 9),
+    armFwdL: 1.5 * k * noise(t * 0.6, 6), armFwdR: 1.5 * k * noise(t * 0.6, 7),
+    elbowL: 2 * k * noise(t * 0.5, 8), elbowR: 2 * k * noise(t * 0.5, 9),
     curlL: 3 * noise(t * 0.4, 10), curlR: 3 * noise(t * 0.4, 11),
   };
   if (talk > 0) {

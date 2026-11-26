@@ -4,6 +4,9 @@ import type { Emotion, GestureTag } from "@hikari/protocol";
 import type { CharacterPack } from "../characters";
 import type { AvatarController, AvatarEvent, AvatarState, Visemes } from "../types";
 import { visemesToLive2D } from "../../lipsync/engine";
+import { LayerAnimator, type LayerFrame } from "../layers/animator";
+import { cubismOffsets, eyeOpenValue } from "../layers/mapping";
+import { loadTuning } from "../layers/tuning";
 import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, limitArmLift, resolveGesture, restoreBases, smoother, type Pose } from "./gestures";
 
 /**
@@ -15,6 +18,13 @@ import { GESTURES, SpringSet, addPoses, applyOffsets, idlePose, limitArmLift, re
  *
  * The stage owns the frame rate (render tiers), so the player's own rAF loop is never
  * started: `update()` advances motion and draws one frame.
+ *
+ * The four layers (layers/animator.ts) on Iki: (1) base life is IkiMotion's idle (its own blinks, breath, gaze
+ * jumps, head drift, hair physics) plus our idle arm life, weight shift, look-aways and blinks on gaze shifts;
+ * (2) the state posture adds head/body offsets, a state gaze (via setGazeTarget, so the head follows the eyes),
+ * lids, brows and breath tempo; (3) gestures (gestures.ts) go on top through springs, ducking the posture;
+ * (4) the face: the decaying emotion picks the rig's expression each frame (a gesture's own expression wins while
+ * it plays), plus smile/brow extras, lip sync and the cursor look.
  */
 
 /** Hikari emotion → the default expressions Iki's rig declares. */
@@ -47,6 +57,7 @@ const TIMED_PARAMETERS = new Set([
 
 export class IkiAvatar implements AvatarController {
   readonly renderer = "iki" as const;
+  readonly layers: LayerAnimator;
   onHitChange?: (hit: string | null) => void;
   onDestroy?: () => void;
 
@@ -58,21 +69,25 @@ export class IkiAvatar implements AvatarController {
   private params = new Set<string>();
   private state: AvatarState = "idle";
   private mouth = { open: 0, form: 0 };
-  private look = { x: 0, y: 0, active: false };
   private busyUntil = 0;
+  /** A gesture's own expression, shown while it plays (it wins over the emotion's). */
+  private gestureExpr: { id: string; until: number } | null = null;
+  /** Expression currently asked of IkiMotion (null = none). */
+  private expr: string | null = null;
+  private gazeHeld = false;
   private gesture: { name: string; pose: (t: number) => Pose; start: number; dur: number; scale: number; timed: boolean } | null = null;
   /** Values our offsets were added to last frame, restored before IkiMotion runs (see gestures.ts). */
   private bases = new Map<string, number>();
   // Elbows follow faster than the shoulder and torso.
   private springs: SpringSet;
-  /** Idle weight shift between the legs (ParamLegShift, a Hikari addition to the model): current and target. */
-  private leg = { v: 0, target: 0.6, next: 0 };
   private pendingHit: { x: number; y: number } | null = null;
   private lastHit: string | null = null;
   private pixel = new Uint8Array(4);
   private destroyed = false;
 
   private constructor(private pack: CharacterPack) {
+    // IkiMotion blinks on its own; the animator adds only event blinks (gaze shifts, waking).
+    this.layers = new LayerAnimator({ tuning: loadTuning(pack.id), ownBlink: false });
     this.springs = new SpringSet(8.5, { ParamElbowL: 20, ParamElbowR: 20 }, Math.max(0.65, Math.min(1, pack.springDamping ?? 1)));
   }
 
@@ -144,13 +159,33 @@ export class IkiAvatar implements AvatarController {
     (this.player as unknown as { renderFrame(): void }).renderFrame();
   }
 
+  /** The emotion goes to the face layer, which holds it, decays it and picks the expression each frame. */
   setExpression(emotion: Emotion, intensity: number): void {
-    const id = (this.pack.expressionMap?.[emotion] as string | undefined) ?? EMOTION_TO_EXPRESSION[emotion];
-    if (!id || intensity < 0.15) {
-      this.motion.stopExpression();
-      return;
+    this.layers.setEmotion(emotion, intensity);
+  }
+
+  private emotionExpression(emotion: Emotion): string | undefined {
+    return (this.pack.expressionMap?.[emotion] as string | undefined) ?? EMOTION_TO_EXPRESSION[emotion];
+  }
+
+  /** The expression the face should show now: a playing gesture's own, else the (decaying) emotion's. */
+  private updateExpression(f: LayerFrame, now: number): void {
+    let want: string | null = null;
+    if (this.gestureExpr && now < this.gestureExpr.until) want = this.gestureExpr.id;
+    else {
+      this.gestureExpr = null;
+      const th = this.layers.tuning.emotion.threshold;
+      const id = this.emotionExpression(f.emotion.name) ?? null;
+      // Hysteresis: an expression already showing stays until the emotion has faded a bit further.
+      const keep = id !== null && id === this.expr ? th * 0.7 : th;
+      if (id && f.emotion.weight >= keep) want = id;
     }
-    this.motion.playExpression(id);
+    if (want === this.expr) return;
+    if (want && this.motion.playExpression(want)) this.expr = want;
+    else {
+      if (this.expr) this.motion.stopExpression();
+      this.expr = null;
+    }
   }
 
   playMotion(name: GestureTag | string, opts?: { interrupt?: boolean }): void {
@@ -173,42 +208,41 @@ export class IkiAvatar implements AvatarController {
     if (g) {
       // A gesture already in progress is not restarted by a repeat request (a burst of identical cues).
       if (this.gesture?.name === gname && now - this.gesture.start < this.gesture.dur) return;
-      // A little variation each time, so repeats never look canned.
-      const dur = g.dur * 1000 * (0.92 + Math.random() * 0.16);
-      this.gesture = { name: gname, pose: g.pose, start: now, dur, scale: 0.9 + Math.random() * 0.15, timed: g.timed ?? false };
+      // A little variation each time, so repeats never look canned. The tuner's speed scales the whole timeline
+      // (timed gestures stay in sync); its intensity scales only the free (non-timed) offsets.
+      const tg = this.layers.tuning.gesture;
+      const dur = g.dur * 1000 * (0.92 + Math.random() * 0.16) / Math.max(0.2, tg.speed);
+      this.gesture = { name: gname, pose: g.pose, start: now, dur, scale: (0.9 + Math.random() * 0.15) * tg.intensity, timed: g.timed ?? false };
       this.busyUntil = now + dur;
       const exprId = g.expression ?? GESTURE_TO_EXPRESSION[name as GestureTag];
-      if (exprId && this.motion.playExpression(exprId)) window.setTimeout(() => !this.destroyed && this.motion.stopExpression(), g.dur * 1000);
+      if (exprId) this.gestureExpr = { id: exprId, until: now + dur };
       return;
     }
     const expr = GESTURE_TO_EXPRESSION[name as GestureTag];
-    if (expr && this.motion.playExpression(expr)) {
-      this.busyUntil = performance.now() + 1800;
-      window.setTimeout(() => !this.destroyed && this.motion.stopExpression(), 1800);
+    if (expr) {
+      this.busyUntil = now + 1800;
+      this.gestureExpr = { id: expr, until: now + 1800 };
     }
   }
 
   lookAt(x: number, y: number): void {
     const k = this.pack.gazeScale ?? 1;
-    this.look = { x: Math.max(-1, Math.min(1, x * k)), y: Math.max(-1, Math.min(1, y * k)), active: true };
-    this.motion.setGazeTarget(this.look.x, this.look.y);
+    this.layers.lookAt(x * k, y * k);
   }
 
   setVisemes(weights: Visemes): void {
     this.mouth = visemesToLive2D(weights);
   }
 
+  /** The posture cross-fades in the layer animator; a gesture in progress keeps playing over it. */
   setState(state: AvatarState): void {
     this.state = state;
-    if (state === "thinking") this.motion.setGazeTarget(0.35, 0.6);
-    else if (this.look.active) this.motion.setGazeTarget(this.look.x, this.look.y);
-    else this.motion.clearGazeTarget();
+    this.layers.setState(state);
   }
 
   idle(): void {
-    this.motion.stopExpression();
-    this.motion.clearGazeTarget();
-    this.look.active = false;
+    this.layers.setEmotion("neutral", 0);
+    this.layers.releaseLook();
   }
 
   react(event: AvatarEvent): void {
@@ -216,6 +250,7 @@ export class IkiAvatar implements AvatarController {
     // A tap never cuts a running gesture short (a flower offer snapping into a wave looks broken).
     if (this.gesture && performance.now() - this.gesture.start < this.gesture.dur) return;
     const tag = event.area === "head" ? (this.pack.motionMap?.tap_head ? "tap_head" : "nod") : this.pack.motionMap?.tap_body ? "tap_body" : "wave";
+    if (event.area === "head") this.layers.blink();
     this.playMotion(tag, { interrupt: true });
   }
 
@@ -233,18 +268,22 @@ export class IkiAvatar implements AvatarController {
     const now = performance.now();
     const access = { get: (id: string) => this.player.getParameter(id), set: (id: string, v: number) => this.player.setParameter(id, v), has: (id: string) => this.params.has(id) };
     restoreBases(access, this.bases);
+    const gesturing = !!this.gesture || now < this.busyUntil || this.motion.activeMotion() !== null;
+    const f = this.layers.update(dt, { gesturing });
+    // Layer 4 look-at: the cursor, blended with the state's gaze and look-aways. Through IkiMotion's gaze target, so
+    // the head follows the eyes; with nothing to hold, IkiMotion's own idle gaze runs.
+    if (f.gaze.active) {
+      this.motion.setGazeTarget(f.gaze.x, f.gaze.y);
+      this.gazeHeld = true;
+    } else if (this.gazeHeld) {
+      this.motion.clearGazeTarget();
+      this.gazeHeld = false;
+    }
+    this.updateExpression(f, now);
     this.motion.update(now);
     const idleTempo = Math.max(0.25, this.pack.idleTempo ?? 1);
     const idleAmplitude = Math.max(0, Math.min(1, this.pack.idleAmplitude ?? 1));
     // What the app drives goes after the motion update, so it wins.
-    if (this.params.has("ParamLegShift")) {
-      // Shift the weight from one leg to the other every 7–12 s, easing over ~2 s.
-      if (now >= this.leg.next) {
-        this.leg.target = -Math.sign(this.leg.target || 1) * (0.45 + Math.random() * 0.45);
-        this.leg.next = now + (7000 + Math.random() * 5000) / idleTempo;
-      }
-      this.leg.v += (this.leg.target - this.leg.v) * (1 - Math.exp(-dt / 0.9));
-    }
     let target: Pose = {};
     const timed: Pose = {};
     if (this.gesture) {
@@ -260,12 +299,13 @@ export class IkiAvatar implements AvatarController {
       limitArmLift(target, this.pack.armLiftMax);
     }
     target = this.springs.step(target, dt);
-    // Fade out the idle weight shift as a signature takes weight onto one leg.
-    // The sum then stays within the leg warp's range, even on the same side.
+    // Layer 1 weight shift (ParamLegShift, a Hikari addition to the model), faded out as a signature takes weight
+    // onto one leg, so the sum stays within the leg warp's range, even on the same side.
     const gestureLeg = target.ParamLegShift ?? 0;
-    const idleLeg = this.leg.v * idleAmplitude * (1 - Math.abs(gestureLeg));
-    const life = idlePose(now / 1000 * idleTempo, idleLeg + gestureLeg, this.state === "speaking", Math.min(1, this.mouth.open * 1.4));
-    for (const id of Object.keys(life)) life[id] *= idleAmplitude;
+    const idleLeg = this.params.has("ParamLegShift") ? f.weightShift * idleAmplitude * (1 - Math.abs(gestureLeg)) : 0;
+    const speaking = this.state === "speaking";
+    const life = idlePose(now / 1000 * idleTempo, idleLeg + gestureLeg, speaking, Math.min(1, this.mouth.open * 1.4));
+    for (const id of Object.keys(life)) life[id] *= idleAmplitude * Math.min(1.2, f.sway);
     // A timed gesture places the arms exactly (palms that must meet), so idle arm sway fades out under it.
     const clapArms = 1 - smoother(Math.abs(timed.ParamElbowL ?? 0) / 40);
     const guidedRightArm = Math.max(timed.ParamGlassesReach ?? 0, timed.ParamLuStudy ?? 0,
@@ -276,15 +316,29 @@ export class IkiAvatar implements AvatarController {
     life.ParamElbowR *= rightArmIdle;
     life.ParamArmL *= leftArmIdle;
     life.ParamElbowL *= leftArmIdle;
-    if (this.mouth.open > 0.01 || this.state === "speaking") {
-      this.player.setParameter(StandardParameter.MouthOpen, Math.min(1, this.mouth.open * 1.1));
+    const open = Math.min(1, this.mouth.open * this.layers.tuning.face.mouthGain);
+    if (open > 0.01 || speaking) {
+      this.player.setParameter(StandardParameter.MouthOpen, Math.min(1, open * 1.1));
       if (this.params.has(StandardParameter.MouthForm)) this.player.setParameter(StandardParameter.MouthForm, this.mouth.form);
     }
-    applyOffsets(access, addPoses(life, target, timed, { ParamLegShift: idleLeg }), this.bases);
-    if (this.state === "sleeping") {
-      this.player.setParameter(StandardParameter.EyeOpenLeft, 0.15);
-      this.player.setParameter(StandardParameter.EyeOpenRight, 0.15);
+    // Layer 2 posture (+ the settle after a gesture) and layer 4 smile, as offsets under the gesture's.
+    const posture = cubismOffsets(f);
+    posture.ParamMouthForm = 0.35 * f.face.smile;
+    applyOffsets(access, addPoses(life, posture, target, timed, { ParamLegShift: idleLeg }), this.bases);
+    // Lids: blinks on gaze shifts, state (sleeping shut, working lowered) and emotion, over IkiMotion's own blink.
+    if (f.eyeClose > 0.001 || f.eyeWiden > 0.001) {
+      for (const id of [StandardParameter.EyeOpenLeft, StandardParameter.EyeOpenRight]) {
+        if (this.params.has(id)) this.player.setParameter(id, eyeOpenValue(this.player.getParameter(id), f, 1.2));
+      }
     }
+    // Slow sleeping breath: IkiMotion breathes at its own tempo, so the posture's breath takes over as it departs.
+    const breathK = Math.min(1, Math.abs(f.posture.breathRate - 1) * 3);
+    if (breathK > 0.01 && this.params.has(StandardParameter.Breath)) {
+      const own = this.player.getParameter(StandardParameter.Breath);
+      this.player.setParameter(StandardParameter.Breath, own + (Math.min(1, f.breath * f.breathDepth) - own) * breathK);
+    }
+    // A state's gesture tendency (thinking: hand to chin) plays only into a pause.
+    if (f.cue && !gesturing) this.playMotion(f.cue);
     this.draw();
     if (this.pendingHit) this.readHit();
   }

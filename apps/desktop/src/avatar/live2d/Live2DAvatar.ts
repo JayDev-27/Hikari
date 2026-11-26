@@ -11,6 +11,9 @@ import type { CharacterPack } from "../characters";
 
 import { installPoseRig, type DrawableModel } from "./poseRig";
 import { lipSyncIds } from "./lipSyncIds";
+import { LayerAnimator, type LayerFrame } from "../layers/animator";
+import { cubismOffsets, eyeOpenValue } from "../layers/mapping";
+import { loadTuning } from "../layers/tuning";
 
 let pluginAdded = false;
 
@@ -23,20 +26,25 @@ interface CoreModel {
   getParameterValueByIndex(i: number): number;
 }
 
-const EMOTION_FORM: Partial<Record<Emotion, number>> = { joy: 0.45, fun: 0.35, teasing: 0.3, angry: -0.35, sorrow: -0.25 };
-
 /**
  * Live2D renderer (Pixi v8 + untitled-pixi-live2d-engine).
  *
- * Layering (M0 subset of §2.5):
- *  - life: engine's eye-blink + our breathing and micro head sway (Perlin-ish sums of sines)
- *  - look-at: model.focus() with smoothing
- *  - mouth: visemes → ParamMouthOpenY/ParamMouthForm written in `beforeModelUpdate`,
- *    i.e. after motions/expressions so lip sync always wins; emotion biases MouthForm (smile while talking)
- *  - gestures: tag → motion group via the pack's motionMap, parallel to idle
+ * The four layers (layers/animator.ts), written in `beforeModelUpdate`, i.e. after motions/expressions:
+ *  1. life: our blinks (the engine's auto-blink is switched off so blinks vary and follow gaze shifts), breath,
+ *     micro head sway (sums of incommensurate sines) and a slow weight shift;
+ *  2. state posture: head/body offsets, lids and brows, cross-faded between states;
+ *  3. gestures: tag → motion group via the pack's motionMap (the motion plays under our offsets; the posture
+ *     ducks while it runs, and the body settles when it ends);
+ *  4. face: the decaying emotion picks the pack's expression and biases MouthForm; visemes →
+ *     ParamMouthOpenY/ParamMouthForm, so lip sync always wins; gaze (cursor, state gaze, look-aways, saccades)
+ *     through the focus controller, smoothed.
  */
 export class Live2DAvatar implements AvatarController {
   readonly renderer = "live2d" as const;
+  layers!: LayerAnimator;
+  private f?: LayerFrame;
+  /** Expression currently applied from the emotion (undefined = none / reset). */
+  private expr: string | number | undefined;
   private app!: Application;
   private model!: Live2DModel;
   private core!: CoreModel;
@@ -44,12 +52,8 @@ export class Live2DAvatar implements AvatarController {
   /** Parameters the model declares for lip sync (its `LipSync` group); the official Mao uses ParamA. */
   private lipIds: string[] = [];
   private vis: Visemes = { ...ZERO_VISEMES };
-  private emotion: Emotion = "neutral";
-  private emotionIntensity = 0;
-  private expressionWeight = 1;
   private state: AvatarState = "idle";
-  private t = 0;
-  private look = { x: 0, y: 0, tx: 0, ty: 0 };
+  private look = { x: 0, y: 0 };
   private pendingHit: { x: number; y: number } | null = null;
   private lastHit: string | null = null;
   private pixel = new Uint8Array(4);
@@ -90,6 +94,10 @@ export class Live2DAvatar implements AvatarController {
       const ids = a.core.getModel().parameters.ids;
       ids.forEach((id, i) => (a.p[id] = i));
       a.lipIds = lipSyncIds(a.model.internalModel, a.p);
+      // Blinks come from the life layer when the model has the standard lids (varied timing, blinks on gaze shifts).
+      const ownBlink = a.p.ParamEyeLOpen !== undefined && a.p.ParamEyeROpen !== undefined;
+      if (ownBlink) (a.model.internalModel as unknown as { eyeBlink?: unknown }).eyeBlink = undefined;
+      a.layers = new LayerAnimator({ tuning: loadTuning(pack.id), ownBlink });
       a.model.internalModel.on("beforeModelUpdate", () => a.applyParams());
       if (pack.poseRig) {
         let textureIndex = -1;
@@ -191,47 +199,64 @@ export class Live2DAvatar implements AvatarController {
 
   private addParam(id: string, v: number) {
     const i = this.p[id];
-    if (i === undefined) return;
+    if (i === undefined || !Number.isFinite(v)) return;
     this.core.setParameterValueByIndex(i, this.core.getParameterValueByIndex(i) + v);
+  }
+
+  private paramMax(id: string): number {
+    const i = this.p[id];
+    const raw = this.core.getModel().parameters as unknown as { maximumValues: Float32Array };
+    return i === undefined ? 1 : raw.maximumValues[i];
   }
 
   /** Runs after motions/expressions each frame, so procedural layers and mouth win. */
   private applyParams(): void {
-    const t = this.t;
-    // Breathing (slower + deeper when sleepy).
-    const sleepy = this.state === "sleeping";
-    this.param("ParamBreath", 0.5 + 0.5 * Math.sin(t * (sleepy ? 1.4 : 2.2)));
-    // Micro head sway: sum of incommensurate sines ≈ smooth noise. Added on top of motion.
-    const sway = sleepy ? 0.4 : 1;
+    const f = this.f;
+    if (!f) return;
+    const t = f.lifeTime;
+    // Layer 1: breath (slower and deeper asleep, from the posture), micro head sway on top of the motion.
+    this.param("ParamBreath", Math.min(1, f.breath * f.breathDepth));
+    const sway = f.sway;
     this.addParam("ParamAngleX", sway * (2.2 * Math.sin(t * 0.61) + 1.1 * Math.sin(t * 1.37)));
     this.addParam("ParamAngleY", sway * (1.4 * Math.sin(t * 0.43 + 1) + 0.6 * Math.sin(t * 1.9)));
-    this.addParam("ParamAngleZ", sway * 1.3 * Math.sin(t * 0.29 + 2) + (this.state === "listening" ? 4 : 0));
-    this.addParam("ParamBodyAngleX", 1.2 * Math.sin(t * 0.37 + 0.5));
-    if (this.state === "thinking") {
-      // Gaze aversion while thinking (up-left).
-      this.param("ParamEyeBallX", -0.6, 0.7);
-      this.param("ParamEyeBallY", 0.5, 0.7);
+    this.addParam("ParamAngleZ", sway * 1.3 * Math.sin(t * 0.29 + 2));
+    this.addParam("ParamBodyAngleX", sway * 1.2 * Math.sin(t * 0.37 + 0.5) + 1.2 * f.weightShift);
+    this.addParam("ParamBodyAngleZ", 2.4 * f.weightShift);
+    // Layer 2 posture + settle (and the brows the face layer shares).
+    for (const [id, v] of Object.entries(cubismOffsets(f))) this.addParam(id, v);
+    // Lids: blink ∪ state ∪ emotion, over whatever the motion wrote.
+    for (const id of ["ParamEyeLOpen", "ParamEyeROpen"]) {
+      const i = this.p[id];
+      if (i !== undefined) this.core.setParameterValueByIndex(i, eyeOpenValue(this.core.getParameterValueByIndex(i), f, this.paramMax(id)));
     }
-    // Mouth from visemes (+ emotion: smile while talking when happy, tighter when angry).
+    // Layer 4 mouth from visemes (+ emotion: smile while talking when happy, tighter when angry).
     const { open, form } = visemesToLive2D(this.vis);
-    const bias = (EMOTION_FORM[this.emotion] ?? 0) * this.emotionIntensity;
-    const openK = this.emotion === "angry" ? 0.85 : 1;
+    const angry = this.layers.emotion.levels.get("angry") ?? 0;
+    const openK = (1 - 0.15 * angry) * this.layers.tuning.face.mouthGain;
     // Drive whatever the model declares for lip sync, mapped through that parameter's own range.
     for (const id of this.lipIds) this.paramNorm(id, Math.min(1, open * openK));
     // Preserve authored mouth shape on the speech rigs, including between words.
     const authoredForm = this.pack.speech && this.p.ParamMouthForm !== undefined
-      ? this.core.getParameterValueByIndex(this.p.ParamMouthForm) * this.expressionWeight
-      : bias;
+      ? this.core.getParameterValueByIndex(this.p.ParamMouthForm) * Math.max(0, Math.min(1, f.emotion.weight))
+      : f.face.smile * 0.9;
     this.param("ParamMouthForm", Math.max(-1, Math.min(1, form * 0.62 + authoredForm)));
   }
 
+  /** The emotion goes to the face layer, which holds it, decays it and picks the expression each frame. */
   setExpression(emotion: Emotion, intensity: number): void {
-    this.emotion = emotion;
-    this.emotionIntensity = intensity;
-    this.expressionWeight = Math.max(0, Math.min(1, intensity));
-    const name = this.pack.expressionMap?.[emotion];
-    if (name !== undefined) void this.model.expression(name);
-    else if (emotion === "neutral") this.model.internalModel.motionManager.expressionManager?.resetExpression();
+    this.layers.setEmotion(emotion, intensity);
+  }
+
+  private updateExpression(f: LayerFrame): void {
+    const map = this.pack.expressionMap ?? {};
+    const th = this.layers.tuning.emotion.threshold;
+    const named = map[f.emotion.name];
+    const keep = named !== undefined && named === this.expr ? th * 0.7 : th;
+    const want = f.emotion.weight >= keep && named !== undefined ? named : map.neutral;
+    if (want === this.expr) return;
+    this.expr = want;
+    if (want !== undefined) void this.model.expression(want);
+    else this.model.internalModel.motionManager.expressionManager?.resetExpression();
   }
 
   playMotion(name: string, { interrupt = false } = {}): void {
@@ -243,16 +268,17 @@ export class Live2DAvatar implements AvatarController {
   }
 
   lookAt(x: number, y: number): void {
-    this.look.tx = Math.max(-1, Math.min(1, x));
-    this.look.ty = Math.max(-1, Math.min(1, y));
+    this.layers.lookAt(x, y);
   }
 
   setVisemes(w: Visemes): void {
     this.vis = w;
   }
 
+  /** The posture cross-fades in the layer animator; a motion in progress keeps playing over it. */
   setState(state: AvatarState): void {
     this.state = state;
+    this.layers.setState(state);
   }
 
   idle(): void {
@@ -263,6 +289,7 @@ export class Live2DAvatar implements AvatarController {
   react(event: AvatarEvent): void {
     if (event.kind === "click" || event.kind === "poke") {
       const m = this.pack.motionMap?.[`tap_${event.area.toLowerCase()}`] ?? this.pack.motionMap?.tap;
+      if (event.area.toLowerCase() === "head") this.layers.blink();
       if (m) void this.model.motion(m.group, m.index, MotionPriority.NORMAL, { loop: false });
     }
   }
@@ -286,11 +313,13 @@ export class Live2DAvatar implements AvatarController {
 
   update(dt: number): void {
     if (this.destroyed) return;
-    this.t += dt;
-    // Smooth look-at (critically-damped-ish), slower when sleepy.
-    const k = 1 - Math.exp(-dt / (this.state === "sleeping" ? 0.8 : 0.18));
-    this.look.x += (this.look.tx - this.look.x) * k;
-    this.look.y += (this.look.ty - this.look.y) * k;
+    const f = this.f = this.layers.update(dt, { gesturing: this.isBusy() });
+    this.updateExpression(f);
+    if (f.cue && !this.isBusy()) this.playMotion(f.cue);
+    // Smooth look-at toward the face layer's gaze (cursor, state gaze, look-aways, saccades), slower when sleepy.
+    const k = 1 - Math.exp(-dt / (this.state === "sleeping" ? 0.8 : 0.12));
+    this.look.x += (f.gaze.x - this.look.x) * k;
+    this.look.y += (f.gaze.y - this.look.y) * k;
     // Live2DModel.focus converts positions to a unit direction, which throws away distance
     // and drives full-strength turns even for tiny cursor changes close to the centre.
     const gaze = this.pack.gazeScale ?? 1;
