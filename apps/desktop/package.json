@@ -16,7 +16,8 @@
     "avsync": "bash dev/avsync.sh",
     "audit:models": "node dev/model-audit/audit.mjs",
     "fix:models": "node dev/model-fix/fix-models.mjs",
-    "fake-core": "node dev/fake-core.mjs"
+    "fake-core": "node dev/fake-core.mjs",
+    "check:bundle": "node scripts/check-bundle.mjs"
   },
   "dependencies": {
     "@hikari/protocol": "workspace:*",
