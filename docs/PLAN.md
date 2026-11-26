@@ -26,7 +26,7 @@ Status legend: ✅ done · 🟡 in progress · ⬜ not started
 
 ## Open questions
 
-0. ~~Idle CPU budget vs smooth idle~~ — decided: keep 30 fps idle (~25 % of a core, release build on M2); deep idle was tried and rejected as laggy. The < 3 % target needs a different approach (e.g. a native renderer), so it's revisited at M8. **M8 measurement (2026-11-26, release, M2):** idle 17.9 % (Iki, Reze) / 28.1 % (Live2D, Hiyori); active 60 fps 39.9 % / 38.4 %. Still far from 3 %; the cheap wins listed in DECISIONS 2026-11-26 (M8) are worth a few points each, not an order of magnitude.
+0. ~~Idle CPU budget vs smooth idle~~ — decided: keep 30 fps idle (~25 % of a core, release build on M2); deep idle was tried and rejected as laggy. The < 3 % target needs a different approach (e.g. a native renderer), so it's revisited at M8. **M8 measurement (2026-11-26, release, M2):** idle 17.9 % (Iki, Reze) / 28.1 % (Live2D, Hiyori); active 60 fps 39.9 % / 38.4 %. Still far from 3 %; the cheap wins listed in DECISIONS 2026-11-26 (M8) are worth a few points each, not an order of magnitude. **Locked screen / sleeping display:** the stage now pauses (1.0 % measured while locked, DECISIONS 2026-11-26).
 
 1. Hima TTS licence — B to contact the author before shipping anything that bundles it.
 2. Peekaboo TCC attribution (Bridge host vs Hikari.app) — test in M7.

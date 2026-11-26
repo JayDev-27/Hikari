@@ -4,6 +4,7 @@ mod hotkeys;
 mod onboarding;
 mod packs;
 mod permissions;
+mod presence;
 mod secrets;
 mod settings_store;
 mod stage;
@@ -77,6 +78,7 @@ pub fn run() {
             hotkeys::setup(handle)?;
             // First run: the welcome window (until the user finishes it once).
             onboarding::setup(handle);
+            presence::watch(handle);
             // Debug builds: HIKARI_OPEN=studio,chat opens those panels at launch (testing without the tray).
             #[cfg(debug_assertions)]
             if let Ok(list) = std::env::var("HIKARI_OPEN") {

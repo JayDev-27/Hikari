@@ -317,3 +317,10 @@ The default packs now include MOC3 rigs and texture atlases based on the officia
 - No live RVC (no maintained Apple-Silicon real-time RVC); §5(c) downgraded to offline augmentation.
 - Lip sync: Cohen–Massaro dominance blending + explicit bilabial closure gate (the unit test showed blending alone leaves lips ~19 % open on "m").
 - Dev without core: releasing push-to-talk with no core connected plays an in-browser synthetic mock turn (formant buzz matched to phoneme timings); double-click on her also plays it. B's `core/mock_server.py` will replay real recorded Hinglish turns.
+
+## 2026-11-26 — The stage stops rendering while the screen is locked or the display sleeps (A)
+
+- **Why:** idle rendering stays at 30 fps by choice (deep idle was rejected as laggy), but nobody can see her behind a lock screen or a sleeping display, and she kept drawing there at 17–28 % of a core.
+- **How:** `src-tauri/src/presence.rs` checks the session every 2 s (`CGSessionCopyCurrentDictionary` → `CGSSessionScreenIsLocked`, `CGDisplayIsAsleep`) and sends the stage the tray's own `stage://visible`. Coming back resumes rendering only if the stage window is still shown, so a Hikari hidden from the tray stays hidden. Tauri reports no window occlusion, so a stage covered by other windows still renders.
+- **Measured** (release build, M2, screen locked, app + WebKit processes over 30 s): **1.0 %** of a core, against 17.9–28.1 % before. Log line: `presence: locked=true display_asleep=false → stage renders: false`.
+- **Open:** the 30 fps idle cost while someone is at the Mac is unchanged; the cheaper-rendering ideas from the M8 entry (no MSAA on Live2D, lower idle resolution) still need an eye test before adoption.
