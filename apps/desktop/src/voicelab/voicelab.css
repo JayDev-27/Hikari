@@ -80,7 +80,7 @@
   background: var(--st-field);
   font: 600 11px var(--st-font);
 }
-.vl-steps li.on .vl-step-dot { background: var(--st-accent); color: #fff; }
+.vl-steps li.on .vl-step-dot { background: var(--accent-fill); color: #fff; }
 .vl-steps li.done .vl-step-dot { background: var(--st-accent-soft); color: var(--st-sel-text); }
 .vl-step-dot svg { width: 11px; height: 11px; stroke-width: 2.2; }
 .vl-step { display: grid; gap: 12px; animation: st-in 0.24s var(--st-ease); }

@@ -101,7 +101,7 @@
   opacity: 0.85;
 }
 .ob-step-dot svg { width: 11px; height: 11px; stroke-width: 2.2; }
-.ob-step.cur .ob-step-dot { background: var(--st-accent); border-color: var(--st-accent); color: #fff; opacity: 1; }
+.ob-step.cur .ob-step-dot { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; opacity: 1; }
 .ob-side-foot { margin: auto 8px 0; font-size: 11px; color: var(--st-text-3); }
 
 /* ---------- page ---------- */
@@ -165,12 +165,12 @@
   padding: 0 18px;
   border: none;
   border-radius: 9px;
-  background: var(--st-accent);
+  background: var(--accent-fill);
   color: #fff;
   font: 600 13px var(--st-font);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 14px var(--st-accent-soft);
 }
-.ob .ob-btn-primary:hover { background: var(--st-accent-press); }
+.ob .ob-btn-primary:hover { background: var(--accent-fill-hover); }
 .ob .ob-btn-plain { height: 32px; background: transparent; border: none; box-shadow: none; color: var(--st-text-2); font-size: 13px; }
 .ob .ob-btn-plain:hover { background: var(--st-field); color: var(--st-text); }
 .ob .ob-dev { font-size: 11px; color: var(--st-text-3); }

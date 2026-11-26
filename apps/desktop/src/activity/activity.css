@@ -49,8 +49,8 @@
   outline: 3px solid var(--st-accent-soft);
   outline-offset: 1px;
 }
-.ac .ac-btn-default { background: var(--st-accent); color: #fff; border: none; font-weight: 600; min-width: 76px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14); }
-.ac .ac-btn-default:hover:not(:disabled) { background: var(--st-accent-press); }
+.ac .ac-btn-default { background: var(--accent-fill); color: #fff; border: none; font-weight: 600; min-width: 76px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14); }
+.ac .ac-btn-default:hover:not(:disabled) { background: var(--accent-fill-hover); }
 .ac .ac-btn-plain { background: transparent; border: none; box-shadow: none; color: var(--st-text-2); padding: 0 10px; }
 .ac .ac-btn-plain:hover:not(:disabled) { background: var(--st-field); color: var(--st-text); }
 .ac .ac-danger { color: var(--st-red); }

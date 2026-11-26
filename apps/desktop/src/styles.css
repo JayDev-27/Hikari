@@ -130,7 +130,7 @@ body,
   padding: 6px 12px;
   border-radius: 8px;
   border: none;
-  background: var(--accent);
+  background: var(--accent-fill);
   color: #fff;
   cursor: pointer;
 }
@@ -183,7 +183,7 @@ html.panel button:disabled {
   cursor: default;
 }
 html.panel button.primary {
-  background: var(--accent);
+  background: var(--accent-fill);
   border-color: transparent;
   color: #fff;
 }

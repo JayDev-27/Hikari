@@ -154,8 +154,8 @@
 .se .se-btn-small { height: 24px; padding: 0 9px; font-size: 12px; border-radius: 6px; }
 .se .se-btn-attn { color: var(--st-sel-text); background: var(--st-accent-soft); border-color: transparent; box-shadow: none; }
 .se .se-btn-attn:hover:not(:disabled) { background: var(--st-sel); }
-.se .se-btn-primary { border: none; background: var(--st-accent); color: #fff; font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
-.se .se-btn-primary:hover:not(:disabled) { background: var(--st-accent-press); }
+.se .se-btn-primary { border: none; background: var(--accent-fill); color: #fff; font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+.se .se-btn-primary:hover:not(:disabled) { background: var(--accent-fill-hover); }
 .se .se-btn-danger-plain { color: var(--st-red); background: transparent; border-color: transparent; box-shadow: none; padding: 0 6px; }
 
 .se .se-switch {
