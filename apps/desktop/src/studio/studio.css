@@ -237,9 +237,9 @@
 .st-stage-col { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 /* The stage tint is resolved here, where the character's --hue is in scope (set on .st-detail). */
 .st-stage {
-  --st-stage-a: hsl(var(--hue, 330) 70% 96%);
-  --st-stage-b: hsl(var(--hue, 330) 45% 86%);
-  --st-stage-glow: hsl(var(--hue, 330) 90% 82% / 0.9);
+  --st-stage-a: hsl(var(--hue, 230) 70% 96%);
+  --st-stage-b: hsl(var(--hue, 230) 45% 86%);
+  --st-stage-glow: hsl(var(--hue, 230) 90% 82% / 0.9);
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
@@ -553,9 +553,9 @@
 
 @media (prefers-color-scheme: dark) {
   .st-stage {
-    --st-stage-a: hsl(var(--hue, 330) 24% 21%);
-    --st-stage-b: hsl(var(--hue, 330) 18% 12%);
-    --st-stage-glow: hsl(var(--hue, 330) 65% 48% / 0.42);
+    --st-stage-a: hsl(var(--hue, 230) 24% 21%);
+    --st-stage-b: hsl(var(--hue, 230) 18% 12%);
+    --st-stage-glow: hsl(var(--hue, 230) 65% 48% / 0.42);
   }
 }
 

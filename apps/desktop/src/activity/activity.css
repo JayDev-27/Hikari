@@ -1,5 +1,5 @@
 /* Activity + Confirm: the agent's safety surface, in Hikari's panel language (tokens from ui/tokens.css).
-   Sensitive things are orange (macOS system orange), never pink: the accent means "Hikari", not "careful". */
+   Sensitive things are orange (macOS system orange), never the accent: the periwinkle means "Hikari", not "careful". */
 
 .ac {
   --ac-warn: #c25700;

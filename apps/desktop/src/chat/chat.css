@@ -1,11 +1,11 @@
 /* Chat — a Messages-style conversation in Hikari's panel language (tokens from ui/tokens.css).
-   Her bubbles are neutral, yours are Hikari pink; runs of messages share tightened corners. */
+   Her bubbles are neutral, yours are the app icon's periwinkle; runs of messages share tightened corners. */
 
 .ch {
   --ch-her: #e9e9eb;
   --ch-her-text: #1d1d1f;
-  --ch-me-a: #f2609b;
-  --ch-me-b: #e04a87;
+  --ch-me-a: #7586ee;
+  --ch-me-b: #5b6ddc;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100vh;
@@ -18,7 +18,7 @@
   -webkit-font-smoothing: antialiased;
 }
 @media (prefers-color-scheme: dark) {
-  .ch { --ch-her: #303034; --ch-her-text: #f5f5f7; --ch-me-a: #ff6aa6; --ch-me-b: #e8508f; }
+  .ch { --ch-her: #303034; --ch-her-text: #f5f5f7; --ch-me-a: #7f8ff2; --ch-me-b: #6172e2; }
 }
 .ch *, .ch *::before, .ch *::after { box-sizing: border-box; }
 .ch p { margin: 0; }

@@ -21,7 +21,7 @@ const PAGES: { id: PageId; title: string; icon: ReactNode; tint: string }[] = [
   { id: "general", title: "General", icon: <IconGear />, tint: "#8e8e93" },
   { id: "providers", title: "Providers", icon: <IconCloud />, tint: "#0a84ff" },
   { id: "performance", title: "Performance", icon: <IconGauge />, tint: "#30b158" },
-  { id: "about", title: "About", icon: <IconInfo />, tint: "#e2508c" },
+  { id: "about", title: "About", icon: <IconInfo />, tint: "#6b7be6" },
 ];
 
 /** macOS app window: the title bar is an overlay, so the sidebar runs up behind the traffic lights. */
