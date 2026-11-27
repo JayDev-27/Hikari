@@ -23,7 +23,7 @@
     "@hikari/protocol": "workspace:*",
     "@ikijs/engine": "0.13.0",
     "@ikijs/format": "0.12.0",
-    "@pixiv/three-vrm": "3.5.5",
+    "@pixiv/three-vrm": "3.6.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-autostart": "^2.7.0",
     "@tauri-apps/plugin-dialog": "^2.8.4",
