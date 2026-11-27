@@ -5,36 +5,19 @@ import { gsap, ScrollTrigger, magnetic, prefersReducedMotion } from './motion';
 
 /* ── Statement ─────────────────────────────────────────────────────────────── */
 export function Statement() {
-  const section = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const el = section.current;
-    const hero = el?.previousElementSibling;
-    const stage = hero?.querySelector<HTMLElement>('.hero-stage');
-    if (!el || !hero || !stage) return;
-    const media = gsap.matchMedia();
-    media.add('(prefers-reduced-motion: no-preference)', () => {
-      const distance = () => (hero.clientHeight - stage.clientHeight) * .12;
-      gsap.fromTo(el, {
-        y: () => -distance(), opacity: 0,
-        clipPath: 'circle(0vmax at 50% 50%)',
-      }, {
-        y: 0, opacity: 1, clipPath: 'circle(76vmax at 50% 50%)', ease: 'none',
-        scrollTrigger: {
-          trigger: hero, start: () => 'bottom top+=' + (stage.clientHeight + distance()),
-          end: () => '+=' + distance(), scrub: true, invalidateOnRefresh: true,
-        },
-      });
-    });
-    return () => media.revert();
-  }, []);
   return (
-    <section ref={section} id="about" className="sec sec-dark statement" aria-label="What Hikari is">
-      <div className="wrap">
+    <section id="about" className="sec statement" aria-label="What Hikari is">
+      <div className="wrap statement-grid">
         <p className="kicker">What she is</p>
-        <p className="statement-text">
+        <p className="statement-text" data-scrub-words>
           She stands beside your windows, looks up when you speak, and answers in your language. She remembers what
           matters to you, and every word of it stays on your Mac.
         </p>
+        <dl className="statement-facts">
+          <div><dt>3</dt><dd>languages, mixed mid-sentence</dd></div>
+          <div><dt>±8 ms</dt><dd>lip sync to her voice</dd></div>
+          <div><dt>Local</dt><dd>voice, memory and brain, by default</dd></div>
+        </dl>
       </div>
     </section>
   );

@@ -62,6 +62,7 @@ const COMPOSITE_FRAG = /* glsl */ `
   uniform sampler2D uScene;
   uniform sampler2D uTrail;
   uniform bool uOverlay;
+  uniform bool uPremultiplied;
   uniform float uEffectStrength;
   uniform float uTime;
 
@@ -72,6 +73,29 @@ const COMPOSITE_FRAG = /* glsl */ `
 
     vec2 offset = vel * energy * 0.022;
     vec4 base = uOverlay ? vec4(0.) : texture2D(uScene, vUv);
+
+    if (uPremultiplied) {
+      // Light backgrounds: the scene target is premultiplied (cleared to transparent black), so refract and tint in
+      // premultiplied space and let the page show through, instead of dragging black into the sky.
+      vec4 col = base;
+      if (energy >= 0.004) {
+        vec4 rS = texture2D(uScene, clamp(vUv + offset * 1.08, 0.0, 1.0));
+        vec4 gS = texture2D(uScene, clamp(vUv + offset, 0.0, 1.0));
+        vec4 bS = texture2D(uScene, clamp(vUv + offset * .92, 0.0, 1.0));
+        float glow = smoothstep(0.06, 0.65, energy) * (1.0 - smoothstep(0.62, 1.0, energy) * 0.35);
+        float wave = 0.5 + 0.5 * sin(vUv.x * 11.0 + vUv.y * 8.0 - uTime * 2.4);
+        vec3 tint = mix(vec3(0.42, 0.52, 0.98), vec3(0.78, 0.84, 1.0), wave);
+        float a = (rS.a + gS.a + bS.a) / 3.0;
+        float ta = glow * 0.22;
+        col = vec4(vec3(rS.r, gS.g, bS.b) * (1.0 - ta) + tint * ta, a + ta * (1.0 - a));
+      }
+      if (col.a < 0.002) { gl_FragColor = vec4(0.0); return; }
+      gl_FragColor = vec4(col.rgb / col.a, col.a);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+      gl_FragColor.rgb *= gl_FragColor.a;
+      return;
+    }
 
     if (energy < 0.004) {
       gl_FragColor = base;
@@ -115,7 +139,7 @@ export class FluidPass {
   private hasMoved = false;
   private targetVelocity = new THREE.Vector2();
 
-  constructor(width: number, height: number, dpr: number, type: THREE.TextureDataType, trailSize = 256) {
+  constructor(width: number, height: number, dpr: number, type: THREE.TextureDataType, trailSize = 256, premultiplied = false) {
     this.quadGeo = new THREE.PlaneGeometry(2, 2);
     this.orthoCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
@@ -166,10 +190,12 @@ export class FluidPass {
         uScene: { value: this.sceneTarget.texture },
         uTrail: { value: this.trailB.texture },
         uOverlay: { value: false },
+        uPremultiplied: { value: premultiplied },
         uEffectStrength: { value: 1.0 },
         uTime: { value: 0 },
       },
       transparent: true,
+      premultipliedAlpha: premultiplied,
       depthTest: false,
       depthWrite: false,
     });
