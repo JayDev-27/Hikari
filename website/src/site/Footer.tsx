@@ -9,10 +9,9 @@ export function Footer() {
     const el = word.current;
     if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        el.classList.add('in-view');
-        observer.disconnect();
-      }
+      const visible = entry.intersectionRatio >= .4;
+      el.classList.toggle('is-visible', visible);
+      if (visible) el.classList.add('in-view');
     }, { threshold: 0.4 });
     observer.observe(el);
     return () => observer.disconnect();
@@ -46,7 +45,9 @@ export function Footer() {
         </div>
         <p ref={word} id="ft-title" className="ft-word">
           <span id="ft-label" className="sr-only">Hikari</span>
-          {Array.from('Hikari', (letter, i) => <span aria-hidden="true" key={i} style={{ animationDelay: `${i * 65}ms` }}>{letter}</span>)}
+          {Array.from('Hikari', (letter, i) => (
+            <span aria-hidden="true" key={i} style={{ '--letter-index': i } as React.CSSProperties}>{letter}</span>
+          ))}
         </p>
         <div className="ft-legal">
           <span>© 2026 Hikari contributors · MIT licence</span>

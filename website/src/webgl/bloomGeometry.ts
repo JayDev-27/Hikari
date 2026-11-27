@@ -2,6 +2,13 @@ import * as THREE from 'three';
 
 const TAU = Math.PI * 2;
 const mix = THREE.MathUtils.lerp;
+const petalBase = new THREE.Color('#ab739c');
+const petalMid = new THREE.Color('#c5cdec');
+const petalRim = new THREE.Color('#edf4ff');
+
+export function shadePetal(color: THREE.Color, body: number, rim: number) {
+  return color.copy(petalBase).lerp(petalMid, body).lerp(petalRim, rim);
+}
 
 export function makeRandom(seed: number) {
   return () => {
@@ -18,9 +25,6 @@ function petalGeometry(seed: number, length: number, width: number, segments: nu
   const colors: number[] = [];
   const uv: number[] = [];
   const order: number[] = [];
-  const base = new THREE.Color('#ab739c');
-  const mid = new THREE.Color('#c5cdec');
-  const rim = new THREE.Color('#edf4ff');
   const tint = new THREE.Color();
   for (let row = 0; row <= segments; row++) {
     const t = row / segments;
@@ -43,8 +47,7 @@ function petalGeometry(seed: number, length: number, width: number, segments: nu
       const bend = 1.12 + .24 * t;
       folded.push(x * (.46 - .13 * t), .14 + radial * Math.cos(bend) - .07 * s * s * t,
         .04 + radial * Math.sin(bend) + curl * .66 + twist);
-      tint.copy(base).lerp(mid, THREE.MathUtils.smoothstep(t, 0, .54))
-        .lerp(rim, Math.min(.9, .66 * edge ** 3.4 + .42 * t ** 2.9));
+      shadePetal(tint, THREE.MathUtils.smoothstep(t, 0, .54), Math.min(.9, .66 * edge ** 3.4 + .42 * t ** 2.9));
       tint.multiplyScalar(.92 + .10 * Math.sin(t * 6 + s * 3 + seed));
       colors.push(tint.r, tint.g, tint.b);
       uv.push(column / across, t);
@@ -110,6 +113,7 @@ function petalTexture() {
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.anisotropy = 4;
+  texture.wrapS = THREE.RepeatWrapping;
   return texture;
 }
 
@@ -239,7 +243,7 @@ export function createBlossom(compact: boolean) {
       .replace('#include <color_fragment>', `#include <color_fragment>
         float fiber = texture2D(bumpMap, vBumpMapUv).r;
         float vein = smoothstep(.61, .84, fiber);
-        float across = abs(vBumpMapUv.x * 2.0 - 1.0);
+        float across = abs(fract(vBumpMapUv.x) * 2.0 - 1.0);
         diffuseColor.rgb *= .88 + .27 * vein;
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.9, .81, .94), vein * .32);`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
@@ -306,6 +310,7 @@ export function createBlossom(compact: boolean) {
   root.add(throat);
   return {
     root,
+    petalMaterial: material,
     open(amount: number, pass: number) {
       for (let i = 0; i < petalMeshes.length; i++) {
         const stagger = .037 * Math.sin(i * 1.77);

@@ -140,7 +140,7 @@ function glow() {
         float r = length((vUv-.5)*2.);
         float glow = exp(-r*r*7.0) * (1. - smoothstep(.65,1.,r));
         float core = exp(-r*r*32.);
-        gl_FragColor = vec4(mix(vec3(.32,.49,.98),vec3(.77,.85,1.),core), glow*intensity);
+        gl_FragColor = vec4(mix(vec3(.60,.48,.78),vec3(1.,.89,.84),core), glow*intensity);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
@@ -173,12 +173,15 @@ export function createSakuraExperience(container: HTMLElement) {
   back.position.set(1, 2, -3);
   const lower = new THREE.DirectionalLight('#eab5ce', .30);
   lower.position.set(-2.5, -3, 1);
-  scene.add(key, fill, back, lower, new THREE.AmbientLight('#becfff', .20));
+  const exteriorAmbient = new THREE.Color('#becfff');
+  const interiorAmbient = new THREE.Color('#f3dbee');
+  const ambient = new THREE.AmbientLight(exteriorAmbient, .20);
+  scene.add(key, fill, back, lower, ambient);
 
   const flower = createBlossom(compact);
   const dust = makeDust(compact);
   const floating = createFloatingPetals(compact);
-  const tunnel = createBlossomInterior(compact);
+  const tunnel = createBlossomInterior(compact, flower.petalMaterial);
   scene.add(tunnel);
   const horizon = glow();
   horizon.position.z = -24.02;
@@ -227,6 +230,11 @@ export function createSakuraExperience(container: HTMLElement) {
     const pass = easedRange(progress, .617, .763);
     const travel = easedRange(progress, .702, 1);
     const thresholdPass = easedRange(progress, .515, .714);
+    const interiorLight = inspect ? 0 : easedRange(progress, .60, .81);
+    fill.intensity = mix(.62, .36, interiorLight);
+    back.intensity = mix(2.14, 1.25, interiorLight);
+    ambient.intensity = mix(.20, .59, interiorLight);
+    ambient.color.lerpColors(exteriorAmbient, interiorAmbient, interiorLight);
     flower.open(inspect ? 1 : mix(.86, 1, bloom), inspect ? 0 : thresholdPass);
     const cursorActive = time > 0 && !inspect;
     if (cursorActive) rotation.lerp(pointer, .11);
