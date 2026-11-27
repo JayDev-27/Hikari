@@ -6,16 +6,22 @@
 
 **A local-first anime companion for your Mac's desktop.**
 
-Keep a character on screen while you work, preview their signature moves, and try a lip-synced conversation from the menu bar.
+She stands beside your windows, talks with you in English, हिंदी and Hinglish with lip sync that follows every sound, and keeps what she learns on your Mac.
 
-[![Desktop checks](https://github.com/JayDev-27/Hikari/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/JayDev-27/Hikari/actions/workflows/checks.yml)
+[![Code checks](https://github.com/JayDev-27/Hikari/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/JayDev-27/Hikari/actions/workflows/checks.yml)
 [![Rust checks](https://github.com/JayDev-27/Hikari/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/JayDev-27/Hikari/actions/workflows/rust.yml)
+[![CodeQL](https://github.com/JayDev-27/Hikari/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/JayDev-27/Hikari/actions/workflows/codeql.yml)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Fhikari-companion.vercel.app&label=website&up_message=live&up_color=5061cc)](https://hikari-companion.vercel.app)
+<br>
+[![Winter of Code Social 2026](https://img.shields.io/badge/Winter_of_Code_Social-2026-8ea3ff)](https://woc.codesocial.tech)
 ![macOS 13+ on Apple Silicon](https://img.shields.io/badge/macOS_13%2B-Apple_Silicon-5061cc?logo=apple)
 [![MIT License](https://img.shields.io/badge/License-MIT-5061cc)](LICENSE)
 
-[Website](https://hikari-companion.vercel.app) · [Quick start](#quick-start) · [Gallery](#gallery) · [The cast](#the-cast) · [Architecture](#architecture) · [Contributing](#contributing)
+**[Website](https://hikari-companion.vercel.app)** · [Quick start](#quick-start) · [Gallery](#gallery) · [The cast](#the-cast) · [Architecture](#architecture) · [Contributing](#contributing)
 
-<img src="website/public/media/app-studio.webp" alt="Character Studio showing Hiyori's full-body preview, the character list, and her available moves" width="100%">
+<a href="https://hikari-companion.vercel.app"><img src="assets/readme/website-demo.gif" alt="The Hikari website: a giant HIKARI wordmark over a periwinkle sky, a sakura bud that opens through three beats (Isn't just an assistant, Speaks your language, Everything stays here), then lets its petals go under the line She opens up the more you talk" width="100%"></a>
+
+<sub>The <a href="https://hikari-companion.vercel.app">website</a> blooms as you scroll: a three.js sakura in the app icon's colours.</sub>
 
 </div>
 
@@ -63,27 +69,50 @@ Push to talk with <kbd>⌥ Space</kbd>, mute with <kbd>⌘ ⇧ M</kbd>, or stop 
 
 </details>
 
-## What you can try
+## Why Hikari
 
-- **A desktop stage that stays out of the way.** The transparent avatar follows you across Spaces, with clicks passing through the areas around it. Rendering pauses while the screen is locked or the display sleeps.
+|  |  |
+| --- | --- |
+| 🪟 **Lives on your desktop** | A transparent stage above every app and Space. Clicks pass through everywhere except her, and she rests while your Mac sleeps. |
+| 🗣️ **Speaks your language** | English, हिंदी and Hinglish, switching mid-sentence. The lip-sync engine maps Hindi and English phonemes to mouth shapes. |
+| 🎭 **A real cast** | Five hand-rigged Iki characters with personas and signature moves, plus Live2D samples and any `.vrm` you import. |
+| 🔒 **Local first** | Provider keys live in the macOS Keychain; voice, memory and the brain are designed to run on your Mac. |
+| ✋ **Asks before it acts** | Every action on your Mac waits for an approval dialog and lands in an Activity log. |
+| 🧩 **Open and hackable** | Tauri, React, Rust and a versioned protocol. Build your own character from a picture with the [Iki guide](docs/IKI.md). |
+
+<details>
+<summary><b>What works in the app today</b></summary>
+
+- **Desktop stage.** The transparent avatar follows you across Spaces, with clicks passing through the areas around it. Rendering pauses while the screen is locked or the display sleeps.
 - **Character Studio.** Browse the cast, play signature moves and everyday gestures, and import your own Iki, Live2D, or VRM model. Character details include model and licence information.
-- **Chat and voice input.** Type or use push-to-talk and follow both kinds of turns in the transcript. The desktop lip-sync engine maps Hindi and English phonemes to mouth shapes.
-- **Setup and Settings.** Choose a character, check permissions, and review microphone, performance, and provider settings. Provider keys are stored in the macOS Keychain.
-- **Tools for core integration.** The desktop includes a Memories browser, consent and evaluation screens in Voice Lab, and approval dialogs with an Activity log. End-to-end memory, training, and automation depend on the core. [Development plan](docs/PLAN.md)
+- **Chat and voice input.** Type or use push-to-talk and follow both kinds of turns in the transcript.
+- **Setup and Settings.** Choose a character, check permissions, and review microphone, performance, and provider settings.
+- **Tools for core integration.** A Memories browser, consent and evaluation screens in Voice Lab, and approval dialogs with an Activity log. End-to-end memory, training, and automation depend on the core. [Development plan](docs/PLAN.md)
+
+</details>
 
 ## Gallery
 
-These screenshots show Hikari’s desktop interface in the development browser preview.
+<img src="website/public/media/app-studio.webp" alt="Character Studio showing Hiyori's full-body preview, the character list, and her available moves" width="100%">
+<p align="center"><b>Character Studio</b> · browse the cast, play moves, import your own model.</p>
 
 <table>
   <tr>
-    <td width="42%" valign="top">
-      <img src="website/public/media/app-chat.webp" alt="Hiyori's chat welcome screen with conversation starters in English, Hindi, and Hinglish" width="100%">
-      <p><b>Chat</b><br>Start a text or push-to-talk conversation.</p>
+    <td width="50%" valign="top">
+      <img src="website/public/media/app-memory.webp" alt="The Memories window listing facts and episodes Hikari remembers, with search and categories (sample data)" width="100%">
+      <p><b>Memories</b><br>See what she remembers, then search, correct or forget it. <sub>(sample data)</sub></p>
     </td>
-    <td width="58%" valign="top">
+    <td width="50%" valign="top">
+      <img src="website/public/media/app-voicelab.webp" alt="Voice Lab on the Evaluate step: speaker similarity, naturalness, character error rate and latency scores, with English, Hinglish and Hindi listening samples (sample data)" width="100%">
+      <p><b>Voice Lab</b><br>Consent, record, train, then score the voice and compare it blind. <sub>(sample data)</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
       <img src="website/public/media/app-settings.webp" alt="General settings showing launch at login, microphone mode, input device, and default language" width="100%">
       <p><b>Settings</b><br>Set how Hikari starts, listens, and speaks.</p>
+    </td>
+    <td width="50%" valign="top">
       <img src="website/public/media/app-onboarding.webp" alt="Hikari's first-run welcome screen with setup steps and a periwinkle Get Started button" width="100%">
       <p><b>Welcome</b><br>Pick a character, check permissions, and try push-to-talk.</p>
     </td>
@@ -91,11 +120,24 @@ These screenshots show Hikari’s desktop interface in the development browser p
 </table>
 
 <details>
-<summary><b>See the website</b></summary>
+<summary><b>Chat and Activity</b></summary>
 
-<a href="https://hikari-companion.vercel.app/"><img src="assets/readme/website-hero.webp" alt="The Hikari website with its interactive blue cherry blossom and Meet Hikari heading" width="100%"></a>
+<table>
+  <tr>
+    <td width="40%" valign="top">
+      <img src="website/public/media/app-chat.webp" alt="Hiyori's chat welcome screen with conversation starters in English, Hindi, and Hinglish" width="100%">
+      <p><b>Chat</b><br>Start a text or push-to-talk conversation.</p>
+    </td>
+    <td width="60%" valign="top">
+      <img src="website/public/media/app-activity.webp" alt="The Activity window with All, Active, Done, Failed and Denied filters, a tier menu, search, and an empty state" width="100%">
+      <p><b>Activity</b><br>What Hikari asked to do, what you decided, and what happened.</p>
+    </td>
+  </tr>
+</table>
 
 </details>
+
+Screens come from the desktop interface in the development browser preview; panels marked *sample data* use made-up content.
 
 ## The cast
 
@@ -134,6 +176,18 @@ Five hand-rigged Iki characters come with the app. Each has a persona, breathing
 </details>
 
 Build and rig your own model from a reference picture using the [Iki character guide](docs/IKI.md).
+
+## The website
+
+<a href="https://hikari-companion.vercel.app"><img src="assets/readme/website-hero.webp" alt="The Hikari website hero: a giant HIKARI wordmark, a periwinkle sakura bud, an info card and a cast reel on a light morning sky" width="100%"></a>
+
+The [website](https://hikari-companion.vercel.app) lives in [`website/`](website) (Vite, React, three.js, GSAP) and deploys to Vercel from `main`. The sakura is procedural: real petal geometry, a cloud-filled sky shader, and a water-like wake that follows your cursor.
+
+```bash
+cd website
+npm ci
+npm run dev
+```
 
 ## Architecture
 
@@ -182,7 +236,16 @@ pnpm -F desktop build
 | `pnpm build` | Local `Hikari.app` and DMG build |
 | `pnpm -F desktop check:bundle` | Built app contents and signing checks |
 
-Frontend checks run on Linux. Shell changes also run Rust formatting, Clippy, and tests on macOS. [Frontend workflow](.github/workflows/checks.yml) · [Rust workflow](.github/workflows/rust.yml)
+Every pull request is checked automatically, so you get feedback before a maintainer looks:
+
+| Check | What it does |
+| --- | --- |
+| **Code checks** | Protocol types, lint, typecheck, tests and builds for the desktop app and the website ([workflow](.github/workflows/checks.yml)) |
+| **Rust checks** | Formatting, Clippy and tests on macOS when the Tauri shell changes ([workflow](.github/workflows/rust.yml)) |
+| **CodeQL** | Security analysis of the TypeScript and the workflows ([workflow](.github/workflows/codeql.yml)) |
+| **Dependency review** | Blocks new packages with known high-severity vulnerabilities or MIT-incompatible licences ([workflow](.github/workflows/dependency-review.yml)) |
+| **Community bots** | Conventional PR titles (`fix(website): …`), size labels, area labels and a welcome for first-time contributors ([workflow](.github/workflows/community.yml)) |
+| **Vercel preview** | A live preview link for any change to `website/` |
 
 <a href="https://github.com/JayDev-27/Hikari/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=JayDev-27/Hikari" alt="Hikari contributors">
@@ -198,5 +261,9 @@ Hikari's code is MIT-licensed. Third-party character art, models, runtimes, and 
 - **Voice Lab** requires a recorded consent file for another person's voice.
 
 <div align="center">
-  <a href="#光-hikari">Back to top ↑</a>
+
+If Hikari made you smile, a ⭐ helps other people find her.
+
+<a href="#光-hikari">Back to top ↑</a>
+
 </div>
