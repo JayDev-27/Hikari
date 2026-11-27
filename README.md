@@ -101,7 +101,7 @@ These screenshots show Hikari’s desktop interface in the development browser p
 
 Five hand-rigged Iki characters come with the app. Each has a persona, breathing and blinking, and its own signature moves.
 
-<img src="assets/readme/signatures.png" alt="Makima's finger-gun, Reze offering a flower, Rize opening her book, and Cheng Xiaoshi's photo dive" width="100%">
+<img src="assets/readme/signature-poses.webp" alt="Makima folds her hands, Reze offers a flower, Rize reads an open book, Cheng Xiaoshi presses his palms together, and Lu Guang studies a photo" width="100%">
 
 | Character | Renderer | Featured moves |
 | --- | --- | --- |
@@ -115,8 +115,6 @@ Five hand-rigged Iki characters come with the app. Each has a persona, breathing
 
 <details>
 <summary><b>See the rigs and signature moves</b></summary>
-
-<img src="assets/readme/cast.png" alt="Makima, Reze, Rize Kamishiro, and Cheng Xiaoshi standing side by side in the Iki renderer" width="100%">
 
 <table>
   <tr>
