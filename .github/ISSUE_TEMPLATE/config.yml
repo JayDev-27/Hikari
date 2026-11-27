@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Contributing guide and AI policy
+    url: https://github.com/JayDev-27/Hikari/blob/main/CONTRIBUTING.md
+    about: Setup, checks, labels and how to claim an issue.
+  - name: Report a security problem privately
+    url: https://github.com/JayDev-27/Hikari/security/advisories/new
+    about: Please don't open a public issue for vulnerabilities.
