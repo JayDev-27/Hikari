@@ -80,21 +80,20 @@ const COMPOSITE_FRAG = /* glsl */ `
       return;
     }
 
-    vec4 rSample = texture2D(uScene, clamp(vUv + offset * 1.08, 0.0, 1.0));
-    vec4 gSample = texture2D(uScene, clamp(vUv + offset, 0.0, 1.0));
-    vec4 bSample = texture2D(uScene, clamp(vUv + offset * .92, 0.0, 1.0));
-
-    vec3 refracted = vec3(rSample.r, gSample.g, bSample.b);
-    float alpha = uOverlay ? 0. : max(base.a, max(rSample.a, bSample.a));
-
     // Match the pearl and periwinkle light on the blossom.
     float edgeGlow = smoothstep(0.06, 0.65, energy) * (1.0 - smoothstep(0.62, 1.0, energy) * 0.35);
     float wave = 0.5 + 0.5 * sin(vUv.x * 11.0 + vUv.y * 8.0 - uTime * 2.4);
     vec3 prismTint = mix(vec3(0.085, 0.21, 0.78), vec3(0.31, 0.48, 0.91), wave);
-    vec3 finalRgb = mix(refracted, prismTint, edgeGlow * 0.17);
-    float finalAlpha = clamp(alpha + edgeGlow * 0.34, 0.0, 1.0);
-
-    gl_FragColor = vec4(finalRgb, finalAlpha);
+    if (uOverlay) {
+      gl_FragColor = vec4(prismTint, edgeGlow * 0.28);
+    } else {
+      vec4 rSample = texture2D(uScene, clamp(vUv + offset * 1.08, 0.0, 1.0));
+      vec4 gSample = texture2D(uScene, clamp(vUv + offset, 0.0, 1.0));
+      vec4 bSample = texture2D(uScene, clamp(vUv + offset * .92, 0.0, 1.0));
+      vec3 refracted = vec3(rSample.r, gSample.g, bSample.b);
+      float alpha = max(base.a, max(rSample.a, bSample.a));
+      gl_FragColor = vec4(mix(refracted, prismTint, edgeGlow * 0.17), clamp(alpha + edgeGlow * 0.34, 0.0, 1.0));
+    }
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
@@ -190,11 +189,6 @@ export class FluidPass {
       return;
     }
     this.mouse.set(uvX, uvY);
-  }
-
-  readDisplacement(renderer: THREE.WebGLRenderer, buffer: Uint8Array) {
-    const field = this.trailA;
-    return renderer.readRenderTargetPixelsAsync(field, 0, 0, field.width, field.height, buffer);
   }
 
   resetPointer() {
