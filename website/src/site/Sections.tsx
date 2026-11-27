@@ -52,7 +52,6 @@ export function DesktopStage() {
         .fromTo('.mac-win-b', { y: 140 }, { y: -10, ease: 'none' }, 0)
         .fromTo('.mac-her', { y: 160, scale: 0.94 }, { y: 0, scale: 1, ease: 'power2.out' }, 0)
         .fromTo('.mac-bubble', { autoAlpha: 0, y: 20, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, ease: 'back.out(2)', duration: 0.25 }, 0.35);
-      gsap.fromTo('.mac', { clipPath: 'inset(10% 8% 0% 8% round 28px)' }, { clipPath: 'inset(0% 0% 0% 0% round 22px)', ease: 'none', scrollTrigger: { trigger: '.mac', start: 'top 95%', end: 'top 35%', scrub: 0.8 } });
     }, el);
     return () => ctx.revert();
   }, []);
