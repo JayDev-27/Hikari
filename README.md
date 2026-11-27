@@ -158,7 +158,13 @@ See the [phased plan](docs/PLAN.md) for desktop and core milestones and the [bun
 
 ## Contributing
 
-Bug fixes, docs, and tests are welcome. For larger changes, open an issue first to agree on scope. Include verification steps in your pull request and a screenshot or short recording for visible changes. If you change the wire schema, run `pnpm gen:protocol` and commit the generated types. [Open an issue](https://github.com/JayDev-27/Hikari/issues/new)
+Hikari is a **[Winter of Code Social 2026](https://woc.codesocial.tech)** project ❄️. New contributors are very welcome, including first-timers.
+
+1. Read **[CONTRIBUTING.md](CONTRIBUTING.md)**: setup, how to claim an issue, the pull-request steps, WOCS labels and points, and our AI policy (AI-assisted work is allowed if you understand it, test it and say so).
+2. Pick an [open WOCS issue](https://github.com/JayDev-27/Hikari/issues?q=is%3Aissue+is%3Aopen+label%3Awocs); [`level 1`](https://github.com/JayDev-27/Hikari/issues?q=is%3Aissue+is%3Aopen+label%3A%22level+1%22) issues are the best place to start.
+3. Comment to claim it, wait to be assigned, then open a pull request that closes it.
+
+For larger ideas, [open an issue](https://github.com/JayDev-27/Hikari/issues/new) first so we can agree on scope. If you change the wire schema, run `pnpm gen:protocol` and commit the generated types.
 
 ```bash
 pnpm install --frozen-lockfile
