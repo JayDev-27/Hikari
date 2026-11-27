@@ -5,7 +5,7 @@ import type { Emotion, GestureTag } from "@hikari/protocol";
 import type { CharacterPack } from "../characters";
 import type { AvatarController, AvatarEvent, AvatarState, Visemes } from "../types";
 import { ZERO_VISEMES } from "../types";
-import { GESTURES, PoseSpring, envelope, idlePose, resolveGesture, type Gesture } from "./gestures";
+import { GESTURES, PoseSpring, arm, envelope, fitClap, idlePose, resolveGesture, setClapTargets, type ArmTarget, type Gesture } from "./gestures";
 import { EMOTION_EXPRESSIONS, REST, VISEME_KEYS, addPoses, clampPose, emotionToVrm, poseToBones, toVrm0Frame, visemeWeights, type Pose } from "./pose";
 import { LayerAnimator, type LayerFrame } from "../layers/animator";
 import { vrmOffsets } from "../layers/mapping";
@@ -141,6 +141,8 @@ export class VrmAvatar implements AvatarController {
       neckY: neck.y,
       span: l && rr ? l.distanceTo(rr) : 0.3,
     };
+    this.fitClapToModel(at, hips.y, neck.y);
+    this.applyPose(REST);
     vrm.springBoneManager?.reset();
   }
 
@@ -163,6 +165,34 @@ export class VrmAvatar implements AvatarController {
     this.camera.position.set(0, cy + 0.03, headZ + this.camDist);
     this.camera.lookAt(0, cy, headZ);
     this.camera.updateProjectionMatrix();
+  }
+
+  /**
+   * The default clap angles fit VRoid-like proportions; on broader shoulders or longer arms the palms stop short.
+   * Probe this skeleton: pose both arms at a candidate, find the palms (between the hand and middle-finger roots, or
+   * just past the wrist when there are no finger bones) and keep the angles that bring them together in front of the
+   * chest (VRM faces +Z here, 0.x included).
+   */
+  private fitClapToModel(at: (b: VRMHumanBoneName) => Vector3 | undefined, hipsY: number, neckY: number): void {
+    const h = this.vrm!.humanoid;
+    const chestZ = (at("chest") ?? at("spine"))?.z ?? 0;
+    const palm = (s: "left" | "right"): Vector3 | undefined => {
+      const hand = at(`${s}Hand`);
+      if (!hand) return undefined;
+      const mid = at(`${s}MiddleProximal`);
+      if (mid) return hand.lerp(mid, 0.6);
+      const fore = at(`${s}LowerArm`);
+      return fore ? hand.clone().add(hand.clone().sub(fore).normalize().multiplyScalar(0.05)) : hand;
+    };
+    if (!h.getNormalizedBoneNode("leftHand") || !h.getNormalizedBoneNode("rightHand")) return;
+    const fit = fitClap((t: ArmTarget) => {
+      this.applyPose(addPoses(REST, arm("L", t, 1), arm("R", t, 1)));
+      const a = palm("left"), b = palm("right");
+      if (!a || !b) return { gap: Infinity, inFront: false };
+      const inFront = [a, b].every((p) => p.z > chestZ + 0.05 && p.y > hipsY + 0.1 && p.y < neckY);
+      return { gap: a.distanceTo(b), inFront };
+    });
+    setClapTargets(fit.shut, fit.open);
   }
 
   private applyPose(pose: Pose): void {
@@ -378,6 +408,7 @@ export class VrmAvatar implements AvatarController {
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
+    setClapTargets();
     this.onDestroy?.();
     if (this.vrm) {
       this.scene.remove(this.vrm.scene);

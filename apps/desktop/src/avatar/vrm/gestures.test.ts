@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Quaternion, Vector3 } from "three";
-import { GESTURES, PoseSpring, envelope, idlePose, resolveGesture } from "./gestures";
+import { CLAP_OPEN, CLAP_SHUT, GESTURES, PoseSpring, envelope, fitClap, idlePose, resolveGesture, setClapTargets } from "./gestures";
 import { LIMITS, REST, addPoses, clampPose, poseToBones, type Pose } from "./pose";
 
 /**
@@ -197,5 +197,37 @@ describe("gesture helpers", () => {
     // Large dt stays stable.
     const big = s.step({ elbowR: 0 }, 5);
     expect(Math.abs(big.elbowR ?? 0)).toBeLessThan(1);
+  });
+});
+
+describe("Clap fitted to each model's proportions", () => {
+  it("keeps the default angles when the palms already meet", () => {
+    const fit = fitClap(() => ({ gap: 0.03, inFront: true }));
+    expect(fit.shut).toBe(CLAP_SHUT);
+    expect(fit.open).toBe(CLAP_OPEN);
+  });
+
+  it("on broad shoulders, picks the in-front pose that brings the palms closest", () => {
+    // A stand-in skeleton: palms meet when the shoulder turns in 55° with the elbow at 125°; behind the chest past 70°.
+    const fit = fitClap((t) => ({ gap: Math.abs(t.twist! - 55) * 0.01 + Math.abs(t.elbow! - 125) * 0.004, inFront: t.twist! <= 70 }));
+    expect(fit.shut.twist).toBe(55);
+    expect(fit.shut.elbow).toBe(125);
+    expect(fit.gap).toBeLessThan(0.01);
+    // The open pose eases back from it, so the hands part between beats.
+    expect(fit.open.twist!).toBeLessThan(fit.shut.twist!);
+  });
+
+  it("never picks a pose with the palms behind the chest", () => {
+    const fit = fitClap((t) => ({ gap: t.twist! > 60 ? 0 : 0.2, inFront: t.twist! <= 60 }));
+    expect(fit.shut.twist!).toBeLessThanOrEqual(60);
+  });
+
+  it("the clap gesture uses the fitted angles, and resets to the defaults", () => {
+    const shutAt = (p: Pose) => p.elbowL ?? 0;
+    const before = shutAt(GESTURES.clap.pose(0.5));
+    setClapTargets({ ...CLAP_SHUT, elbow: 140 }, { ...CLAP_OPEN, elbow: 135 });
+    expect(shutAt(GESTURES.clap.pose(0.5))).toBeGreaterThan(before);
+    setClapTargets();
+    expect(shutAt(GESTURES.clap.pose(0.5))).toBeCloseTo(before, 6);
   });
 });

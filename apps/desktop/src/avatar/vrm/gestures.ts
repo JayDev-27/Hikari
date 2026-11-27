@@ -68,9 +68,40 @@ const FACEPALM: ArmTarget = { down: 86, fwd: 72, twist: 20, elbow: 122, hand: 14
 /** Forearms folded across the chest, one just above the other. */
 const FOLD_L: ArmTarget = { down: 86, fwd: 52, twist: 92, elbow: 95, hand: 0, curl: 40 };
 const FOLD_R: ArmTarget = { down: 86, fwd: 60, twist: 90, elbow: 95, hand: 0, curl: 40 };
-/** Hands in front of the chest, a hand's width apart (clap open); CLAP_SHUT brings the palms together. */
-const CLAP_OPEN: ArmTarget = { down: 72, fwd: 12, twist: 10, elbow: 105, hand: -10, curl: 8 };
-const CLAP_SHUT: ArmTarget = { down: 78, fwd: 12, twist: 25, elbow: 110, hand: -10, curl: 8 };
+/** Hands in front of the chest, a hand's width apart (clap open); CLAP_SHUT brings the palms together. These fit
+ *  VRoid-like proportions; a model with broader shoulders or longer arms gets its own pair from `fitClap`, measured on
+ *  its skeleton when it loads (VrmAvatar), so the palms really meet. */
+export const CLAP_OPEN: ArmTarget = { down: 72, fwd: 12, twist: 10, elbow: 105, hand: -10, curl: 8 };
+export const CLAP_SHUT: ArmTarget = { down: 78, fwd: 12, twist: 25, elbow: 110, hand: -10, curl: 8 };
+let clapShut = CLAP_SHUT, clapOpen = CLAP_OPEN;
+/** Use a model's own clap (from `fitClap`); call with no arguments to go back to the defaults. */
+export function setClapTargets(shut: ArmTarget = CLAP_SHUT, open: ArmTarget = CLAP_OPEN): void {
+  clapShut = shut;
+  clapOpen = open;
+}
+
+/** What a candidate clap looks like on the model: palm distance (m), and whether the palms are in front of the chest
+ *  at chest height. */
+export interface ClapProbe { gap: number; inFront: boolean }
+
+/**
+ * Find the clap-shut angles that bring this model's palms together. `probe` poses both arms at the candidate target
+ * on the real skeleton and measures. The defaults win whenever their palms already meet (within 6 cm); otherwise a
+ * small grid over shoulder twist, elbow bend and forward lift picks the closest in-front pose. The open pose is the
+ * shut one eased back, a hand or so apart.
+ */
+export function fitClap(probe: (t: ArmTarget) => ClapProbe): { shut: ArmTarget; open: ArmTarget; gap: number } {
+  const ease = (t: ArmTarget): ArmTarget => ({ ...t, down: t.down! - 6, twist: t.twist! - 15, elbow: t.elbow! - 5 });
+  const base = probe(CLAP_SHUT);
+  if (base.inFront && base.gap < 0.06) return { shut: CLAP_SHUT, open: CLAP_OPEN, gap: base.gap };
+  let best = { t: CLAP_SHUT, gap: base.inFront ? base.gap : Infinity };
+  for (const fwd of [12, 20, 30]) for (let twist = 20; twist <= 75; twist += 5) for (let elbow = 100; elbow <= 140; elbow += 5) {
+    const t: ArmTarget = { ...CLAP_SHUT, fwd, twist, elbow };
+    const r = probe(t);
+    if (r.inFront && r.gap < best.gap) best = { t, gap: r.gap };
+  }
+  return { shut: best.t, open: ease(best.t), gap: best.gap };
+}
 /** Arm forward and slightly out, index finger toward the viewer. */
 const POINT: ArmTarget = { down: 86, fwd: 78, twist: 10, elbow: 12, hand: 0, curl: 60, index: 1 };
 /** Shrug: elbows at the sides, forearms out, palms up. */
@@ -81,7 +112,7 @@ const BOW_HANDS: ArmTarget = { down: 84, fwd: 14, twist: 40, elbow: 34, curl: 20
 const SHY_HAND: ArmTarget = { down: 70, fwd: 4, twist: 30, elbow: 130, hand: 20, curl: 40 };
 
 function clapAt(gap: number, e: number): Pose {
-  const a: ArmTarget = {}, b = CLAP_OPEN, c = CLAP_SHUT;
+  const a: ArmTarget = {}, b = clapOpen, c = clapShut;
   for (const k of Object.keys(b) as (keyof ArmTarget)[]) a[k] = c[k]! + (b[k]! - c[k]!) * gap;
   return merge(arm("L", a, e), arm("R", a, e));
 }
