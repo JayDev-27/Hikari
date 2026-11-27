@@ -57,7 +57,7 @@ export const CAST_CHARACTERS: CastCharacter[] = [
     name: 'Rize Kamishiro',
     renderer: 'Iki',
     signatureMove: 'Reads open book · glasses push · ghoul eyes',
-    image: '/media/hikari-cast-rize.webp',
+    image: '/media/hikari-rize-reading-art.webp',
     imageAlt: 'Rize looking down at a book held in both hands in the current Iki rig',
     summary:
       'Bookish, theatrical, and sharp. Features a separately keyed glasses frame layer and irises that shift to crimson ghoul red mid-conversation.',
@@ -107,33 +107,74 @@ export const HOTKEYS = [
 export const ROADMAP_MILESTONES: RoadmapMilestone[] = [
   {
     id: 'M0',
-    title: 'Desktop Stage, Lip Sync & Wire Protocol',
-    detail: 'NSPanel transparency, Iki + Live2D renderers, ±8 ms A/V sync, generated TS/Pydantic protocol.',
+    title: 'The desktop stage',
+    detail: 'A transparent panel above every app and Space, Iki and Live2D renderers, lip sync within ±8 ms of the audio, and one typed protocol for app and core.',
     status: 'done',
-    statusLabel: 'Shipped in Repo',
+    statusLabel: 'Done',
   },
   {
     id: 'M1–M2',
-    title: 'Voice Input, Character Studio & Personas',
-    detail: 'Desktop mic worklet, barge-in, pack importer, chat UI & 4 Iki rigs done; Python voice brain (core/) in progress.',
+    title: 'Voice, characters and chat',
+    detail: 'Push to talk, barge-in, Character Studio with pack import, personas and the chat window are in the app. The speech brain in core/ is being built.',
     status: 'in-progress',
-    statusLabel: 'Body Done · Core WIP',
+    statusLabel: 'App done · brain in progress',
   },
   {
-    id: 'M3–M5',
-    title: 'VRM 3D Renderer, Multi-LLM Router & Memory',
-    detail: 'Three.js VRM avatars, 8 GB Apple Silicon profiles, failover routing, and local sqlite-vec memory browser.',
-    status: 'planned',
-    statusLabel: 'Planned',
+    id: 'M3',
+    title: 'Expressive animation and VRM',
+    detail: 'A four-layer animator on every renderer (life, posture, gesture, face), VRM 0.x and 1.0 characters, and sharper Hindi lip shapes.',
+    status: 'done',
+    statusLabel: 'Done in the app',
   },
   {
-    id: 'M6–M8',
-    title: 'Voice Lab, Safe Mac MCP & Signed .dmg Release',
-    detail: 'Consented voice cloning, tiered macOS automation audit log, onboarding, and public macOS installer.',
-    status: 'planned',
-    statusLabel: 'Download Coming Soon',
+    id: 'M4–M5',
+    title: 'Settings and memories',
+    detail: 'Providers with keys in the macOS Keychain, hardware profiles, memory meters, and a browser to search, edit and delete what she remembers.',
+    status: 'in-progress',
+    statusLabel: 'App done · brain in progress',
   },
+  {
+    id: 'M6–M7',
+    title: 'Voice Lab and safe Mac control',
+    detail: 'Consent before any voice is recorded, guided recording and blind A/B listening; a confirm dialog before every action and a permanent audit log.',
+    status: 'in-progress',
+    statusLabel: 'App done · brain in progress',
+  },
+  {
+    id: 'M8',
+    title: 'Welcome and release',
+    detail: 'First-run welcome with live permission checks, a pause while your screen is locked, and a bundle check. The signed, notarised download comes next.',
+    status: 'planned',
+    statusLabel: 'Signed release next',
+  },
+];
+
+export interface AppScreen {
+  id: string;
+  title: string;
+  detail: string;
+  image: string;
+  width: number;
+  height: number;
+  sample?: boolean;
+}
+
+export const APP_SCREENS: AppScreen[] = [
+  { id: 'studio', title: 'Character Studio', detail: 'Meet the cast, preview every move a character can really do, and choose who stands on your desktop.', image: '/media/app-studio.webp', width: 2160, height: 1440 },
+  { id: 'memory', title: 'Memories', detail: 'See what she remembers about you. Search it, correct it, or let it go.', image: '/media/app-memory.webp', width: 1800, height: 1240, sample: true },
+  { id: 'voicelab', title: 'Voice Lab', detail: 'Train a voice only with consent: a recorded statement first, then guided lines, then a blind comparison.', image: '/media/app-voicelab.webp', width: 1800, height: 1280, sample: true },
+  { id: 'settings', title: 'Settings', detail: 'Pick providers and models, keep API keys in the macOS Keychain, and match her to your Mac’s memory.', image: '/media/app-settings.webp', width: 1520, height: 1120 },
+  { id: 'onboarding', title: 'Welcome', detail: 'A first-run guide: choose a character, grant permissions with live status, and learn push to talk.', image: '/media/app-onboarding.webp', width: 1520, height: 1120 },
 ];
 
 export const GITHUB_REPO_URL = 'https://github.com/JayDev-27/Hikari';
 export const GITHUB_RELEASES_URL = 'https://github.com/JayDev-27/Hikari/releases';
+
+export const NAV = [
+  { href: '#desktop', label: 'Desktop' },
+  { href: '#cast', label: 'Cast' },
+  { href: '#voice', label: 'Voice' },
+  { href: '#app', label: 'The app' },
+  { href: '#open-source', label: 'Open source' },
+  { href: '#roadmap', label: 'Roadmap' },
+];

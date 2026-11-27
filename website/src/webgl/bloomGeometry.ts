@@ -18,13 +18,13 @@ function petalGeometry(seed: number, length: number, width: number, segments: nu
   const colors: number[] = [];
   const uv: number[] = [];
   const order: number[] = [];
-  const base = new THREE.Color('#6479bc');
-  const mid = new THREE.Color('#9db9f5');
+  const base = new THREE.Color('#ab739c');
+  const mid = new THREE.Color('#c5cdec');
   const rim = new THREE.Color('#edf4ff');
   const tint = new THREE.Color();
   for (let row = 0; row <= segments; row++) {
     const t = row / segments;
-    const taper = .22 + .78 * THREE.MathUtils.smoothstep(t, 0, .62);
+    const taper = .49 + .51 * THREE.MathUtils.smoothstep(t, 0, .55);
     const span = .017 + width * Math.pow(Math.sin(Math.PI * t * .79), .74) * taper;
     for (let column = 0; column <= across; column++) {
       const s = 2 * column / across - 1;
@@ -37,7 +37,8 @@ function petalGeometry(seed: number, length: number, width: number, segments: nu
       const twist = .10 * Math.sin(seed) * s * t ** 1.7;
       const x = s * span + .084 * t * t * Math.sin(seed);
       const y = .13 + radial;
-      const z = .10 + .63 * t ** 3 - .42 * t + curl + ripple + twist;
+      const pleat = .016 * Math.cos(s * 17 + t * 2 + seed) * Math.sin(Math.PI * t) * (1 - edge * .5);
+      const z = pleat + .10 + .63 * t ** 3 - .42 * t + curl + ripple + twist;
       open.push(x, y, z);
       const bend = 1.12 + .24 * t;
       folded.push(x * (.46 - .13 * t), .14 + radial * Math.cos(bend) - .07 * s * s * t,
@@ -87,7 +88,7 @@ function petalTexture() {
   for (let v = -11; v <= 11; v++) {
     const spread = v / 11;
     const tip = size / 2 + spread * 252;
-    const start = size / 2 + spread * 196;
+    const start = size / 2 + spread * 68;
     ctx.strokeStyle = v === 0 ? 'rgba(248,248,248,.56)' : 'rgba(236,236,236,.31)';
     ctx.lineWidth = v % 4 === 0 ? 2.4 : .92;
     ctx.beginPath();
@@ -119,7 +120,7 @@ function makeStamens(compact: boolean) {
   const thread = new THREE.MeshStandardMaterial({ color: '#e1d7d1', roughness: .38, metalness: .08 });
   const points = new THREE.SphereGeometry(1, 8, 6);
   const amber = new THREE.MeshStandardMaterial({
-    color: '#fff1cc', roughness: .38, metalness: .18,
+    color: '#f5c885', roughness: .38, metalness: .18,
     emissive: '#cf9865', emissiveIntensity: .15,
   });
   const anthers = new THREE.InstancedMesh(points, amber, count);
@@ -228,8 +229,8 @@ export function createBlossom(compact: boolean) {
   const texture = petalTexture();
   const material = new THREE.MeshPhysicalMaterial({
     vertexColors: true, color: '#dce8ff', side: THREE.DoubleSide,
-    metalness: .10, roughness: .41, clearcoat: .51, clearcoatRoughness: .24,
-    iridescence: compact ? 0 : .28, iridescenceIOR: 1.28, iridescenceThicknessRange: [255, 424],
+    metalness: .015, roughness: .54, clearcoat: .16, clearcoatRoughness: .24,
+    iridescence: compact ? 0 : .06, iridescenceIOR: 1.28, iridescenceThicknessRange: [255, 424],
     sheen: .54, sheenColor: new THREE.Color('#9daaf3'), sheenRoughness: .52,
     emissive: '#526cb1', emissiveIntensity: .16, bumpMap: texture, bumpScale: .047,
   });
@@ -240,7 +241,7 @@ export function createBlossom(compact: boolean) {
         float vein = smoothstep(.61, .84, fiber);
         float across = abs(vBumpMapUv.x * 2.0 - 1.0);
         diffuseColor.rgb *= .88 + .27 * vein;
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.55, .69, .98), vein * .21);`)
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.9, .81, .94), vein * .32);`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         float edge = smoothstep(.72, 1., across);
         float tip = smoothstep(.86, 1., vBumpMapUv.y);
@@ -251,7 +252,7 @@ export function createBlossom(compact: boolean) {
   ];
   for (let p = 0; p < petals.length; p++) {
     const [length, width] = petals[p];
-    const petal = new THREE.Mesh(petalGeometry(p * 2.31, length, width, compact ? 28 : 47), material);
+    const petal = new THREE.Mesh(petalGeometry(p * 2.31, length, width * 1.12, compact ? 42 : 62), material);
     petal.rotation.z = p / 5 * TAU + .035 * Math.cos(p * 3);
     petalMeshes.push(petal);
     const dew = p === 2 ? [[.61, .82, .061], [.68, .74, .027], [.56, .90, .023]]

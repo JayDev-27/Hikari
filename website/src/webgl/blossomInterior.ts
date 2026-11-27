@@ -73,6 +73,10 @@ function surface(compact: boolean, foldCount: number) {
         const marbling = .5 + .5 * Math.sin(theta * 8 + depth * 41 + panel) * Math.cos(theta * 3 - depth * 20);
         color.copy(cool).lerp(soft, isFold ? .36 + .32 * marbling + Math.abs(sideways) * .22 : .15 + marbling * .52);
         if (isFold) color.lerp(veinLight, Math.sin(t * Math.PI) * .13);
+        // The tunnel lights are fixed, so bake their falloff into the tissue once.
+        const axialGlow = .5 + .5 * Math.cos(depth * 30 - 1);
+        const sideGlow = .5 + .5 * Math.cos(theta - depth * 13);
+        color.multiplyScalar(.85 + axialGlow * sideGlow * 1.35);
         colors.push(color.r, color.g, color.b);
         uv.push(isFold ? u * .34 + panel * .012 : u, depth);
         if (r < rows && c < around) {
@@ -190,17 +194,5 @@ function makeFilaments(compact: boolean) {
 export function createBlossomInterior(compact: boolean) {
   const interior = new THREE.Group();
   interior.add(surface(compact, 0), surface(compact, compact ? 13 : 22), traceVeins(compact), makeFilaments(compact));
-  const lights = [
-    { x: -.06, y: .20, z: -.8, color: '#cbdcff', strength: 5.4, distance: 4.1 },
-    { x: .64, y: .22, z: -4.7, color: '#99baff', strength: 13, distance: 7.1 },
-    { x: -.41, y: -.37, z: -9.3, color: '#bbd6ff', strength: 13, distance: 7.2 },
-    { x: .55, y: .28, z: -14.8, color: '#9bb6ff', strength: 14, distance: 7.6 },
-    { x: -.18, y: .11, z: -21.5, color: '#c6d6ff', strength: 11, distance: 6.6 },
-  ];
-  for (const light of lights) {
-    const lamp = new THREE.PointLight(light.color, light.strength, light.distance, 2);
-    lamp.position.set(light.x, light.y, light.z);
-    interior.add(lamp);
-  }
   return interior;
 }

@@ -161,22 +161,25 @@ export function createSakuraExperience(container: HTMLElement) {
   const scene = new THREE.Scene();
   const environment = reflections(renderer);
   scene.environment = environment.texture;
-  scene.environmentIntensity = .82;
+  scene.environmentIntensity = .58;
 
-  const key = new THREE.DirectionalLight('#e1e9ff', 2.02);
-  key.position.set(-3, 5, 3);
-  const fill = new THREE.DirectionalLight('#819aff', .72);
+  const key = new THREE.SpotLight('#ffe4ca', 145, 14, .57, .85, 2);
+  key.position.set(-2.8, 3.7, 3.4);
+  key.target.position.set(-.6, .65, 0);
+  scene.add(key.target);
+  const fill = new THREE.DirectionalLight('#9caeff', .62);
   fill.position.set(5, -.8, 2.2);
   const back = new THREE.DirectionalLight('#93b8ff', 2.14);
   back.position.set(1, 2, -3);
-  const lower = new THREE.DirectionalLight('#b9a4ea', .38);
+  const lower = new THREE.DirectionalLight('#eab5ce', .30);
   lower.position.set(-2.5, -3, 1);
-  scene.add(key, fill, back, lower, new THREE.AmbientLight('#becfff', .27));
+  scene.add(key, fill, back, lower, new THREE.AmbientLight('#becfff', .20));
 
   const flower = createBlossom(compact);
   const dust = makeDust(compact);
   const floating = createFloatingPetals(compact);
-  let tunnel: THREE.Group | null = null;
+  const tunnel = createBlossomInterior(compact);
+  scene.add(tunnel);
   const horizon = glow();
   horizon.position.z = -24.02;
   horizon.scale.setScalar(3.7);
@@ -185,6 +188,9 @@ export function createSakuraExperience(container: HTMLElement) {
   threshold.position.z = -.36;
   scene.add(horizon, flower.root, floating.layer, dust, threshold);
   const camera = new THREE.PerspectiveCamera(35, 1, .035, 72);
+  // Warm the interior shaders before the camera reaches the throat.
+  void renderer.compileAsync(scene, camera).catch(() => {});
+  tunnel.visible = false;
   let width = 1;
   let height = 1;
   let dpr = 1;
@@ -196,7 +202,6 @@ export function createSakuraExperience(container: HTMLElement) {
   const cursorLifetime = 2.05;
 
   function movePointer(x: number, y: number, time: number) {
-    if (width < 768) return;
     pointer.set(x * 2 - 1, y * 2 - 1);
     fluid ??= new FluidPass(width, height, dpr, fluidType);
     if (time - lastPointer > cursorLifetime) fluid.resetPointer();
@@ -208,7 +213,7 @@ export function createSakuraExperience(container: HTMLElement) {
   function resize() {
     width = Math.max(1, container.clientWidth);
     height = Math.max(1, container.clientHeight);
-    dpr = Math.min(devicePixelRatio || 1, width < 720 ? 1.23 : 1.5, Math.sqrt(2450000 / (width * height)));
+    dpr = Math.min(devicePixelRatio || 1, width < 800 ? 1.15 : 1.4, Math.sqrt(1600000 / (width * height)));
     renderer.setPixelRatio(dpr);
     renderer.setSize(width, height, false);
     dust.material.uniforms.uDpr.value = dpr;
@@ -222,13 +227,13 @@ export function createSakuraExperience(container: HTMLElement) {
     const pass = easedRange(progress, .617, .763);
     const travel = easedRange(progress, .702, 1);
     const thresholdPass = easedRange(progress, .515, .714);
-    flower.open(inspect ? 1 : mix(.51, 1, bloom), inspect ? 0 : thresholdPass);
-    const cursorActive = time > 0 && !inspect && width >= 768;
+    flower.open(inspect ? 1 : mix(.86, 1, bloom), inspect ? 0 : thresholdPass);
+    const cursorActive = time > 0 && !inspect;
     if (cursorActive) rotation.lerp(pointer, .11);
     else rotation.set(0, 0);
     flower.root.rotation.set(-.032 - rotation.y * .09 * (1 - approach),
       Math.sin(time * .26) * .032 + rotation.x * .13 * (1 - approach), -.19 + .12 * bloom);
-    const outsideDepth = narrow ? mix(11.9, 15.4, bloom) : mix(8.95, 10.25, bloom);
+    const outsideDepth = Math.max(narrow ? 13.2 : 12.4, (narrow ? 8.2 : 10.2) * height / width) + bloom * .7;
     if (inspect) {
       const radius = narrow ? 15.1 : 10.6;
       const horizontal = Math.cos(pitch) * radius;
@@ -237,23 +242,19 @@ export function createSakuraExperience(container: HTMLElement) {
       camera.fov = narrow ? 46 : 37;
       camera.setViewOffset(width, height, 0, narrow ? height * .085 : 0, width, height);
     } else {
-      const z = mix(outsideDepth, 1.18, approach) - pass * 4.55 - travel * 14.9;
-      const x = mix(2.71, .25, bloom) * (1 - approach) + Math.sin(travel * 7) * travel * .31;
-      const y = mix(.95, .18, bloom) * (1 - approach) + Math.sin(travel * 5) * travel * .19;
+      const z = mix(outsideDepth, 1.18, approach) - pass * 4.55 - travel * 21.6;
+      const x = mix(2.71, .25, bloom) * (1 - approach) + Math.sin(travel * 6) * travel * .14;
+      const y = mix(.95, .18, bloom) * (1 - approach) + Math.sin(travel * 8) * travel * .18;
       camera.position.set(x, y, z);
       camera.lookAt(travel * .14, travel * -.08, Math.min(-.25, z - 2.15));
       camera.rotateZ(travel * .115 - Math.sin(approach * Math.PI) * .048);
       camera.fov = narrow ? mix(42, 59, pass) : mix(35, 57, pass);
-      camera.setViewOffset(width, height, narrow ? 0 : -width * .22 * (1 - easedRange(progress, .10, .53)),
-        narrow ? height * .13 * (1 - easedRange(progress, .12, .58)) : 0, width, height);
+      camera.setViewOffset(width, height, 0, height * (width < 900 && height > 580 ? (narrow ? -.20 : -.14) : .055) * (1 - approach), width, height);
     }
     camera.updateProjectionMatrix();
-    if (!tunnel && progress > .28) {
-      tunnel = createBlossomInterior(compact);
-      scene.add(tunnel);
-    }
     const insideVisible = !inspect && progress > .48;
-    if (tunnel) tunnel.visible = insideVisible;
+    tunnel.visible = insideVisible;
+    flower.root.visible = pass < .99;
     dust.material.uniforms.uTime.value = time;
     floating.draw(time, 1 - easedRange(approach, .1, .6));
     threshold.visible = !inspect && pass < .47;

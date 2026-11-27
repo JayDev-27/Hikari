@@ -61,6 +61,7 @@ const COMPOSITE_FRAG = /* glsl */ `
   varying vec2 vUv;
   uniform sampler2D uScene;
   uniform sampler2D uTrail;
+  uniform bool uOverlay;
   uniform float uEffectStrength;
   uniform float uTime;
 
@@ -70,7 +71,7 @@ const COMPOSITE_FRAG = /* glsl */ `
     vec2 vel = (trail.rg - 0.5) * 2.0;
 
     vec2 offset = vel * energy * 0.022;
-    vec4 base = texture2D(uScene, vUv);
+    vec4 base = uOverlay ? vec4(0.) : texture2D(uScene, vUv);
 
     if (energy < 0.004) {
       gl_FragColor = base;
@@ -79,18 +80,18 @@ const COMPOSITE_FRAG = /* glsl */ `
       return;
     }
 
-    vec4 rSample = texture2D(uScene, clamp(vUv + offset * 1.35, 0.0, 1.0));
-    vec4 gSample = texture2D(uScene, clamp(vUv + offset * 0.25, 0.0, 1.0));
-    vec4 bSample = texture2D(uScene, clamp(vUv - offset * 1.25, 0.0, 1.0));
+    vec4 rSample = texture2D(uScene, clamp(vUv + offset * 1.08, 0.0, 1.0));
+    vec4 gSample = texture2D(uScene, clamp(vUv + offset, 0.0, 1.0));
+    vec4 bSample = texture2D(uScene, clamp(vUv + offset * .92, 0.0, 1.0));
 
     vec3 refracted = vec3(rSample.r, gSample.g, bSample.b);
-    float alpha = max(base.a, max(rSample.a, bSample.a));
+    float alpha = uOverlay ? 0. : max(base.a, max(rSample.a, bSample.a));
 
     // Match the pearl and periwinkle light on the blossom.
     float edgeGlow = smoothstep(0.06, 0.65, energy) * (1.0 - smoothstep(0.62, 1.0, energy) * 0.35);
     float wave = 0.5 + 0.5 * sin(vUv.x * 11.0 + vUv.y * 8.0 - uTime * 2.4);
     vec3 prismTint = mix(vec3(0.085, 0.21, 0.78), vec3(0.31, 0.48, 0.91), wave);
-    vec3 finalRgb = mix(refracted, prismTint, edgeGlow * 0.38);
+    vec3 finalRgb = mix(refracted, prismTint, edgeGlow * 0.17);
     float finalAlpha = clamp(alpha + edgeGlow * 0.34, 0.0, 1.0);
 
     gl_FragColor = vec4(finalRgb, finalAlpha);
@@ -115,7 +116,7 @@ export class FluidPass {
   private hasMoved = false;
   private targetVelocity = new THREE.Vector2();
 
-  constructor(width: number, height: number, dpr: number, type: THREE.TextureDataType) {
+  constructor(width: number, height: number, dpr: number, type: THREE.TextureDataType, trailSize = 256) {
     this.quadGeo = new THREE.PlaneGeometry(2, 2);
     this.orthoCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
@@ -128,8 +129,8 @@ export class FluidPass {
       stencilBuffer: false,
     };
 
-    this.trailA = new THREE.WebGLRenderTarget(256, 256, trailOpts);
-    this.trailB = new THREE.WebGLRenderTarget(256, 256, trailOpts);
+    this.trailA = new THREE.WebGLRenderTarget(trailSize, trailSize, trailOpts);
+    this.trailB = new THREE.WebGLRenderTarget(trailSize, trailSize, trailOpts);
 
     this.sceneTarget = new THREE.WebGLRenderTarget(
       Math.max(1, Math.floor(width * dpr)),
@@ -165,6 +166,7 @@ export class FluidPass {
       uniforms: {
         uScene: { value: this.sceneTarget.texture },
         uTrail: { value: this.trailB.texture },
+        uOverlay: { value: false },
         uEffectStrength: { value: 1.0 },
         uTime: { value: 0 },
       },
@@ -190,6 +192,11 @@ export class FluidPass {
     this.mouse.set(uvX, uvY);
   }
 
+  readDisplacement(renderer: THREE.WebGLRenderer, buffer: Uint8Array) {
+    const field = this.trailA;
+    return renderer.readRenderTargetPixelsAsync(field, 0, 0, field.width, field.height, buffer);
+  }
+
   resetPointer() {
     this.hasMoved = false;
   }
@@ -204,7 +211,7 @@ export class FluidPass {
 
   render(
     renderer: THREE.WebGLRenderer,
-    renderIntoTarget: (target: THREE.WebGLRenderTarget | null) => void,
+    renderIntoTarget: ((target: THREE.WebGLRenderTarget | null) => void) | null,
     elapsed: number,
   ) {
     const dx = this.mouse.x - this.prevMouse.x;
@@ -225,11 +232,12 @@ export class FluidPass {
     this.prevMouse.copy(this.mouse);
 
     // 2. Render main scene into offscreen target
-    renderIntoTarget(this.sceneTarget);
+    renderIntoTarget?.(this.sceneTarget);
 
     // 3. Composite chromatic refraction onto screen
-    this.compositeMat.uniforms.uScene.value = this.sceneTarget.texture;
+    this.compositeMat.uniforms.uScene.value = renderIntoTarget ? this.sceneTarget.texture : null;
     this.compositeMat.uniforms.uTrail.value = this.trailA.texture;
+    this.compositeMat.uniforms.uOverlay.value = !renderIntoTarget;
     this.compositeMat.uniforms.uTime.value = elapsed;
 
     renderer.setRenderTarget(null);
@@ -244,4 +252,12 @@ export class FluidPass {
     this.trailB.dispose();
     this.sceneTarget.dispose();
   }
+}
+
+export function createFluidOverlay(canvas: HTMLCanvasElement, trailSize: number) {
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+  renderer.setClearColor(0, 0);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.08;
+  return { renderer, fluid: new FluidPass(1, 1, 1, THREE.UnsignedByteType, trailSize) };
 }
