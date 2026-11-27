@@ -1,0 +1,48 @@
+name: Pull request triage
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+
+permissions: {}
+
+jobs:
+  area-labels:
+    name: Label changed areas
+    if: github.event.action != 'labeled' && github.event.action != 'unlabeled'
+    concurrency:
+      group: pr-area-labels-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      # Read the labeler config from the base repository. Never check out PR code in this workflow.
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          sync-labels: true
+
+  wocs-labels:
+    name: Check WOCS labels
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'wocs') ||
+      contains(github.event.pull_request.labels.*.name, 'level 1') ||
+      contains(github.event.pull_request.labels.*.name, 'level 2') ||
+      contains(github.event.pull_request.labels.*.name, 'level 3')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const labels = new Set(context.payload.pull_request.labels.map(({ name }) => name));
+            const levels = ['level 1', 'level 2', 'level 3'].filter(level => labels.has(level));
+            const valid = labels.has('wocs') && levels.length === 1;
+            const message = valid
+              ? `WOCS labels are consistent: wocs and ${levels[0]}.`
+              : 'A WOCS pull request needs the wocs label and exactly one level label before merging.';
+            if (!valid) core.warning(message);
+            await core.summary.addHeading('Winter of Code Social', 2).addRaw(message, true).write();

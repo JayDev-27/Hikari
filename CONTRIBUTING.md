@@ -74,6 +74,8 @@ cargo clippy --all-targets --manifest-path apps/desktop/src-tauri/Cargo.toml -- 
 4. A maintainer or mentor reviews it. Expect questions and requests for changes; that's a normal part of review, not a rejection.
 5. Once it's approved and the checks pass, a maintainer merges it.
 
+GitHub Actions adds `area:` labels based on the files changed. The WOCS label check flags missing or conflicting scoring labels in the workflow summary so a maintainer or mentor can correct them.
+
 ## Winter of Code Social 2026
 
 Hikari is a WOCS 2026 project. To earn points:

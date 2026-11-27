@@ -1,0 +1,23 @@
+'area: desktop':
+  - changed-files:
+      - any-glob-to-any-file: 'apps/desktop/**'
+
+'area: website':
+  - changed-files:
+      - any-glob-to-any-file: 'website/**'
+
+'area: characters':
+  - changed-files:
+      - any-glob-to-any-file: 'characters/**'
+
+'area: protocol':
+  - changed-files:
+      - any-glob-to-any-file: ['packages/protocol/**', 'fixtures/**']
+
+'area: docs':
+  - changed-files:
+      - any-glob-to-any-file: ['*.md', 'docs/**', 'assets/readme/**']
+
+'area: automation':
+  - changed-files:
+      - any-glob-to-any-file: '.github/**'
