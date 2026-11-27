@@ -43,8 +43,10 @@ html {
   scroll-behavior: auto;
   overflow-x: clip;
   overscroll-behavior-x: none;
+  scrollbar-width: none;
   background: var(--ink);
 }
+html::-webkit-scrollbar { display: none; }
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 html.menu-open { overflow: hidden; }
@@ -191,7 +193,17 @@ main, .ft { position: relative; z-index: 1; }
 /* ── Sections ────────────────────────────────────────────────────────────── */
 .sec { position: relative; padding-block: clamp(110px, 16vw, 220px); }
 .sec-dark { color: var(--text-d); }
-.sec-light { background: var(--paper); color: var(--text-l); border-radius: 0; margin-inline: clamp(0px, 1vw, 14px); }
+.sec-light {
+  --section-fade: clamp(78px, 11vw, 150px);
+  color: var(--text-l);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--paper) var(--section-fade),
+    var(--paper) calc(100% - var(--section-fade)),
+    transparent
+  );
+}
 .sec-dark.solid, .roadmap, .privacy, .voice, .cast, .final { background: transparent; }
 
 /* ── Hero ────────────────────────────────────────────────────────────────── */
