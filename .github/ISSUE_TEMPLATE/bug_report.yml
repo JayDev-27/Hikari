@@ -1,0 +1,38 @@
+name: Bug report
+description: Something in the app, a character or the website doesn't work as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Character Studio
+        2. Import …
+        3. …
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Desktop app, Characters / rigs, Voice and lip sync, Website, Docs, Other]
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: macOS version and Mac
+      placeholder: macOS 15.2, MacBook Air M2
+  - type: textarea
+    id: logs
+    attributes:
+      label: Screenshots, recordings or logs
+      description: Please remove anything personal (API keys, names, paths) first.

@@ -67,7 +67,8 @@ export function PointerWater() {
       if (motion.matches || event.pointerType === 'touch') return;
       const target = event.target;
       if (!(target instanceof Element)) return;
-      if (target.closest('#top') && document.querySelector('.hero-bloom.live')) {
+      // The hero's own scene draws the wake (with refraction) there, so the overlay steps aside.
+      if (target.closest('#top') && document.querySelector('.sky-canvas.is-ready')) {
         if (frame || last !== -Infinity) stop();
         return;
       }

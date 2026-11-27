@@ -1,0 +1,39 @@
+name: Stale
+
+# Keeps the board honest during WOCS: claimed-but-silent issues and abandoned pull requests are nudged, then
+# closed, so other contributors can pick the work up. Anything labelled "pinned" or "help wanted" is left alone.
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93 # v11.0.0
+        with:
+          days-before-issue-stale: 30
+          days-before-issue-close: 10
+          days-before-pr-stale: 14
+          days-before-pr-close: 7
+          stale-issue-label: stale
+          stale-pr-label: stale
+          exempt-issue-labels: pinned,help wanted,security
+          exempt-pr-labels: pinned,security
+          exempt-draft-pr: true
+          stale-issue-message: >
+            This issue has had no activity for 30 days. It will close in 10 days unless someone comments.
+            If you claimed it and are still working on it, just leave a quick update.
+          stale-pr-message: >
+            This pull request has had no activity for 14 days. It will close in 7 days unless it's updated.
+            Need help getting it over the line? Ask in a comment.
+          close-issue-message: Closed after 40 days without activity. Comment if it's still relevant and we'll reopen it.
+          close-pr-message: Closed after three weeks without activity. You're welcome to reopen it when you pick it back up.
+          operations-per-run: 60

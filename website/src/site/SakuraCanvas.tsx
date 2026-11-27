@@ -2,10 +2,9 @@ import { useEffect, useRef } from 'react';
 import { prefersReducedMotion } from './motion';
 
 /**
- * The fixed night-sakura canvas behind the page. The hero's scroll position drives the bloom (0 → 1 while the hero is
- * pinned, then on to 1.6 as the blossom drifts away); light sections cover it with their own background. The scene
- * module loads after first paint so the headline is readable before three.js arrives, and it stops drawing when the
- * tab is hidden or the canvas is scrolled far out of use.
+ * One fixed canvas behind the whole page. Through the pinned hero it is the morning sky with the blossom; after the
+ * hero the sky has faded to paper and only a few petals keep drifting behind the content. The scene module loads
+ * after first paint so the type is readable before three.js arrives; drawing stops while the tab is hidden.
  */
 export function SakuraCanvas({ heroId = 'top' }: { heroId?: string }) {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -16,40 +15,45 @@ export function SakuraCanvas({ heroId = 'top' }: { heroId?: string }) {
     let disposed = false;
     let cleanup = () => {};
     const reduced = prefersReducedMotion();
-    const mobile = window.matchMedia('(max-width: 760px)').matches || navigator.maxTouchPoints > 1;
+    const compact = window.matchMedia('(max-width: 760px)').matches;
 
-    void import('../webgl/NightSakura').then(({ NightSakura }) => {
+    void import('../webgl/DawnSakura').then(({ DawnSakura }) => {
       if (disposed) return;
-      let scene: InstanceType<typeof NightSakura>;
+      let scene: InstanceType<typeof DawnSakura>;
       try {
-        scene = new NightSakura(el, { reducedMotion: reduced, mobile });
+        scene = new DawnSakura(el, { reducedMotion: reduced, compact });
       } catch {
-        el.dataset.failed = '1'; // no WebGL: the CSS sky behind it stays
+        el.dataset.failed = '1'; // no WebGL: the CSS sky stays
         return;
       }
       const hero = document.getElementById(heroId);
-      let heroInView = Boolean(hero);
-      const onVis = () => scene.setVisible(!reduced && !document.hidden && !heroInView);
-      const observer = new IntersectionObserver(([entry]) => {
-        heroInView = entry.isIntersecting;
-        onVis();
-      });
-      if (hero) observer.observe(hero);
-      scene.setProgress(1.7);
-      scene.setPetalDensity(.4);
-      const onResize = () => {
-        scene.resize();
+      const measure = () => {
+        const travel = hero ? Math.max(1, hero.offsetHeight - window.innerHeight) : 1;
+        const y = window.scrollY;
+        scene.setProgress(y / travel);
+        const rest = Math.max(1, document.documentElement.scrollHeight - window.innerHeight - travel);
+        scene.setAfter(Math.max(0, y - travel) / rest);
         if (reduced) scene.render();
       };
-      const onPointer = (e: PointerEvent) => scene.setPointer((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
-      onVis();
+      const onResize = () => {
+        scene.resize();
+        measure();
+      };
+      const onPointer = (e: PointerEvent) => {
+        scene.setPointer((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
+        if (e.pointerType !== 'touch') scene.movePointer(e.clientX / window.innerWidth, 1 - e.clientY / window.innerHeight);
+      };
+      const onVis = () => scene.setVisible(!document.hidden);
+      window.addEventListener('scroll', measure, { passive: true });
       window.addEventListener('resize', onResize);
       window.addEventListener('pointermove', onPointer, { passive: true });
       document.addEventListener('visibilitychange', onVis);
+      measure();
       if (reduced) scene.render();
+      else scene.start();
       requestAnimationFrame(() => el.classList.add('is-ready'));
       cleanup = () => {
-        observer.disconnect();
+        window.removeEventListener('scroll', measure);
         window.removeEventListener('resize', onResize);
         window.removeEventListener('pointermove', onPointer);
         document.removeEventListener('visibilitychange', onVis);
@@ -65,7 +69,6 @@ export function SakuraCanvas({ heroId = 'top' }: { heroId?: string }) {
   return (
     <div className="sky" aria-hidden="true">
       <canvas ref={canvas} className="sky-canvas" />
-      <div className="sky-grain" />
     </div>
   );
 }
