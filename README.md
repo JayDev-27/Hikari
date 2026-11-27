@@ -15,10 +15,7 @@ Keep a character on screen while you work, preview their signature moves, and tr
 
 [Website](https://hikari-companion.vercel.app) · [Quick start](#quick-start) · [Gallery](#gallery) · [The cast](#the-cast) · [Architecture](#architecture) · [Contributing](#contributing)
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/studio-dark.png">
-  <img src="assets/readme/studio.png" alt="Character Studio showing Reze's live model preview, the cast sidebar, and controls for her signature moves" width="100%">
-</picture>
+<img src="website/public/media/app-studio.webp" alt="Character Studio showing Hiyori's full-body preview, the character list, and her available moves" width="100%">
 
 </div>
 
@@ -76,25 +73,29 @@ Push to talk with <kbd>⌥ Space</kbd>, mute with <kbd>⌘ ⇧ M</kbd>, or stop 
 
 ## Gallery
 
-The screenshots show the current app UI in its development browser preview. Chat uses a sample transcript.
+These screenshots show Hikari’s desktop interface in the development browser preview.
 
 <table>
   <tr>
     <td width="42%" valign="top">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="assets/readme/chat-dark.png">
-        <img src="assets/readme/chat.png" alt="Chat showing a sample exchange in English and Hinglish with periwinkle outgoing messages" width="100%">
-      </picture>
-      <p><b>Chat</b><br>Voice and typed messages share a transcript.</p>
+      <img src="website/public/media/app-chat.webp" alt="Hiyori's chat welcome screen with conversation starters in English, Hindi, and Hinglish" width="100%">
+      <p><b>Chat</b><br>Start a text or push-to-talk conversation.</p>
     </td>
     <td width="58%" valign="top">
-      <img src="assets/readme/settings.png" alt="Settings About page showing the Hikari icon, version, protocol, and third-party licence controls" width="100%">
-      <p><b>Settings</b><br>Review your configuration, app details, and licences.</p>
-      <img src="assets/readme/onboarding.png" alt="Hikari's first-run welcome screen with setup steps and a periwinkle Get Started button" width="100%">
+      <img src="website/public/media/app-settings.webp" alt="General settings showing launch at login, microphone mode, input device, and default language" width="100%">
+      <p><b>Settings</b><br>Set how Hikari starts, listens, and speaks.</p>
+      <img src="website/public/media/app-onboarding.webp" alt="Hikari's first-run welcome screen with setup steps and a periwinkle Get Started button" width="100%">
       <p><b>Welcome</b><br>Pick a character, check permissions, and try push-to-talk.</p>
     </td>
   </tr>
 </table>
+
+<details>
+<summary><b>See the website</b></summary>
+
+<a href="https://hikari-companion.vercel.app/"><img src="assets/readme/website-hero.webp" alt="The Hikari website with its interactive blue cherry blossom and Meet Hikari heading" width="100%"></a>
+
+</details>
 
 ## The cast
 

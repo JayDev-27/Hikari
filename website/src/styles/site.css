@@ -41,6 +41,8 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: auto;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
   background: var(--ink);
 }
 html.lenis, html.lenis body { height: auto; }
@@ -444,7 +446,7 @@ kbd { display: inline-block; padding: 2px 8px; margin-right: 4px; border-radius:
 .final { text-align: center; padding-block: clamp(140px, 20vw, 280px); }
 .final::before { content: ''; position: absolute; inset: 10% 0 0; background: radial-gradient(50% 50% at 50% 50%, rgba(110, 130, 255, 0.22), transparent 70%); pointer-events: none; }
 .final-inner { position: relative; display: grid; justify-items: center; }
-.final-icon { width: clamp(88px, 9vw, 128px); border-radius: 0; box-shadow: 0 30px 80px -20px rgba(110, 130, 255, 0.7); margin-bottom: 40px; }
+.final-icon { width: clamp(88px, 9vw, 128px); filter: drop-shadow(0 12px 22px rgba(110, 130, 255, 0.38)); margin-bottom: 40px; }
 .final-title { font-size: clamp(52px, 9vw, 150px); line-height: 0.9; font-weight: 600; letter-spacing: -0.055em; }
 .final-title em { color: var(--peri-2); display: block; font-size: 1.04em; }
 .final .lede { margin-inline: auto; }
@@ -508,7 +510,7 @@ kbd { display: inline-block; padding: 2px 8px; margin-right: 4px; border-radius:
 }
 @media (max-width: 899px) {
   .cast-pin { min-height: 0; padding-block: clamp(100px, 16vw, 140px) 40px; }
-  .cast-rail { width: auto; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 20px; scroll-padding-inline: var(--gutter); scrollbar-width: none; }
+  .cast-rail { width: auto; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; padding-bottom: 20px; scroll-padding-inline: var(--gutter); scrollbar-width: none; }
   .cast-rail::-webkit-scrollbar { display: none; }
   .card { scroll-snap-align: start; width: min(82vw, 360px); }
   .inside-grid { grid-template-columns: 1fr; }
