@@ -376,7 +376,38 @@ export class StageRuntime {
       }));
       this.subs.add(listen<{ text: string }>("chat://send", (e) => void this.sendText(e.payload.text)));
       this.subs.add(listen("chat://hello", () => void emitTo("chat", "chat://history", this.chatLog)));
-      this.subs.add(listen<CoreEvent>("core://send", (e) => this.core.send(e.payload.type, e.payload.payload)));
+      this.subs.add(listen<CoreEvent>("core://send", (e) => {
+        if (e.payload.type === "tool.confirm") {
+          console.warn("Refused tool.confirm through generic core://send relay");
+          return;
+        }
+
+        const event = e.payload as CoreEvent<Exclude<CoreEvent["type"], "tool.confirm">>;
+        this.core.send(event.type, event.payload);
+      }));
+
+      let draining = false;
+      const confirmationPoll = window.setInterval(async () => {
+        if (draining) return;
+        draining = true;
+        try {
+          const confirmations = await invoke<Array<{
+            callId: string;
+            approved: boolean;
+            via?: "click" | "voice";
+          }>>("take_tool_confirmations");
+
+          for (const confirmation of confirmations) {
+            this.core.send("tool.confirm", confirmation);
+          }
+        } catch (error) {
+          console.error("Could not retrieve Confirm decisions:", error);
+        } finally {
+          draining = false;
+        }
+      }, 100);
+
+      this.subs.add(() => window.clearInterval(confirmationPoll));
       this.subs.add(listen("core://hello", () => void emit("core://status", this.coreStatus)));
       this.subs.add(listen("hotkey://panic", () => {
         this.bargeIn("ui");
