@@ -19,7 +19,7 @@ Status legend: ✅ done · 🟡 in progress · ⬜ not started
 - [x] Cubism Core installed (SDK 5-r.5, Core 6 + compat shim); Hiyori renders transparently on the stage; mock turn plays (AudioContext running), mouth follows phonemes, captions track audio.
 - [x] Hover / per-pixel click-through tested with the real cursor (fixed a one-event lag).
 - [ ] Needs a person: drag her, click/pat reactions, eye-follow, ⌥Space barge-in.
-- [x] A/V sync: `pnpm -F desktop avsync` — pass at −1.4 / +6.9 ms (Bluetooth, 30 fps; target ±40 ms). Fixed 3 sync bugs. Still to do: measure at 60/120 Hz; acoustic check with a mic/loopback.
+- [x] A/V sync: `pnpm -F desktop avsync` — pass at −1.4 / +6.9 ms (Bluetooth, 30 fps) and +16.3 ms at 60 fps (2026-11-28, Bluetooth, output latency 160 ms, jitter 0.3 ms); target ±40 ms. Fixed 3 sync bugs. 120 Hz needs a ProMotion display; an acoustic check with a mic/loopback is open as a WOCS issue (#28).
 - [x] `apps/desktop/dev/protocol-console` for B (§12.3): interactive + one-shot `--say`/`--wav`, schema validation, latency report, TTS WAV capture.
 - [x] Idle FPS throttling: 60 active / 30 idle / 0 hidden. Release idle CPU 37.2 % → 24.7 % (M2). Fixed 3 production-only bugs (CSP eval, blob-worker textures, tauri:// URL resolution).
 - [ ] Tag `m0` once B's mock server drives the mouth.

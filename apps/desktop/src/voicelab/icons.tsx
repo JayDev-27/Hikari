@@ -12,4 +12,3 @@ export const IconRight = () => <svg {...base}><path d="m6 3.5 4.5 4.5L6 12.5" />
 export const IconShield = () => <svg {...base}><path d="M8 1.8 13 3.6v4c0 3.2-2.2 5.5-5 6.6-2.8-1.1-5-3.4-5-6.6v-4Z" /><path d="m5.7 8 1.6 1.6 3-3.2" /></svg>;
 export const IconPerson = () => <svg {...base}><circle cx="8" cy="5.5" r="2.6" /><path d="M3 14a5 5 0 0 1 10 0" /></svg>;
 export const IconPeople = () => <svg {...base}><circle cx="6" cy="5.5" r="2.3" /><path d="M1.8 13a4.2 4.2 0 0 1 8.4 0" /><path d="M10.5 3.4a2.3 2.3 0 0 1 0 4.3M12 9.3a4.2 4.2 0 0 1 2.2 3.7" /></svg>;
-export const IconSpark = () => <svg {...base}><path d="M8 2v3M8 11v3M2 8h3M11 8h3M3.8 3.8l2 2M10.2 10.2l2 2M3.8 12.2l2-2M10.2 5.8l2-2" /></svg>;

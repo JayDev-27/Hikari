@@ -1,3 +1,4 @@
+import { HikariFlower } from "../ui/HikariFlower";
 import { useEffect, useMemo, useReducer, useState, type CSSProperties, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
@@ -110,7 +111,7 @@ export function Onboarding() {
       <div className="ob-titlebar" data-tauri-drag-region />
       <aside className="ob-side">
         <div className="ob-brand">
-          <Sakura />
+          <HikariFlower size={22} className="ob-brand-mark" />
           <span>Hikari</span>
         </div>
         <ol className="ob-steps">
@@ -198,7 +199,7 @@ function Welcome({ packs }: { packs: CharacterPack[] }) {
       </div>
       <Header title="Welcome to Hikari">A companion who lives on your desktop, talks with you, and remembers what matters.</Header>
       <ul className="ob-features">
-        <Feature icon={<IconSpark />} title="On your desktop">
+        <Feature icon={<HikariFlower />} title="On your desktop">
           She stands beside your windows and stays out of the way. Clicks go through to whatever is behind her.
         </Feature>
         <Feature icon={<IconWave />} title="Talk or type">
@@ -436,7 +437,7 @@ function Done({ character, report, core }: { character?: CharacterPack; report: 
         </div>
         <div className="ob-summary-row">
           <span className={`ob-summary-icon ${core.connected ? "on" : ""}`}>
-            <IconSpark />
+            <HikariFlower />
           </span>
           <span>
             <strong>Brain</strong>
@@ -475,12 +476,6 @@ const IconScreen = () => (
     <circle cx="8" cy="6.9" r="1.4" fill="currentColor" stroke="none" />
   </svg>
 );
-const IconSpark = () => (
-  <svg {...base}>
-    <path d="M8 1.8c.4 3.1 1.6 4.3 4.7 4.7-3.1.4-4.3 1.6-4.7 4.7-.4-3.1-1.6-4.3-4.7-4.7C6.4 6.1 7.6 4.9 8 1.8Z" />
-    <path d="M12.6 10.6c.2 1.3.7 1.8 2 2-1.3.2-1.8.7-2 2-.2-1.3-.7-1.8-2-2 1.3-.2 1.8-.7 2-2Z" />
-  </svg>
-);
 const IconWave = () => (
   <svg {...base}>
     <path d="M2 8h.01M4.7 5.6v4.8M7.4 3v10M10.1 5v6M12.8 6.8v2.4" />
@@ -490,14 +485,5 @@ const IconLock = () => (
   <svg {...base}>
     <rect x="3" y="7" width="10" height="7" rx="1.8" />
     <path d="M5.3 7V5.1a2.7 2.7 0 0 1 5.4 0V7" />
-  </svg>
-);
-/** Five-petal sakura, Hikari's mark. */
-const Sakura = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-    {[0, 72, 144, 216, 288].map((r) => (
-      <path key={r} transform={`rotate(${r} 12 12)`} d="M12 12c-2.6-1.6-3.6-4.4-2.6-7 .6-1.4 1.6-2 2.6-1.2 1-.8 2-.2 2.6 1.2 1 2.6 0 5.4-2.6 7Z" fill="var(--st-accent)" />
-    ))}
-    <circle cx="12" cy="12" r="1.6" fill="#fff" opacity="0.9" />
   </svg>
 );

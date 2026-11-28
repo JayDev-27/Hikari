@@ -221,11 +221,7 @@ pub fn import_into(
         )
         .map_err(|e| e.to_string())?;
 
-        let dest = root.join(&id);
-        if dest.exists() {
-            fs::remove_dir_all(&dest).map_err(|e| e.to_string())?;
-        }
-        fs::rename(&staging, &dest).map_err(|e| e.to_string())?;
+        replace_dir(&staging, &root.join(&id))?;
         Ok(ImportResult {
             id,
             renderer,
@@ -418,6 +414,10 @@ pub fn vrm_meta(path: &Path) -> Result<(Value, Vec<String>), String> {
 
 /// Extract a zip, rejecting entries that would escape `out` (zip-slip) and symlinks.
 pub fn unzip_safe(zip_path: &Path, out: &Path) -> Result<(), String> {
+    unzip_limited(zip_path, out, MAX_IMPORT_BYTES)
+}
+
+fn unzip_limited(zip_path: &Path, out: &Path, max_bytes: u64) -> Result<(), String> {
     let f = fs::File::open(zip_path).map_err(|e| e.to_string())?;
     let mut zip = zip::ZipArchive::new(f).map_err(|e| format!("not a valid zip: {e}"))?;
     let mut total = 0u64;
@@ -438,9 +438,15 @@ pub fn unzip_safe(zip_path: &Path, out: &Path) -> Result<(), String> {
             fs::create_dir_all(&target).map_err(|e| e.to_string())?;
             continue;
         }
+        // The zip crate refuses to read past an entry's declared size, so summing declared sizes bounds what's
+        // written (unzip_rejects_entries_larger_than_declared checks that this still holds after upgrades).
         total += entry.size();
-        if total > MAX_IMPORT_BYTES {
-            return Err("zip expands to more than 1 GiB".into());
+        if total > max_bytes {
+            return Err(if max_bytes == MAX_IMPORT_BYTES {
+                "zip expands to more than 1 GiB".into()
+            } else {
+                format!("zip expands to more than {max_bytes} bytes")
+            });
         }
         if let Some(p) = target.parent() {
             fs::create_dir_all(p).map_err(|e| e.to_string())?;
@@ -449,6 +455,26 @@ pub fn unzip_safe(zip_path: &Path, out: &Path) -> Result<(), String> {
         std::io::copy(&mut entry, &mut w).map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+/// Move `staging` to `dest`, replacing an existing pack only once the new one is in place: the old folder is set
+/// aside first and put back if the move fails, so a failed re-import never loses the character.
+fn replace_dir(staging: &Path, dest: &Path) -> Result<(), String> {
+    if !dest.exists() {
+        return fs::rename(staging, dest).map_err(|e| e.to_string());
+    }
+    let backup = dest.with_extension(format!("old-{}", now_ms()));
+    fs::rename(dest, &backup).map_err(|e| e.to_string())?;
+    match fs::rename(staging, dest) {
+        Ok(()) => {
+            let _ = fs::remove_dir_all(&backup);
+            Ok(())
+        }
+        Err(e) => {
+            let _ = fs::rename(&backup, dest);
+            Err(e.to_string())
+        }
+    }
 }
 
 fn copy_file(a: &Path, b: &Path) -> Result<(), String> {
@@ -633,6 +659,85 @@ mod tests {
             fs::read_dir(&root).unwrap().count(),
             0,
             "staging dir must be removed"
+        );
+    }
+
+    #[test]
+    fn unzip_rejects_entries_larger_than_declared() {
+        let dir = tmp("ziplie");
+        // A stored 5000-byte entry whose headers claim 10 bytes: the size check must not trust them.
+        let path = dir.join("lie.zip");
+        {
+            let mut z = zip::ZipWriter::new(fs::File::create(&path).unwrap());
+            let opts = zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Stored);
+            z.start_file("big.bin", opts).unwrap();
+            z.write_all(&[7u8; 5000]).unwrap();
+            z.finish().unwrap();
+        }
+        let mut bytes = fs::read(&path).unwrap();
+        let patch = |b: &mut Vec<u8>, sig: [u8; 4], off: usize| {
+            let at = b.windows(4).position(|w| w == sig).unwrap();
+            b[at + off..at + off + 4].copy_from_slice(&10u32.to_le_bytes());
+        };
+        patch(&mut bytes, [0x50, 0x4b, 0x03, 0x04], 22); // local header: uncompressed size
+        patch(&mut bytes, [0x50, 0x4b, 0x01, 0x02], 24); // central directory: uncompressed size
+        fs::write(&path, &bytes).unwrap();
+
+        // The declared 10 bytes pass the budget check; the zip crate must then stop at the declared size.
+        let e = unzip_limited(&path, &dir.join("out"), 1000).unwrap_err();
+        assert!(e.contains("larger than its declared"), "{e}");
+    }
+
+    #[test]
+    fn unzip_limit_allows_exactly_the_budget() {
+        let dir = tmp("zipexact");
+        let path = dir.join("ok.zip");
+        {
+            let mut z = zip::ZipWriter::new(fs::File::create(&path).unwrap());
+            let opts = zip::write::SimpleFileOptions::default();
+            z.start_file("a.bin", opts).unwrap();
+            z.write_all(&[1u8; 600]).unwrap();
+            z.start_file("b.bin", opts).unwrap();
+            z.write_all(&[2u8; 400]).unwrap();
+            z.finish().unwrap();
+        }
+        unzip_limited(&path, &dir.join("out"), 1000).unwrap();
+        assert_eq!(fs::read(dir.join("out/b.bin")).unwrap().len(), 400);
+        let e = unzip_limited(&path, &dir.join("out2"), 999).unwrap_err();
+        assert!(e.contains("expands to more than"), "{e}");
+    }
+
+    #[test]
+    fn failed_replace_keeps_the_existing_pack() {
+        let root = tmp("replace");
+        let dest = root.join("reze");
+        fs::create_dir_all(&dest).unwrap();
+        fs::write(dest.join("character.json"), b"{\"id\":\"reze\"}").unwrap();
+        // The staging folder doesn't exist, so the move fails after the old pack was set aside.
+        assert!(replace_dir(&root.join("missing-staging"), &dest).is_err());
+        assert_eq!(
+            fs::read_to_string(dest.join("character.json")).unwrap(),
+            "{\"id\":\"reze\"}"
+        );
+        assert_eq!(
+            fs::read_dir(&root).unwrap().count(),
+            1,
+            "no backup folder left behind"
+        );
+
+        let staging = root.join("staging");
+        fs::create_dir_all(&staging).unwrap();
+        fs::write(staging.join("character.json"), b"{\"id\":\"new\"}").unwrap();
+        replace_dir(&staging, &dest).unwrap();
+        assert_eq!(
+            fs::read_to_string(dest.join("character.json")).unwrap(),
+            "{\"id\":\"new\"}"
+        );
+        assert_eq!(
+            fs::read_dir(&root).unwrap().count(),
+            1,
+            "backup removed after success"
         );
     }
 
