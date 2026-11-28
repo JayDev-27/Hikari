@@ -22,6 +22,18 @@ export interface CoreEvent<T extends MessageType = MessageType> {
 export interface CoreStatus {
   connected: boolean;
   reason?: string;
+  /** Wall-clock time of the most recent observed transition to disconnected. */
+  lastDisconnectAt?: number;
+}
+
+/** Preserve the time of the most recent disconnect, including an initial disconnected status. */
+export function withDisconnectTimestamp(previous: CoreStatus, next: CoreStatus, now = Date.now()): CoreStatus {
+  const enteredDisconnected = !next.connected && (previous.connected || previous.lastDisconnectAt === undefined);
+  const lastDisconnectAt = enteredDisconnected ? now : previous.lastDisconnectAt;
+  return {
+    ...next,
+    ...(lastDisconnectAt === undefined ? {} : { lastDisconnectAt }),
+  };
 }
 
 export const inTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -69,8 +81,15 @@ export function useCoreStatus(): CoreStatus {
     if (!inTauri()) return;
     let off: (() => void) | undefined;
     let gone = false;
-    void listen<CoreStatus>("core://status", (e) => setStatus(e.payload)).then((u) => (gone ? u() : (off = u)));
-    void emit("core://hello", null);
+    void listen<CoreStatus>("core://status", (e) => setStatus((previous) => withDisconnectTimestamp(previous, e.payload))).then((u) => {
+      if (gone) {
+        u();
+        return;
+      }
+      off = u;
+      // Ask only after the listener is installed so the initial status cannot race past this window.
+      void emit("core://hello", null);
+    });
     return () => {
       gone = true;
       off?.();

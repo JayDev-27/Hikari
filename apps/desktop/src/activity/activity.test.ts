@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ToolConfirm, ToolRequest } from "@hikari/protocol";
+import { withDisconnectTimestamp } from "../ui/coreBridge";
 import { ConfirmQueue } from "./queue";
 import { ActionGuard, WORKING_STALE_MS } from "./guard";
 import {
@@ -110,7 +111,7 @@ function harness(timeoutMs = 60_000) {
     },
     timeoutMs,
   );
-  return { g, sent, log, working, advance: (ms: number) => (now += ms), changes: () => changes };
+  return { g, sent, log, working, now: () => now, advance: (ms: number) => (now += ms), changes: () => changes };
 }
 
 describe("ActionGuard", () => {
@@ -206,7 +207,64 @@ describe("ActionGuard", () => {
     h.advance(WORKING_STALE_MS + 1);
     h.g.sweep();
     expect(h.working.at(-1)?.[0]).toBe(false);
-    expect(buildTimeline(h.log).entries[0].status).toBe("running"); // the log still tells the truth
+    expect(buildTimeline(h.log, { now: h.now() }).entries[0].status).toBe("no_result");
+    expect(h.log.map((r) => r.kind)).toEqual(["request"]); // display state is never appended to the audit log
+  });
+
+  it("shows an approved action as no result after the shared stale timeout without writing an audit event", () => {
+    const h = harness();
+    h.g.onRequest(req("approved-stale"));
+    h.g.answer("approved-stale", true);
+    const auditBefore = [...h.log];
+
+    h.advance(WORKING_STALE_MS + 1);
+    h.g.sweep();
+
+    expect(buildTimeline(h.log, { now: h.now() }).entries[0]).toMatchObject({
+      callId: "approved-stale",
+      status: "no_result",
+      decision: { decision: "approved" },
+    });
+    expect(h.log).toEqual(auditBefore);
+    expect(h.log.map((r) => r.kind)).toEqual(["request", "decision"]);
+  });
+
+  it("shows a running action as no result immediately after core disconnect without changing the audit log", () => {
+    const h = harness();
+    h.g.onRequest(req("disconnected"));
+    h.g.answer("disconnected", true);
+    const auditBefore = [...h.log];
+    const disconnectedAt = h.now() + 1;
+    const coreStatus = withDisconnectTimestamp({ connected: true }, { connected: false }, disconnectedAt);
+    h.advance(1);
+
+    const { entries } = buildTimeline(h.log, { now: h.now(), lastDisconnectAt: coreStatus.lastDisconnectAt });
+
+    expect(entries[0]).toMatchObject({ callId: "disconnected", status: "no_result" });
+    expect(h.log).toEqual(auditBefore);
+    expect(h.log.some((record) => record.kind === "result")).toBe(false);
+  });
+
+  it("keeps a newly approved action running after the core reconnects", () => {
+    const h = harness();
+    h.g.onRequest(req("before-disconnect"));
+    h.g.answer("before-disconnect", true);
+
+    const disconnectedAt = h.now() + 1;
+    let coreStatus = withDisconnectTimestamp({ connected: true }, { connected: false }, disconnectedAt);
+    coreStatus = withDisconnectTimestamp(coreStatus, { connected: true }, disconnectedAt + 1);
+    h.advance(2); // The core has reconnected before this action is approved.
+
+    h.g.onRequest(req("after-reconnect"));
+    h.g.answer("after-reconnect", true);
+
+    const { entries } = buildTimeline(h.log, { now: h.now(), lastDisconnectAt: coreStatus.lastDisconnectAt });
+    expect(entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ callId: "before-disconnect", status: "no_result" }),
+        expect.objectContaining({ callId: "after-reconnect", status: "running" }),
+      ]),
+    );
   });
 
   it("ignores answers for calls that are not waiting", () => {
