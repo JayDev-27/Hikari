@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { inTauri } from "../ui/coreBridge";
+import { inTauri, useCoreStatus } from "../ui/coreBridge";
 import { Subscriptions } from "../util/subscriptions";
 import { clearAudit, exportAudit, onAudit, readAudit, revealAudit } from "./auditStore";
 import { TierBadge } from "./TierBadge";
@@ -30,6 +30,14 @@ export function Activity() {
   const [open, setOpen] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const search = useRef<HTMLInputElement>(null);
+  const coreStatus = useCoreStatus();
+  const [coreDisconnected, setCoreDisconnected] = useState(false);
+
+  // Once a disconnect has been observed, a missing result cannot be expected from that core session.
+  // Keep this latched even if a later connection is established.
+  useEffect(() => {
+    if (coreStatus.known && !coreStatus.connected) setCoreDisconnected(true);
+  }, [coreStatus.known, coreStatus.connected]);
 
   const reload = useCallback(async () => {
     try {
@@ -60,10 +68,14 @@ export function Activity() {
     return () => subs.dispose();
   }, [reload]);
 
-  // Running rows show a live elapsed time.
-  const { entries, marks } = useMemo(() => buildTimeline(records), [records]);
-  const anyRunning = entries.some((e) => e.status === "running");
+  // Running rows show a live elapsed time and become "No result" after the guard's stale window.
   const [now, setNow] = useState(() => Date.now());
+  const coreUnavailable = coreDisconnected || (coreStatus.known === true && !coreStatus.connected);
+  const { entries, marks } = useMemo(
+    () => buildTimeline(records, { now, coreDisconnected: coreUnavailable }),
+    [records, now, coreUnavailable],
+  );
+  const anyRunning = entries.some((e) => e.status === "running");
   useEffect(() => {
     if (!anyRunning) return;
     const t = window.setInterval(() => setNow(Date.now()), 1000);
@@ -196,7 +208,8 @@ export function Activity() {
 }
 
 function Row({ e, now, open, onToggle }: { e: Entry; now: number; open: boolean; onToggle: () => void }) {
-  const dur = e.status === "running" && e.decision?.ts ? now - e.decision.ts : e.status === "running" ? now - e.at : e.durationMs;
+  const startedAt = e.decision?.decision === "approved" ? (e.decision.ts ?? e.at) : e.at;
+  const dur = e.status === "running" || e.status === "no_result" ? now - startedAt : e.durationMs;
   const detail = e.result?.error ?? (e.result?.ok ? resultLine(e.result.result) : "");
   return (
     <article className={`ac-row ac-s-${e.status}${open ? " open" : ""}`}>
@@ -273,7 +286,7 @@ function decisionText(e: Entry): string {
 function StatusIcon({ status }: { status: Entry["status"] }) {
   if (status === "running" || status === "awaiting") return <span className={`ac-icon ac-icon-${status}`} aria-hidden="true" />;
   const path =
-    status === "succeeded" ? "M4.5 8.4 7 10.8l4.6-5.2" : status === "failed" ? "M8 4.6v4.2M8 11.2v.2" : status === "unknown" ? "M6.4 6.2a1.7 1.7 0 1 1 2.4 1.6c-.5.3-.8.6-.8 1.2M8 11.2v.2" : "M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6";
+    status === "succeeded" ? "M4.5 8.4 7 10.8l4.6-5.2" : status === "failed" ? "M8 4.6v4.2M8 11.2v.2" : (status === "unknown" || status === "no_result") ? "M6.4 6.2a1.7 1.7 0 1 1 2.4 1.6c-.5.3-.8.6-.8 1.2M8 11.2v.2" : "M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6";
   return (
     <svg className={`ac-icon ac-icon-${status}`} viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
       <circle cx="8" cy="8" r="7.2" />
