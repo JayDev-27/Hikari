@@ -252,10 +252,10 @@ Every pull request is checked automatically, so you get feedback before a mainta
 Thank you to everyone who has helped build Hikari 🌸 Every merged pull request adds your photo here automatically.
 
 <a href="https://github.com/JayDev-27/Hikari/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=JayDev-27/Hikari&max=100&columns=12" alt="Photos of everyone who has contributed to Hikari">
+  <img src="assets/readme/contributors.svg" alt="Photos of everyone who has contributed to Hikari">
 </a>
 
-<sub>Want to see yourself here? Pick an <a href="https://github.com/JayDev-27/Hikari/issues?q=is%3Aissue+is%3Aopen+label%3Awocs">open WOCS issue</a> and follow the <a href="#contributing">contributing steps</a>. New photos can take up to a day to appear.</sub>
+<sub>Want to see yourself here? Pick an <a href="https://github.com/JayDev-27/Hikari/issues?q=is%3Aissue+is%3Aopen+label%3Awocs">open WOCS issue</a> and follow the <a href="#contributing">contributing steps</a>. Your photo appears a few minutes after your pull request is merged.</sub>
 
 ## Assets and licences
 
