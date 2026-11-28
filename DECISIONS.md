@@ -2,6 +2,14 @@
 
 Newest first. "A" = Person A (Body & Desktop), "B" = Person B (Brain & Voice).
 
+## 2026-11-28 — Audit pass (A): pack replace, Hikari flower mark, 60 fps A/V sync
+
+- **Re-importing over an existing pack is now safe.** `import_into` used to delete the old pack folder and then move the new one in, so a failed move lost the character. `replace_dir` sets the old folder aside first and puts it back if the move fails (unit test). The backup name (`<id>.old-<ms>`) isn't a valid pack id, so it never shows in the Studio.
+- **Zip size limit checked, not changed.** It sums each entry's *declared* size, which looked forgeable, but the `zip` crate refuses to read past the declared size ("File is larger than its declared uncompressed size"), so the sum does bound what's written. A test with a forged header (`unzip_rejects_entries_larger_than_declared`) keeps that true across crate upgrades.
+- **One Hikari mark everywhere.** `src/ui/HikariFlower.tsx` traces the app icon's flower (five notched petals, star-shaped centre; no tile, glass or dot) and fills with `currentColor`. It replaces the sparkle icons (onboarding "On your desktop" and Brain rows, Voice Lab training) and the old blob sakura in the welcome window. The menu-bar template icon is now rendered from the same vector (`dev/make-tray-icon.sh`) instead of being cut out of the old logo's pixels; `assets/brand/tray.swift` is no longer used for it.
+- **A/V sync at 60 fps:** `pnpm -F desktop avsync` passes at +16.3 ms (offsets 15.3–16.7 ms, jitter 0.3 ms, no missed frames; Bluetooth output, reported latency 160 ms, Low Power Mode off). 120 Hz can't be measured on this Mac's 60 Hz display.
+- **New WOCS issues from the audit:** #23 chat transcript tests, #24 tuner phrase tests, #25 "Show Welcome…" in the tray, #26 per-frame allocations in the stage loop, #27 mobile Lighthouse pass on the website, #28 acoustic A/V sync measurement.
+
 ## 2026-11-26 — M8 (A): onboarding, perf pass, release bundle check
 
 - **Onboarding** (`src/onboarding/`, window `onboarding`): Welcome → pick a character (built-in packs; writes the active character and tells the stage, like the Studio's "Use Character") → Permissions → Brain status (`useCoreStatus`; offline is explained as fine) → ⌥Space tutorial (lights up on the real global hotkey `hotkey://ptt`) → Done. Shown automatically at launch until finished (`onboarding.json {doneVersion}` in the app config dir; bump `VERSION` in `onboarding.rs` to show it again to everyone). The position is kept in localStorage so a relaunch (for Screen Recording) resumes where the user was. **Reopen it:** Rust `onboarding::open(app)` or the command `onboarding_open` (restarts at step 1) — for Settings / the tray (not wired by me).

@@ -1,7 +1,7 @@
 import { IconCheck, IconWarn } from "../studio/icons";
 import { usePlayer } from "./audio";
 import { PlayButton } from "./controls";
-import { IconSpark } from "./icons";
+import { HikariFlower } from "../ui/HikariFlower";
 import { canTrain, formatMetric, meetsTarget, OPS, type EvalReport, type Take, type TrainProgress, type Voice } from "./ops";
 import { Empty } from "./VoiceLab";
 import type { SendOp } from "./VoiceLab";
@@ -59,7 +59,7 @@ export function TrainPanel({ voice, takes, progress, error, sendOp, onEvaluate, 
         </>
       ) : (
         <>
-          <span className="vl-granted-icon vl-icon-soft"><IconSpark /></span>
+          <span className="vl-granted-icon vl-icon-soft"><HikariFlower /></span>
           <h2>{voice.status === "failed" || progress?.stage === "failed" ? "Training didn't finish" : "Train the voice"}</h2>
           <p className="vl-note">
             {saved >= voice.minClips
@@ -81,7 +81,7 @@ export function TrainPanel({ voice, takes, progress, error, sendOp, onEvaluate, 
 /** The core's `eval.report`: metrics against their targets, and samples to listen to. */
 export function EvalReportView({ report, onRerun }: { report?: EvalReport; onRerun: () => void }) {
   const player = usePlayer();
-  if (!report) return <Empty icon={<IconSpark />} title="No report yet">The core writes one when training finishes.</Empty>;
+  if (!report) return <Empty icon={<HikariFlower />} title="No report yet">The core writes one when training finishes.</Empty>;
   return (
     <div className="vl-report">
       {report.summary && <p className="vl-summary">{report.summary}</p>}

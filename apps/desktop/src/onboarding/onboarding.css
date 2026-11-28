@@ -61,6 +61,7 @@
   border-right: 0.5px solid var(--st-sidebar-line);
 }
 .ob-unified .ob-side { padding-top: 52px; }
+.ob-brand-mark { color: var(--st-accent); flex: none; }
 .ob-brand {
   display: flex;
   align-items: center;
