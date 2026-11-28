@@ -110,7 +110,7 @@ function harness(timeoutMs = 60_000) {
     },
     timeoutMs,
   );
-  return { g, sent, log, working, advance: (ms: number) => (now += ms), changes: () => changes };
+  return { g, sent, log, working, now: () => now, advance: (ms: number) => (now += ms), changes: () => changes };
 }
 
 describe("ActionGuard", () => {
@@ -206,7 +206,39 @@ describe("ActionGuard", () => {
     h.advance(WORKING_STALE_MS + 1);
     h.g.sweep();
     expect(h.working.at(-1)?.[0]).toBe(false);
-    expect(buildTimeline(h.log).entries[0].status).toBe("running"); // the log still tells the truth
+    expect(buildTimeline(h.log, { now: h.now() }).entries[0].status).toBe("no_result");
+    expect(h.log.map((r) => r.kind)).toEqual(["request"]); // display state is never appended to the audit log
+  });
+
+  it("shows an approved action as no result after the shared stale timeout without writing an audit event", () => {
+    const h = harness();
+    h.g.onRequest(req("approved-stale"));
+    h.g.answer("approved-stale", true);
+    const auditBefore = [...h.log];
+
+    h.advance(WORKING_STALE_MS + 1);
+    h.g.sweep();
+
+    expect(buildTimeline(h.log, { now: h.now() }).entries[0]).toMatchObject({
+      callId: "approved-stale",
+      status: "no_result",
+      decision: { decision: "approved" },
+    });
+    expect(h.log).toEqual(auditBefore);
+    expect(h.log.map((r) => r.kind)).toEqual(["request", "decision"]);
+  });
+
+  it("shows a running action as no result immediately after core disconnect without changing the audit log", () => {
+    const h = harness();
+    h.g.onRequest(req("disconnected"));
+    h.g.answer("disconnected", true);
+    const auditBefore = [...h.log];
+
+    const { entries } = buildTimeline(h.log, { now: h.now(), coreDisconnected: true });
+
+    expect(entries[0]).toMatchObject({ callId: "disconnected", status: "no_result" });
+    expect(h.log).toEqual(auditBefore);
+    expect(h.log.some((record) => record.kind === "result")).toBe(false);
   });
 
   it("ignores answers for calls that are not waiting", () => {
