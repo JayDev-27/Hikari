@@ -244,7 +244,7 @@ export function buildTimeline(records: AuditRecord[], options: TimelineOptions =
   for (const e of byId.values()) {
     if (e.status !== "running") continue;
     const startedAt = e.decision?.decision === "approved" ? (e.decision.ts ?? e.at) : e.at;
-    const stale = options.now !== undefined && options.now - startedAt > ACTION_RESULT_STALE_MS;
+    const stale = startedAt > 0 && options.now !== undefined && options.now - startedAt > ACTION_RESULT_STALE_MS;
     if (options.coreDisconnected || stale) e.status = "no_result";
   }
 
