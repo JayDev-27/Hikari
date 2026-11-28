@@ -24,6 +24,8 @@ export interface CoreStatus {
   reason?: string;
   /** True only after this window has received the stage's initial status response. */
   known?: boolean;
+  /** Whether this window has observed a disconnect during its lifetime. */
+  everDisconnected?: boolean;
 }
 
 export const inTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -66,12 +68,12 @@ export function onCore(types: MessageType[], handler: (e: CoreEvent) => void): (
 
 /** Live connection status of the core, as the stage sees it. */
 export function useCoreStatus(): CoreStatus {
-  const [status, setStatus] = useState<CoreStatus>({ ...local.status, known: false });
+  const [status, setStatus] = useState<CoreStatus>({ ...local.status, known: false, everDisconnected: false });
   useEffect(() => {
     if (!inTauri()) return;
     let off: (() => void) | undefined;
     let gone = false;
-    void listen<CoreStatus>("core://status", (e) => setStatus({ ...e.payload, known: true })).then((u) => {
+    void listen<CoreStatus>("core://status", (e) => setStatus((previous) => ({ ...e.payload, known: true, everDisconnected: previous.everDisconnected || !e.payload.connected }))).then((u) => {
       if (gone) {
         u();
         return;
