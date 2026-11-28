@@ -247,9 +247,15 @@ Every pull request is checked automatically, so you get feedback before a mainta
 | **Community bots** | Conventional PR titles (`fix(website): …`), size labels, area labels and a welcome for first-time contributors ([workflow](.github/workflows/community.yml)) |
 | **Vercel preview** | A live preview link for any change to `website/` |
 
+## Contributors
+
+Thank you to everyone who has helped build Hikari 🌸 Every merged pull request adds your photo here automatically.
+
 <a href="https://github.com/JayDev-27/Hikari/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=JayDev-27/Hikari" alt="Hikari contributors">
+  <img src="https://contrib.rocks/image?repo=JayDev-27/Hikari&max=100&columns=10" alt="Photos of everyone who has contributed to Hikari" width="100%">
 </a>
+
+<sub>Want to see yourself here? Pick an <a href="https://github.com/JayDev-27/Hikari/issues?q=is%3Aissue+is%3Aopen+label%3Awocs">open WOCS issue</a> and follow the <a href="#contributing">contributing steps</a>. New photos can take up to a day to appear.</sub>
 
 ## Assets and licences
 
