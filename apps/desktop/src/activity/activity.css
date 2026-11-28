@@ -222,7 +222,7 @@
 .ac-status-running, .ac-status-awaiting { color: var(--ac-blue); }
 .ac-status-succeeded { color: var(--st-green); }
 .ac-status-failed { color: var(--st-red); }
-.ac-status-denied, .ac-status-auto_denied, .ac-status-stopped, .ac-status-unknown { color: var(--st-text-2); }
+.ac-status-denied, .ac-status-auto_denied, .ac-status-stopped, .ac-status-unknown, .ac-status-no_result { color: var(--st-text-2); }
 .ac-row-time { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex: none; font-size: 11px; color: var(--st-text-3); font-variant-numeric: tabular-nums; }
 .ac-row-time time { color: var(--st-text-2); }
 
@@ -231,7 +231,7 @@ svg.ac-icon circle { fill: currentColor; }
 svg.ac-icon path { fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .ac-icon-succeeded { color: var(--st-green); }
 .ac-icon-failed { color: var(--st-red); }
-.ac-icon-denied, .ac-icon-auto_denied, .ac-icon-stopped, .ac-icon-unknown { color: var(--st-text-3); }
+.ac-icon-denied, .ac-icon-auto_denied, .ac-icon-stopped, .ac-icon-unknown, .ac-icon-no_result { color: var(--st-text-3); }
 span.ac-icon { display: inline-block; border-radius: 50%; }
 .ac-icon-running { border: 2px solid color-mix(in srgb, var(--ac-blue) 25%, transparent); border-top-color: var(--ac-blue); animation: ac-spin 0.9s linear infinite; }
 .ac-icon-awaiting { border: 2px solid var(--ac-blue); background: radial-gradient(circle, var(--ac-blue) 0 3px, transparent 3.5px); animation: ac-pulse 1.6s ease-in-out infinite; }
