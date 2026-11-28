@@ -22,6 +22,8 @@ export interface CoreEvent<T extends MessageType = MessageType> {
 export interface CoreStatus {
   connected: boolean;
   reason?: string;
+  /** True only after this window has received the stage's initial status response. */
+  known?: boolean;
 }
 
 export const inTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -64,13 +66,20 @@ export function onCore(types: MessageType[], handler: (e: CoreEvent) => void): (
 
 /** Live connection status of the core, as the stage sees it. */
 export function useCoreStatus(): CoreStatus {
-  const [status, setStatus] = useState<CoreStatus>(local.status);
+  const [status, setStatus] = useState<CoreStatus>({ ...local.status, known: false });
   useEffect(() => {
     if (!inTauri()) return;
     let off: (() => void) | undefined;
     let gone = false;
-    void listen<CoreStatus>("core://status", (e) => setStatus(e.payload)).then((u) => (gone ? u() : (off = u)));
-    void emit("core://hello", null);
+    void listen<CoreStatus>("core://status", (e) => setStatus({ ...e.payload, known: true })).then((u) => {
+      if (gone) {
+        u();
+        return;
+      }
+      off = u;
+      // Ask only after the listener is installed so the initial status cannot race past this window.
+      void emit("core://hello", null);
+    });
     return () => {
       gone = true;
       off?.();
