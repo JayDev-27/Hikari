@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { inTauri, onCore, sendToCore, useCoreStatus } from "../ui/coreBridge";
@@ -30,7 +31,13 @@ const clock = () => Date.now();
 function createGuard(changed: () => void): ActionGuard {
   return new ActionGuard({
     now: clock,
-    confirm: (m) => void sendToCore("tool.confirm", m),
+    confirm: (m) => {
+      if (inTauri()) {
+        void invoke("submit_tool_confirmation", { confirmation: m }).catch((error) => console.error("Confirmation submission refused:", error));
+      } else {
+        void sendToCore("tool.confirm", m);
+      }
+    },
     audit: (r) => void appendAudit(r),
     working: signalWorking,
     changed,

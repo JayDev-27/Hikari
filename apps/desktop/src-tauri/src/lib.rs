@@ -1,4 +1,5 @@
 mod audit;
+mod confirm;
 mod dock;
 mod hotkeys;
 mod onboarding;
@@ -44,8 +45,11 @@ pub fn run() {
             None,
         ))
         .manage(Arc::new(stage::StageState::default()))
+        .manage(confirm::ConfirmRelayState::default())
         .invoke_handler(tauri::generate_handler![
             stage::set_click_through,
+            confirm::submit_tool_confirmation,
+            confirm::take_tool_confirmations,
             packs::list_user_packs,
             packs::import_model,
             packs::delete_user_pack,
