@@ -77,8 +77,8 @@ node "$P/despeck-edges.mjs" iki-char/rize-rigged.iki
 # Forearms fold inward to 170° (hand-to-face think_chin / facepalm); clean skin under the eyes and
 # glasses (closed lids, head turns) and on the neck under the jaw (head turns).
 node "$P/elbow-in.mjs" iki-char/rize-rigged.iki 170
-node "$P/fill-under.mjs" iki-char/rize-rigged.iki face '^(eye|iris|lash|lash_lower)_[LR]$|^glasses$' 6
-node "$P/fill-under.mjs" iki-char/rize-rigged.iki body '^face$' 0
+node "$P/fill-under.mjs" iki-char/rize-rigged.iki face 'eye_?,iris_?,lash_?,lash_lower_?,glasses' 6
+node "$P/fill-under.mjs" iki-char/rize-rigged.iki body face 0
 # The open book she holds in signature-book (from her Live2D atlas: characters/rize/source/book.png), placed
 # behind both forearms, with the lower corners inside her two open grips.
 node "$P/add-prop.mjs" iki-char/rize-rigged.iki source/book.png book ParamRizeBook 515,1658,445 2.8 bodyWarp -4

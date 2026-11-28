@@ -270,4 +270,12 @@ describe("mapping and tuning", () => {
     expect(diffTuning(t)).toEqual({ blink: { mean: 5 }, postures: { thinking: { headPitch: 9 } } });
     expect(DEFAULT_TUNING.blink.mean).toBe(3.6);
   });
+
+  it("tuning overrides cannot pollute Object.prototype", () => {
+    const hostile = JSON.parse('{"__proto__":{"polluted":1},"constructor":{"prototype":{"polluted":1}},"blink":{"__proto__":{"polluted":1},"mean":4}}');
+    const t = mergeTuning(DEFAULT_TUNING, hostile);
+    expect(t.blink.mean).toBe(4);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(Object.prototype).not.toHaveProperty("polluted");
+  });
 });

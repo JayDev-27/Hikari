@@ -148,6 +148,8 @@ export const DEFAULT_TUNING: Tuning = {
 
 type Plain = { [k: string]: number | Plain };
 
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 export function cloneTuning(t: Tuning = DEFAULT_TUNING): Tuning {
   return JSON.parse(JSON.stringify(t)) as Tuning;
 }
@@ -158,7 +160,9 @@ export function mergeTuning(base: Tuning, overrides: unknown): Tuning {
   const walk = (dst: Plain, src: unknown) => {
     if (!src || typeof src !== "object") return;
     for (const [k, v] of Object.entries(src as Record<string, unknown>)) {
-      if (!(k in dst)) continue;
+      // Only keys the tuning itself defines: `k in dst` would also accept inherited keys such as `__proto__`,
+      // letting a stored override write into Object.prototype.
+      if (UNSAFE_KEYS.has(k) || !Object.prototype.hasOwnProperty.call(dst, k)) continue;
       const d = dst[k];
       if (typeof d === "number") {
         if (typeof v === "number" && Number.isFinite(v)) dst[k] = v;
