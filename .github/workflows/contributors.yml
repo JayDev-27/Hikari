@@ -1,0 +1,48 @@
+name: Contributors
+
+# Rebuilds the README's contributor photos (assets/readme/contributors.svg) right after anything lands on main, so a
+# merged pull request shows its author within minutes. Bots are left out. A commit pushed with GITHUB_TOKEN doesn't
+# start other workflows, so this can't loop.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "41 */6 * * *" # catches anything the push run missed
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: contributors
+  cancel-in-progress: false
+
+jobs:
+  photos:
+    name: Refresh contributor photos
+    if: github.repository == 'JayDev-27/Hikari'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+
+      - name: Draw contributor photos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node .github/scripts/contributors.mjs
+
+      - name: Commit if someone new appeared
+        run: |
+          git add assets/readme/contributors.svg
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: refresh contributor photos"
+          git pull --rebase origin main
+          git push origin HEAD:main
