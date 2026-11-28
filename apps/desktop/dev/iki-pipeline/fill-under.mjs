@@ -1,6 +1,7 @@
-// node fill-under.mjs <model.iki> <target> <coverRegex> [grow=3] — paint clean paint under covering parts.
-// e.g. node fill-under.mjs m.iki face '^(eye|iris|lash|lash_lower)_[LR]$|^glasses$' 6   (the eye sockets)
-//      node fill-under.mjs m.iki body '^face$' 0                                  (the neck under the jaw)
+// node fill-under.mjs <model.iki> <target> <coverIds> [grow=3] — paint clean paint under covering parts.
+// <coverIds> is a comma-separated list of part ids; `?` matches one character and `*` any run.
+// e.g. node fill-under.mjs m.iki face 'eye_?,iris_?,lash_?,lash_lower_?,glasses' 6   (the eye sockets)
+//      node fill-under.mjs m.iki body face 0                                        (the neck under the jaw)
 //
 // Cutting leaves the face layer's eye sockets with whatever the cut filled them with: a pale fill,
 // faint outlines of removed glasses, specks, smeared streaks. At rest the eye parts cover it; when
@@ -14,7 +15,21 @@ const req = createRequire((await import("node:path")).resolve(process.env.IKI_RE
 const sharp = (await import(req.resolve("sharp"))).default;
 
 const [file, target, coverS, growS = "3"] = process.argv.slice(2);
-const grow = +growS, coverRe = new RegExp(coverS);
+const grow = +growS;
+// Wildcard matching without building a RegExp from the command line (CodeQL js/regex-injection).
+const globMatch = (pat, str) => {
+  let p = 0, s = 0, star = -1, mark = 0;
+  while (s < str.length) {
+    if (p < pat.length && (pat[p] === "?" || pat[p] === str[s])) { p++; s++; }
+    else if (p < pat.length && pat[p] === "*") { star = p++; mark = s; }
+    else if (star !== -1) { p = star + 1; s = ++mark; }
+    else return false;
+  }
+  while (pat[p] === "*") p++;
+  return p === pat.length;
+};
+const coverIds = coverS.split(",").map((x) => x.trim()).filter(Boolean);
+const covered = (id) => coverIds.some((pat) => globMatch(pat, id));
 const model = JSON.parse(readFileSync(file, "utf8"));
 const face = model.parts.find((p) => p.id === target);
 if (!face) throw new Error(`no part ${target}`);
@@ -34,7 +49,7 @@ const faceLeft = face.transform.x - face.width / 2, faceTop = face.transform.y +
 
 // Footprint of the eye parts on the face texture.
 const mask = new Uint8Array(fr.w * fr.h);
-const covers = model.parts.filter((p) => coverRe.test(p.id) && p.id !== target);
+const covers = model.parts.filter((p) => covered(p.id) && p.id !== target);
 for (const part of covers) {
   const tex = part.texture.index === face.texture.index ? faceTex : await decode(part.texture.index);
   const r = rect(part, tex);
