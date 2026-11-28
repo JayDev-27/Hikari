@@ -24,6 +24,8 @@ export const CONFIRM_TIMEOUT_S = 60;
 export const ARM_DELAY_MS = 1000;
 /** How long Allow must be held for a sensitive request. */
 export const HOLD_MS = 1500;
+/** A running action with no result is no longer considered live after the same cap used by the avatar. */
+export const ACTION_RESULT_STALE_MS = 3 * 60 * 1000;
 
 // ---------------------------------------------------------------------------------------------------------------
 // Argument display + redaction
@@ -144,11 +146,12 @@ export function panicRecord(pending: string[], running: string[]): PanicRecord {
 // ---------------------------------------------------------------------------------------------------------------
 // Timeline (Activity window)
 
-export type Status = "awaiting" | "running" | "succeeded" | "failed" | "denied" | "auto_denied" | "stopped" | "unknown";
+export type Status = "awaiting" | "running" | "no_result" | "succeeded" | "failed" | "denied" | "auto_denied" | "stopped" | "unknown";
 
 export const STATUS_LABEL: Record<Status, string> = {
   awaiting: "Waiting for you",
   running: "Running",
+  no_result: "No result",
   succeeded: "Done",
   failed: "Failed",
   denied: "Denied",
@@ -178,8 +181,15 @@ export interface TimelineMark {
   detail: string;
 }
 
+/** Inputs used only to derive display state; none of this is written back to the audit log. */
+export interface TimelineOptions {
+  now?: number;
+  /** Set when this Activity window has observed the core disconnect. */
+  coreDisconnected?: boolean;
+}
+
 /** Fold the log into one entry per call (newest first), plus panic / clear marks. */
-export function buildTimeline(records: AuditRecord[]): { entries: Entry[]; marks: TimelineMark[] } {
+export function buildTimeline(records: AuditRecord[], options: TimelineOptions = {}): { entries: Entry[]; marks: TimelineMark[] } {
   const byId = new Map<string, Entry & { startedAt?: number }>();
   const marks: TimelineMark[] = [];
   const get = (callId: string, ts: number) => {
@@ -229,6 +239,15 @@ export function buildTimeline(records: AuditRecord[]): { entries: Entry[]; marks
         break;
     }
   }
+  // A missing result is a presentation state, not an audit event. Keep the source records untouched so
+  // the log remains a record of events that actually happened.
+  for (const e of byId.values()) {
+    if (e.status !== "running") continue;
+    const startedAt = e.decision?.decision === "approved" ? (e.decision.ts ?? e.at) : e.at;
+    const stale = options.now !== undefined && options.now - startedAt > ACTION_RESULT_STALE_MS;
+    if (options.coreDisconnected || stale) e.status = "no_result";
+  }
+
   const entries: Entry[] = [...byId.values()]
     .map((e) => {
       delete e.startedAt;
@@ -253,6 +272,7 @@ export const DEFAULT_FILTER: Filter = { status: "all", tier: "all", query: "" };
 const STATUS_GROUP: Record<Status, Filter["status"]> = {
   awaiting: "active",
   running: "active",
+  no_result: "done",
   succeeded: "done",
   failed: "failed",
   unknown: "done",
