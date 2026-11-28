@@ -31,13 +31,6 @@ export function Activity() {
   const [note, setNote] = useState<string | null>(null);
   const search = useRef<HTMLInputElement>(null);
   const coreStatus = useCoreStatus();
-  const [coreDisconnected, setCoreDisconnected] = useState(false);
-
-  // Once a disconnect has been observed, a missing result cannot be expected from that core session.
-  // Keep this latched even if a later connection is established.
-  useEffect(() => {
-    if (coreStatus.known && !coreStatus.connected) setCoreDisconnected(true);
-  }, [coreStatus.known, coreStatus.connected]);
 
   const reload = useCallback(async () => {
     try {
@@ -70,7 +63,7 @@ export function Activity() {
 
   // Running rows show a live elapsed time and become "No result" after the guard's stale window.
   const [now, setNow] = useState(() => Date.now());
-  const coreUnavailable = coreDisconnected || (coreStatus.known === true && !coreStatus.connected);
+  const coreUnavailable = coreStatus.everDisconnected === true || (coreStatus.known === true && !coreStatus.connected);
   const { entries, marks } = useMemo(
     () => buildTimeline(records, { now, coreDisconnected: coreUnavailable }),
     [records, now, coreUnavailable],
