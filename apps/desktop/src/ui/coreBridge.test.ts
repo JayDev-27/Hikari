@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { MessageType } from "@hikari/protocol";
+import { PROTOCOL_VERSION, type MessageType } from "@hikari/protocol";
 
 type BrowserPreview = {
   inject: (type: MessageType, payload: unknown, turnId?: string) => void;
@@ -11,8 +11,18 @@ type PreviewWindow = {
 };
 
 const browserWindow: PreviewWindow = {};
-let bridge: typeof import("./coreBridge");
-let preview: BrowserPreview;
+let bridge: typeof import("./coreBridge") | undefined;
+let preview: BrowserPreview | undefined;
+
+function getBridge() {
+  if (!bridge) throw new Error("coreBridge has not been initialized");
+  return bridge;
+}
+
+function getPreview() {
+  if (!preview) throw new Error("browser-preview API has not been initialized");
+  return preview;
+}
 
 beforeAll(async () => {
   // coreBridge exposes its preview bus while running in a browser DEV build.
@@ -27,7 +37,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  preview.sent.length = 0;
+  getPreview().sent.length = 0;
 });
 
 afterAll(() => {
@@ -36,20 +46,24 @@ afterAll(() => {
 
 describe("coreBridge browser preview", () => {
   it("records sent messages with their type and payload", async () => {
-    const payload = { role: "ui" as const, protocolVersion: "0.2.0" };
+    const api = getBridge();
+    const bus = getPreview();
+    const payload = { role: "ui" as const, protocolVersion: PROTOCOL_VERSION };
 
-    await bridge.sendToCore("hello", payload);
+    await api.sendToCore("hello", payload);
 
-    expect(preview.sent).toEqual([{ type: "hello", payload }]);
+    expect(bus.sent).toEqual([{ type: "hello", payload }]);
   });
 
   it("delivers only the message types requested by each subscriber", () => {
+    const api = getBridge();
+    const bus = getPreview();
     const handler = vi.fn();
-    const stop = bridge.onCore(["hello"], handler);
-    const hello = { role: "ui" as const, protocolVersion: "0.2.0" };
+    const stop = api.onCore(["hello"], handler);
+    const hello = { role: "ui" as const, protocolVersion: PROTOCOL_VERSION };
 
-    preview.inject("state", {}, "ignored-turn");
-    preview.inject("hello", hello, "hello-turn");
+    bus.inject("state", {}, "ignored-turn");
+    bus.inject("hello", hello, "hello-turn");
 
     expect(handler).toHaveBeenCalledOnce();
     expect(handler).toHaveBeenCalledWith({
@@ -62,13 +76,15 @@ describe("coreBridge browser preview", () => {
   });
 
   it("returns an unsubscribe function that stops future delivery", () => {
+    const api = getBridge();
+    const bus = getPreview();
     const handler = vi.fn();
-    const unsubscribe = bridge.onCore(["hello"], handler);
+    const unsubscribe = api.onCore(["hello"], handler);
 
     expect(unsubscribe).toEqual(expect.any(Function));
     unsubscribe();
 
-    preview.inject("hello", { role: "ui", protocolVersion: "0.2.0" });
+    bus.inject("hello", { role: "ui", protocolVersion: PROTOCOL_VERSION });
 
     expect(handler).not.toHaveBeenCalled();
   });
