@@ -31,6 +31,8 @@ pnpm dev
 
 Most UI work can also be done in the browser: `pnpm -F desktop dev` serves the app at `http://localhost:1420`, for example `/#/studio`, `/#/chat` or `/#/settings`. Panels fall back to sample data there.
 
+For every browser-preview window, its sample-data behavior and the available console hooks, see the [browser preview guide](docs/DEV-PREVIEW.md).
+
 ## Find something to work on
 
 1. Browse the [open WOCS issues](https://github.com/JayDev-27/Hikari/issues?q=is%3Aissue+is%3Aopen+label%3Awocs). Each one says what to do, where in the code, and what "done" looks like.
