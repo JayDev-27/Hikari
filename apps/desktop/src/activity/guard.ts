@@ -1,6 +1,6 @@
 import type { ToolConfirm, ToolRequest, ToolResult } from "@hikari/protocol";
 import { ConfirmQueue, type Pending } from "./queue";
-import { decisionRecord, needsConfirm, panicRecord, requestRecord, resultRecord, type AuditRecord, type DecisionVia } from "./model";
+import { ACTION_RESULT_STALE_MS, decisionRecord, needsConfirm, panicRecord, requestRecord, resultRecord, type AuditRecord, type DecisionVia } from "./model";
 
 /**
  * The one place that turns the core's tool traffic into decisions, audit lines and the "working" signal. It lives in
@@ -19,8 +19,8 @@ export interface GuardDeps {
   changed(): void;
 }
 
-/** A call with no result after this long stops counting as "working" (the log still shows it as running). */
-export const WORKING_STALE_MS = 3 * 60 * 1000;
+/** Shared with the Activity timeline so the avatar and action status go stale together. */
+export const WORKING_STALE_MS = ACTION_RESULT_STALE_MS;
 
 export class ActionGuard {
   readonly queue: ConfirmQueue;
