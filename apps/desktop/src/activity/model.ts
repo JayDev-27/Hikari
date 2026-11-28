@@ -184,8 +184,8 @@ export interface TimelineMark {
 /** Inputs used only to derive display state; none of this is written back to the audit log. */
 export interface TimelineOptions {
   now?: number;
-  /** Set when this Activity window has observed the core disconnect. */
-  coreDisconnected?: boolean;
+  /** Time of the latest observed core disconnect; only earlier actions are affected. */
+  lastDisconnectAt?: number;
 }
 
 /** Fold the log into one entry per call (newest first), plus panic / clear marks. */
@@ -245,7 +245,8 @@ export function buildTimeline(records: AuditRecord[], options: TimelineOptions =
     if (e.status !== "running") continue;
     const startedAt = e.decision?.decision === "approved" ? (e.decision.ts ?? e.at) : e.at;
     const stale = startedAt > 0 && options.now !== undefined && options.now - startedAt > ACTION_RESULT_STALE_MS;
-    if (options.coreDisconnected || stale) e.status = "no_result";
+    const disconnected = startedAt > 0 && options.lastDisconnectAt !== undefined && startedAt < options.lastDisconnectAt;
+    if (disconnected || stale) e.status = "no_result";
   }
 
   const entries: Entry[] = [...byId.values()]

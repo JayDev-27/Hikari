@@ -63,10 +63,9 @@ export function Activity() {
 
   // Running rows show a live elapsed time and become "No result" after the guard's stale window.
   const [now, setNow] = useState(() => Date.now());
-  const coreUnavailable = coreStatus.everDisconnected === true || (coreStatus.known === true && !coreStatus.connected);
   const { entries, marks } = useMemo(
-    () => buildTimeline(records, { now, coreDisconnected: coreUnavailable }),
-    [records, now, coreUnavailable],
+    () => buildTimeline(records, { now, lastDisconnectAt: coreStatus.lastDisconnectAt }),
+    [records, now, coreStatus.lastDisconnectAt],
   );
   const anyRunning = entries.some((e) => e.status === "running");
   useEffect(() => {
